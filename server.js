@@ -89,6 +89,10 @@ app.get('/', (req, res) => {
 
 // Store connected users
  onlineUsers = new Map();
+ // ===== TIC-TAC-TOE GAME STORAGE =====
+const activeGames = new Map(); // gameId -> game object
+const userGameStatus = new Map(); // userId -> gameId
+
 const restrictedUsernames = ['developer', 'DEVELOPER', 'Developer', 'DEVEL0PER', 'devel0per'];
 const userColors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
@@ -953,7 +957,345 @@ socket.on('get-post-comments', (data) => {
     }
 });
 
+// ================= TIC-TAC-TOE GAME SYSTEM (SERVER) =================
+// ===== Get TTT Opponents =====
+socket.on('get-ttt-opponents', () => {
+    const users = Array.from(onlineUsers.entries()).map(([id, user]) => ({
+        id: id,
+        username: user.username,
+        color: user.color,
+        isDeveloper: user.isDeveloper,
+        inGame: userGameStatus.has(id)
+    }));
+    socket.emit('ttt-opponents-list', users);
+});
+
+// ===== Challenge Sent =====
+socket.on('ttt-challenge-sent', (data) => {
+    try {
+        const challenger = onlineUsers.get(socket.id);
+        if (!challenger) return;
+
+        // Send challenge to opponent
+        io.to(data.opponentId).emit('ttt-challenge-received', {
+            challengerId: socket.id,
+            challengerName: data.challengerName,
+            challengerColor: data.challengerColor
+        });
+
+        console.log(`🎮 ${data.challengerName} challenged ${data.opponentName} for Tic-Tac-Toe`);
+    } catch (error) {
+        console.error('Error in ttt-challenge-sent:', error);
+    }
+});
+
+// ===== Challenge Accepted =====
+socket.on('ttt-challenge-accepted', (data) => {
+    try {
+        const accepter = onlineUsers.get(socket.id);
+        const challenger = onlineUsers.get(data.challengerId);
+        
+        if (!accepter || !challenger) return;
+
+        // Create game
+        const gameId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        
+        // Randomly assign X and O
+        const isChallenger_X = Math.random() < 0.5;
+        const challengerSymbol = isChallenger_X ? 'X' : 'O';
+        const accepterSymbol = isChallenger_X ? 'O' : 'X';
+        
+        // X always goes first
+        const challengerTurn = isChallenger_X;
+
+        const game = {
+            id: gameId,
+            player1: {
+                id: data.challengerId,
+                name: challenger.username,
+                color: challenger.color,
+                symbol: challengerSymbol
+            },
+            player2: {
+                id: socket.id,
+                name: accepter.username,
+                color: accepter.color,
+                symbol: accepterSymbol
+            },
+            board: Array(9).fill(null),
+            currentTurn: challengerSymbol,
+            active: true
+        };
+
+        activeGames.set(gameId, game);
+        userGameStatus.set(data.challengerId, gameId);
+        userGameStatus.set(socket.id, gameId);
+
+        // Notify both players
+        io.to(data.challengerId).emit('ttt-game-started', {
+            gameId: gameId,
+            opponent: {
+                name: accepter.username,
+                color: accepter.color,
+                id: socket.id
+            },
+            mySymbol: challengerSymbol,
+            opponentSymbol: accepterSymbol,
+            isMyTurn: challengerTurn
+        });
+
+        io.to(socket.id).emit('ttt-game-started', {
+            gameId: gameId,
+            opponent: {
+                name: challenger.username,
+                color: challenger.color,
+                id: data.challengerId
+            },
+            mySymbol: accepterSymbol,
+            opponentSymbol: challengerSymbol,
+            isMyTurn: !challengerTurn
+        });
+
+        // Update game status for all users
+        io.emit('user-game-status-updated', { username: challenger.username, inGame: true });
+        io.emit('user-game-status-updated', { username: accepter.username, inGame: true });
+
+        console.log(`🎮 Game started: ${challenger.username} vs ${accepter.username}`);
+    } catch (error) {
+        console.error('Error in ttt-challenge-accepted:', error);
+    }
+});
+
+// ===== Challenge Declined =====
+socket.on('ttt-challenge-declined', (data) => {
+    try {
+        io.to(data.challengerId).emit('ttt-challenge-declined', {
+            declinerName: data.declinerName
+        });
+        
+        console.log(`❌ ${data.declinerName} declined challenge`);
+    } catch (error) {
+        console.error('Error in ttt-challenge-declined:', error);
+    }
+});
+
+// ===== Challenge Timeout =====
+socket.on('ttt-challenge-timeout', (data) => {
+    try {
+        io.to(data.challengerId).emit('ttt-challenge-timeout');
+        console.log(`⏰ Challenge timeout`);
+    } catch (error) {
+        console.error('Error in ttt-challenge-timeout:', error);
+    }
+});
+
+// ===== Move Made =====
+// ===== Move Made =====
+socket.on('ttt-move-made', (data) => {
+    try {
+        const game = activeGames.get(data.gameId);
+        if (!game || !game.active) {
+            console.log('❌ Game not found or inactive:', data.gameId);
+            return;
+        }
+
+        // Verify it's the player's turn
+        const player = game.player1.id === socket.id ? game.player1 : game.player2;
+        if (game.currentTurn !== player.symbol) {
+            console.log(`❌ Invalid turn: ${player.name} tried to play ${player.symbol} but it's ${game.currentTurn}'s turn`);
+            return;
+        }
+
+        // Update board on server
+        game.board[data.index] = data.symbol;
+        
+        // Switch turn
+        const previousTurn = game.currentTurn;
+        game.currentTurn = game.currentTurn === 'X' ? 'O' : 'X';
+
+        console.log(`🎮 Move accepted: ${player.name} (${player.symbol}) at position ${data.index}`);
+        console.log(`🎮 Turn switched from ${previousTurn} to ${game.currentTurn}`);
+
+        // Get opponent ID
+        const opponentId = game.player1.id === socket.id ? game.player2.id : game.player1.id;
+
+        // Send move to opponent
+        io.to(opponentId).emit('ttt-opponent-move', {
+            gameId: data.gameId,
+            index: data.index,
+            symbol: data.symbol,
+            board: game.board
+        });
+
+        console.log(`📤 Sent move to opponent ${opponentId}`);
+
+    } catch (error) {
+        console.error('Error in ttt-move-made:', error);
+    }
+});
+
+  // ===== Replay Request =====
+socket.on('ttt-replay-request', (data) => {
+    try {
+        const game = activeGames.get(data.gameId);
+        if (!game) return;
+
+        const opponentId = game.player1.id === socket.id ? game.player2.id : game.player1.id;
+
+        io.to(opponentId).emit('ttt-replay-request-received', {
+            gameId: data.gameId,
+            requesterId: socket.id,
+            requesterName: data.requesterName
+        });
+
+        console.log(`🔄 Replay requested by ${data.requesterName}`);
+    } catch (error) {
+        console.error('Error in ttt-replay-request:', error);
+    }
+});
+
+// ===== Replay Accepted =====
+socket.on('ttt-replay-accepted', (data) => {
+    try {
+        const game = activeGames.get(data.gameId);
+        if (!game) return;
+
+        // Reset game
+        game.board = Array(9).fill(null);
+        game.active = true;
+        
+        // Randomly decide who goes first
+        const player1First = Math.random() < 0.5;
+        game.currentTurn = player1First ? game.player1.symbol : game.player2.symbol;
+
+        // Notify both players
+        io.to(game.player1.id).emit('ttt-replay-accepted', {
+            gameId: data.gameId,
+            isMyTurn: player1First
+        });
+
+        io.to(game.player2.id).emit('ttt-replay-accepted', {
+            gameId: data.gameId,
+            isMyTurn: !player1First
+        });
+
+        console.log(`🔄 Replay started for game ${data.gameId}`);
+    } catch (error) {
+        console.error('Error in ttt-replay-accepted:', error);
+    }
+});
+
+// ===== Replay Declined =====
+socket.on('ttt-replay-declined', (data) => {
+    try {
+        io.to(data.requesterId).emit('ttt-replay-declined', {
+            declinerName: data.declinerName
+        });
+        
+        console.log(`❌ Replay declined by ${data.declinerName}`);
+    } catch (error) {
+        console.error('Error in ttt-replay-declined:', error);
+    }
+});
+
+// ===== Player Left =====
+socket.on('ttt-player-left', (data) => {
+    try {
+        const game = activeGames.get(data.gameId);
+        if (!game) return;
+
+        const opponentId = game.player1.id === socket.id ? game.player2.id : game.player1.id;
+        const opponent = onlineUsers.get(opponentId);
+
+        // Notify opponent
+        io.to(opponentId).emit('ttt-opponent-left', {
+            playerName: data.playerName
+        });
+
+        // Clean up game
+        game.active = false;
+        activeGames.delete(data.gameId);
+        userGameStatus.delete(socket.id);
+        userGameStatus.delete(opponentId);
+
+        // Update game status
+        if (opponent) {
+            io.emit('user-game-status-updated', { username: opponent.username, inGame: false });
+        }
+        
+        const user = onlineUsers.get(socket.id);
+        if (user) {
+            io.emit('user-game-status-updated', { username: user.username, inGame: false });
+        }
+
+        console.log(`🚪 ${data.playerName} left the game`);
+    } catch (error) {
+        console.error('Error in ttt-player-left:', error);
+    }
+});
+
+// ===== Game Ended =====
+socket.on('ttt-game-ended', () => {
+    try {
+        const gameId = userGameStatus.get(socket.id);
+        if (!gameId) return;
+
+        const game = activeGames.get(gameId);
+        if (game) {
+            const opponentId = game.player1.id === socket.id ? game.player2.id : game.player1.id;
+            const opponent = onlineUsers.get(opponentId);
+            
+            // Clean up
+            game.active = false;
+            activeGames.delete(gameId);
+            userGameStatus.delete(socket.id);
+            userGameStatus.delete(opponentId);
+
+            // Update game status
+            if (opponent) {
+                io.emit('user-game-status-updated', { username: opponent.username, inGame: false });
+            }
+            
+            const user = onlineUsers.get(socket.id);
+            if (user) {
+                io.emit('user-game-status-updated', { username: user.username, inGame: false });
+            }
+        }
+    } catch (error) {
+        console.error('Error in ttt-game-ended:', error);
+    }
+});
+
+// ===== CLEAN UP ON DISCONNECT =====
+// (This should be added to your existing disconnect handler)
+// Add this code inside your existing socket.on('disconnect') handler:
+
+/*
+// Clean up any active games
+const gameId = userGameStatus.get(socket.id);
+if (gameId) {
+    const game = activeGames.get(gameId);
+    if (game) {
+        const opponentId = game.player1.id === socket.id ? game.player2.id : game.player1.id;
+        const opponent = onlineUsers.get(opponentId);
+        
+        // Notify opponent
+        if (opponent) {
+            io.to(opponentId).emit('ttt-opponent-left', {
+                playerName: user.username
+            });
+            io.emit('user-game-status-updated', { username: opponent.username, inGame: false });
+        }
+        
+        // Clean up
+        activeGames.delete(gameId);
+        userGameStatus.delete(socket.id);
+        userGameStatus.delete(opponentId);
+    }
+}
+*/
     // ===== Disconnect =====
+// ===== Disconnect =====
     socket.on('disconnect', () => {
         try {
             const user = onlineUsers.get(socket.id);
@@ -968,6 +1310,29 @@ socket.on('get-post-comments', (data) => {
                 });
             }
 
+            // Clean up any active games (TIC-TAC-TOE)
+            const gameId = userGameStatus.get(socket.id);
+            if (gameId) {
+                const game = activeGames.get(gameId);
+                if (game && user) {
+                    const opponentId = game.player1.id === socket.id ? game.player2.id : game.player1.id;
+                    const opponent = onlineUsers.get(opponentId);
+                    
+                    // Notify opponent
+                    if (opponent) {
+                        io.to(opponentId).emit('ttt-opponent-left', {
+                            playerName: user.username
+                        });
+                        io.emit('user-game-status-updated', { username: opponent.username, inGame: false });
+                    }
+                    
+                    // Clean up
+                    activeGames.delete(gameId);
+                    userGameStatus.delete(socket.id);
+                    userGameStatus.delete(opponentId);
+                }
+            }
+
             onlineUsers.delete(socket.id);
 
             // Update counts
@@ -980,12 +1345,12 @@ socket.on('get-post-comments', (data) => {
         }
     });
 
+            
     // ===== Connection errors =====
     socket.on('error', (error) => {
         console.error('Socket error for', socket.id, ':', error);
     });
 });
-
 
 
 // Enhanced error handling

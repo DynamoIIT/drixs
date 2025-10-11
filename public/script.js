@@ -2570,3 +2570,860 @@ function addPostEventListeners() {
         });
     });
 }
+// ================= TIC-TAC-TOE GAME SYSTEM =================
+
+// Game state variables
+let currentGameState = {
+    gameId: null,
+    opponent: null,
+    mySymbol: null,
+    opponentSymbol: null,
+    isMyTurn: false,
+    board: Array(9).fill(null),
+    gameActive: false
+};
+
+let challengeTimer = null;
+
+// Initialize Tic-Tac-Toe system
+function initializeTicTacToe() {
+    // Game container click
+    const ticTacToeGame = document.getElementById('ticTacToeGame');
+    if (ticTacToeGame) {
+        ticTacToeGame.addEventListener('click', function() {
+            showTTTOpponentWindow();
+        });
+    }
+
+    // Opponent window controls
+    const tttOpponentBackBtn = document.getElementById('tttOpponentBackBtn');
+    if (tttOpponentBackBtn) {
+        tttOpponentBackBtn.addEventListener('click', function() {
+            hideTTTOpponentWindow();
+        });
+    }
+
+    // Challenge popup controls
+    const challengeAcceptBtn = document.getElementById('challengeAcceptBtn');
+    const challengeDeclineBtn = document.getElementById('challengeDeclineBtn');
+    
+    if (challengeAcceptBtn) {
+        challengeAcceptBtn.addEventListener('click', acceptChallenge);
+    }
+    
+    if (challengeDeclineBtn) {
+        challengeDeclineBtn.addEventListener('click', declineChallenge);
+    }
+
+    // Game board clicks
+    const tttBoard = document.getElementById('tttBoard');
+    if (tttBoard) {
+        tttBoard.addEventListener('click', handleBoardClick);
+    }
+
+    // Game exit button
+    const tttExitBtn = document.getElementById('tttExitBtn');
+    if (tttExitBtn) {
+        tttExitBtn.addEventListener('click', exitGame);
+    }
+
+    // Replay button
+    const tttReplayBtn = document.getElementById('tttReplayBtn');
+    if (tttReplayBtn) {
+        tttReplayBtn.addEventListener('click', requestReplay);
+    }
+
+    // Result home button
+    const tttResultHomeBtn = document.getElementById('tttResultHomeBtn');
+    if (tttResultHomeBtn) {
+        tttResultHomeBtn.addEventListener('click', returnToChat);
+    }
+
+    // Replay popup controls
+    const replayAcceptBtn = document.getElementById('replayAcceptBtn');
+    const replayDeclineBtn = document.getElementById('replayDeclineBtn');
+    
+    if (replayAcceptBtn) {
+        replayAcceptBtn.addEventListener('click', acceptReplay);
+    }
+    
+    if (replayDeclineBtn) {
+        replayDeclineBtn.addEventListener('click', declineReplay);
+    }
+
+    // Left popup OK button
+    const leftOkBtn = document.getElementById('leftOkBtn');
+    if (leftOkBtn) {
+        leftOkBtn.addEventListener('click', function() {
+            hideTTTLeftPopup();
+            returnToChat();
+        });
+    }
+}
+
+// Show opponent selection window
+function showTTTOpponentWindow() {
+    document.getElementById('userHamburgerMenu').classList.remove('open');
+    document.getElementById('userHamburgerBtn').classList.remove('active');
+    document.getElementById('tttOpponentWindow').style.display = 'flex';
+    
+    // Request users list
+    socket.emit('get-ttt-opponents');
+}
+
+// Hide opponent selection window
+function hideTTTOpponentWindow() {
+    document.getElementById('tttOpponentWindow').style.display = 'none';
+}
+
+// Display opponents list
+function displayTTTOpponents(users) {
+    const container = document.getElementById('tttOpponentList');
+    container.innerHTML = '';
+
+    users.forEach(user => {
+        if (user.username !== currentUser) {
+            const opponentDiv = document.createElement('div');
+            opponentDiv.className = 'ttt-opponent-item';
+
+            const firstLetter = user.username.charAt(0).toUpperCase();
+            const isInGame = user.inGame ? '<i class="fas fa-gamepad user-game-status"></i>' : '';
+            
+            opponentDiv.innerHTML = `
+                <div class="ttt-opponent-avatar" style="background: ${user.color}">
+                    ${firstLetter}
+                </div>
+                <div class="ttt-opponent-info">
+                    <div class="ttt-opponent-name" style="color: ${user.color}">
+                        ${user.username}
+                        ${user.isDeveloper ? '<i class="fas fa-check-circle developer-badge"></i>' : ''}
+                        ${isInGame}
+                    </div>
+                    <div class="ttt-opponent-status">${user.inGame ? 'In Game' : 'Available'}</div>
+                </div>
+                <button class="ttt-challenge-btn" data-user-id="${user.id}" ${user.inGame ? 'disabled' : ''}>
+                    <i class="fas fa-gamepad"></i> Challenge
+                </button>
+            `;
+
+            const challengeBtn = opponentDiv.querySelector('.ttt-challenge-btn');
+            challengeBtn.addEventListener('click', function() {
+                if (!this.disabled) {
+                    sendChallenge(user);
+                }
+            });
+
+            container.appendChild(opponentDiv);
+        }
+    });
+
+    if (users.filter(u => u.username !== currentUser).length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.5);">
+                <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                <p>No other players online</p>
+            </div>
+        `;
+    }
+}
+
+// Send challenge to opponent
+function sendChallenge(opponent) {
+    // Disable all challenge buttons for 6 seconds
+    const allChallengeButtons = document.querySelectorAll('.ttt-challenge-btn');
+    allChallengeButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-clock"></i> Wait...';
+    });
+
+    // Re-enable after 6 seconds
+    setTimeout(() => {
+        allChallengeButtons.forEach(btn => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-gamepad"></i> Challenge';
+        });
+    }, 6000);
+
+    // Send challenge to server
+    socket.emit('ttt-challenge-sent', {
+        opponentId: opponent.id,
+        opponentName: opponent.username,
+        challengerName: currentUser,
+        challengerColor: userColor
+    });
+
+    showNotification(`Challenge sent to ${opponent.username}!`, 'info');
+}
+
+// Show challenge popup (for challenged player)
+function showChallengePopup(data) {
+    const popup = document.getElementById('tttChallengePopup');
+    document.getElementById('challengerName').textContent = data.challengerName;
+    
+    popup.style.display = 'block';
+    
+    // Store challenge data
+    popup.dataset.challengerId = data.challengerId;
+    popup.dataset.challengerName = data.challengerName;
+    popup.dataset.challengerColor = data.challengerColor;
+
+    // Auto-hide after 6 seconds
+    if (challengeTimer) clearTimeout(challengeTimer);
+    challengeTimer = setTimeout(() => {
+        hideChallengePopup();
+        socket.emit('ttt-challenge-timeout', { challengerId: data.challengerId });
+    }, 6000);
+
+    // Play notification sound
+    playMessageSound();
+}
+
+// Hide challenge popup
+function hideChallengePopup() {
+    document.getElementById('tttChallengePopup').style.display = 'none';
+    if (challengeTimer) {
+        clearTimeout(challengeTimer);
+        challengeTimer = null;
+    }
+}
+
+// Accept challenge
+function acceptChallenge() {
+    const popup = document.getElementById('tttChallengePopup');
+    const challengerId = popup.dataset.challengerId;
+    const challengerName = popup.dataset.challengerName;
+    const challengerColor = popup.dataset.challengerColor;
+
+    hideChallengePopup();
+
+    // Notify server
+    socket.emit('ttt-challenge-accepted', {
+        challengerId: challengerId,
+        accepterName: currentUser,
+        accepterColor: userColor
+    });
+}
+
+// Decline challenge
+function declineChallenge() {
+    const popup = document.getElementById('tttChallengePopup');
+    const challengerId = popup.dataset.challengerId;
+    const challengerName = popup.dataset.challengerName;
+
+    hideChallengePopup();
+
+    // Notify server
+    socket.emit('ttt-challenge-declined', {
+        challengerId: challengerId,
+        declinerName: currentUser
+    });
+
+    showNotification(`Challenge from ${challengerName} declined`, 'info');
+}
+
+// Start game
+function startTTTGame(gameData) {
+    // Hide all other windows
+    hideTTTOpponentWindow();
+    document.getElementById('chatScreen').style.display = 'none';
+
+    // Set game state
+    currentGameState = {
+        gameId: gameData.gameId,
+        opponent: gameData.opponent,
+        mySymbol: gameData.mySymbol,
+        opponentSymbol: gameData.opponentSymbol,
+        isMyTurn: gameData.isMyTurn,
+        board: Array(9).fill(null),
+        gameActive: true
+    };
+
+    // Show game window
+    const gameWindow = document.getElementById('tttGameWindow');
+    gameWindow.style.display = 'flex';
+
+    // Setup player info
+    const player1 = gameData.mySymbol === 'X' ? 
+        { name: currentUser, color: userColor, symbol: 'X' } :
+        { name: gameData.opponent.name, color: gameData.opponent.color, symbol: 'X' };
+
+    const player2 = gameData.mySymbol === 'O' ? 
+        { name: currentUser, color: userColor, symbol: 'O' } :
+        { name: gameData.opponent.name, color: gameData.opponent.color, symbol: 'O' };
+
+    document.getElementById('tttPlayer1Avatar').textContent = player1.name.charAt(0).toUpperCase();
+    document.getElementById('tttPlayer1Avatar').style.background = player1.color;
+    document.getElementById('tttPlayer1Name').textContent = player1.name;
+    document.getElementById('tttPlayer1Name').style.color = player1.color;
+    document.getElementById('tttPlayer1Symbol').textContent = player1.symbol;
+
+    document.getElementById('tttPlayer2Avatar').textContent = player2.name.charAt(0).toUpperCase();
+    document.getElementById('tttPlayer2Avatar').style.background = player2.color;
+    document.getElementById('tttPlayer2Name').textContent = player2.name;
+    document.getElementById('tttPlayer2Name').style.color = player2.color;
+    document.getElementById('tttPlayer2Symbol').textContent = player2.symbol;
+
+    // Reset board
+    resetBoard();
+    updateTurnIndicator();
+}
+
+// Reset board
+function resetBoard() {
+    currentGameState.board = Array(9).fill(null);
+    const cells = document.querySelectorAll('.ttt-cell');
+    cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('ttt-cell-x', 'ttt-cell-o', 'ttt-cell-disabled', 'winning-cell');
+        cell.style.cursor = 'pointer';
+        cell.style.opacity = '1';
+    });
+    
+    // Update turn indicator immediately
+    updateTurnIndicator();
+}
+
+// Update turn indicator
+// Update turn indicator
+function updateTurnIndicator() {
+    const indicator = document.getElementById('tttTurnIndicator');
+    
+    console.log('🔄 Updating turn indicator. isMyTurn:', currentGameState.isMyTurn);
+    
+    if (currentGameState.isMyTurn) {
+        indicator.textContent = 'Your Turn!';
+        indicator.style.color = '#00ff41';
+        indicator.style.textShadow = '0 0 20px #00ff41';
+        enableBoard();
+        console.log('✅ Enabled board - YOUR TURN');
+    } else {
+        indicator.textContent = `${currentGameState.opponent.name}'s Turn...`;
+        indicator.style.color = '#ff00ff';
+        indicator.style.textShadow = '0 0 20px #ff00ff';
+        disableBoard();
+        console.log('✅ Disabled board - OPPONENT TURN');
+    }
+}
+// Handle board click
+function handleBoardClick(event) {
+    if (!currentGameState.gameActive || !currentGameState.isMyTurn) return;
+
+    const cell = event.target.closest('.ttt-cell');
+    if (!cell || cell.classList.contains('ttt-cell-disabled')) return;
+
+    const index = parseInt(cell.dataset.index);
+    if (currentGameState.board[index] !== null) return;
+
+    // Make move
+    makeMove(index);
+}
+
+// Make move
+// Make move
+function makeMove(index) {
+    console.log('🎯 Making move at index:', index);
+    
+    // Update local board
+    currentGameState.board[index] = currentGameState.mySymbol;
+    
+    // Update UI immediately
+    const cell = document.querySelector(`.ttt-cell[data-index="${index}"]`);
+    cell.textContent = currentGameState.mySymbol;
+    cell.classList.add(`ttt-cell-${currentGameState.mySymbol.toLowerCase()}`);
+    cell.classList.add('ttt-cell-disabled');
+    console.log('✅ Updated my cell', index, 'with', currentGameState.mySymbol);
+
+    // Send move to server
+    socket.emit('ttt-move-made', {
+        gameId: currentGameState.gameId,
+        index: index,
+        symbol: currentGameState.mySymbol,
+        board: currentGameState.board
+    });
+    console.log('📤 Sent move to server');
+
+    // Switch turn to opponent - NOW it's their turn
+    currentGameState.isMyTurn = false;
+    console.log('✅ Set isMyTurn to FALSE');
+    
+    // Update turn indicator and disable board
+    updateTurnIndicator();
+
+    // Check for win/draw
+    checkGameResult();
+}
+// Disable board (prevent clicking during opponent's turn)
+function disableBoard() {
+    const cells = document.querySelectorAll('.ttt-cell');
+    cells.forEach(cell => {
+        if (!cell.classList.contains('ttt-cell-disabled')) {
+            cell.style.cursor = 'not-allowed';
+            cell.style.opacity = '0.6';
+        }
+    });
+}
+
+// Enable board (allow clicking during your turn)
+function enableBoard() {
+    const cells = document.querySelectorAll('.ttt-cell');
+    cells.forEach(cell => {
+        if (!cell.classList.contains('ttt-cell-disabled')) {
+            cell.style.cursor = 'pointer';
+            cell.style.opacity = '1';
+        }
+    });
+}
+
+// Receive opponent's move
+// Receive opponent's move
+function receiveOpponentMove(data) {
+    console.log('📥 Received opponent move:', data);
+    
+    if (data.gameId !== currentGameState.gameId) {
+        console.log('❌ Game ID mismatch');
+        return;
+    }
+
+    // Update board from server
+    currentGameState.board = data.board;
+    
+    // Update UI for the move
+    const cell = document.querySelector(`.ttt-cell[data-index="${data.index}"]`);
+    if (cell && !cell.classList.contains('ttt-cell-disabled')) {
+        cell.textContent = data.symbol;
+        cell.classList.add(`ttt-cell-${data.symbol.toLowerCase()}`);
+        cell.classList.add('ttt-cell-disabled');
+        console.log('✅ Updated cell', data.index, 'with', data.symbol);
+    }
+
+    // NOW it's MY turn
+    currentGameState.isMyTurn = true;
+    console.log('✅ Set isMyTurn to TRUE');
+    
+    // Update turn indicator and enable board
+    updateTurnIndicator();
+
+    // Check for win/draw
+    checkGameResult();
+}
+    
+// Check game result
+function checkGameResult() {
+    const board = currentGameState.board;
+    const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6]              // Diagonals
+    ];
+
+    // Check for winner
+    for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            // Winner found
+            highlightWinningCells(pattern);
+            setTimeout(() => {
+                const winner = board[a] === currentGameState.mySymbol ? 'win' : 'lose';
+                showGameResult(winner, pattern);
+            }, 1000);
+            currentGameState.gameActive = false;
+            return;
+        }
+    }
+
+    // Check for draw
+    if (!board.includes(null)) {
+        setTimeout(() => {
+            showGameResult('draw');
+        }, 500);
+        currentGameState.gameActive = false;
+    }
+}
+
+// Highlight winning cells
+function highlightWinningCells(pattern) {
+    pattern.forEach(index => {
+        const cell = document.querySelector(`.ttt-cell[data-index="${index}"]`);
+        cell.classList.add('winning-cell');
+    });
+}
+
+// Show game result
+function showGameResult(result) {
+    document.getElementById('tttGameWindow').style.display = 'none';
+    
+    const resultWindow = document.getElementById('tttResultWindow');
+    const resultMessage = document.getElementById('tttResultMessage');
+    const resultAnimation = document.getElementById('tttResultAnimation');
+
+    resultWindow.style.display = 'flex';
+    resultAnimation.innerHTML = '';
+
+    if (result === 'win') {
+        resultMessage.textContent = 'YOU WON!';
+        resultMessage.className = 'ttt-result-message winner';
+        createCelebrationEffects(resultAnimation);
+    } else if (result === 'lose') {
+        resultMessage.textContent = 'YOU ARE A WARRIOR!';
+        resultMessage.className = 'ttt-result-message loser';
+        createWarriorEffects(resultAnimation);
+    } else {
+        resultMessage.textContent = 'IT\'S A DRAW!';
+        resultMessage.className = 'ttt-result-message draw';
+        createDrawEffects(resultAnimation);
+    }
+}
+
+// Create celebration effects (for winner)
+function createCelebrationEffects(container) {
+    // Winner banner
+    const banner = document.createElement('div');
+    banner.className = 'winner-banner';
+    banner.textContent = 'WINNER!';
+    container.appendChild(banner);
+
+    // Fireworks
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+            createFirework(container);
+        }, i * 100);
+    }
+
+    // Confetti
+    for (let i = 0; i < 100; i++) {
+        setTimeout(() => {
+            createConfetti(container);
+        }, i * 20);
+    }
+
+    // Stars
+    for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+            createStar(container);
+        }, i * 150);
+    }
+
+    // Lights
+    for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+            createLight(container);
+        }, i * 200);
+    }
+
+    // Stop after 4 seconds
+    setTimeout(() => {
+        banner.style.animation = 'none';
+    }, 4000);
+}
+
+// Create firework
+function createFirework(container) {
+    const colors = ['#ffd700', '#ff00ff', '#00ffff', '#00ff41', '#ff6b6b'];
+    const centerX = Math.random() * container.offsetWidth;
+    const centerY = Math.random() * (container.offsetHeight * 0.7);
+
+    for (let i = 0; i < 20; i++) {
+        const firework = document.createElement('div');
+        firework.className = 'celebration-firework';
+        firework.style.left = centerX + 'px';
+        firework.style.top = centerY + 'px';
+        firework.style.background = colors[Math.floor(Math.random() * colors.length)];
+        
+        const angle = (Math.PI * 2 * i) / 20;
+        const velocity = 50 + Math.random() * 50;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity;
+        
+        firework.style.setProperty('--tx', tx + 'px');
+        firework.style.setProperty('--ty', ty + 'px');
+        
+        container.appendChild(firework);
+        
+        setTimeout(() => firework.remove(), 1000);
+    }
+}
+
+// Create confetti
+function createConfetti(container) {
+    const confetti = document.createElement('div');
+    confetti.className = 'celebration-confetti';
+    confetti.style.left = Math.random() * container.offsetWidth + 'px';
+    confetti.style.top = '-10px';
+    confetti.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+    
+    container.appendChild(confetti);
+    setTimeout(() => confetti.remove(), 3000);
+}
+
+// Create star
+function createStar(container) {
+    const star = document.createElement('div');
+    star.className = 'celebration-star';
+    star.textContent = '⭐';
+    star.style.left = container.offsetWidth / 2 + 'px';
+    star.style.top = container.offsetHeight / 2 + 'px';
+    
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 100 + Math.random() * 150;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance;
+    
+    star.style.setProperty('--tx', tx + 'px');
+    star.style.setProperty('--ty', ty + 'px');
+    
+    container.appendChild(star);
+    setTimeout(() => star.remove(), 2000);
+}
+
+// Create light pulse
+function createLight(container) {
+    const light = document.createElement('div');
+    light.className = 'celebration-light';
+    light.style.left = Math.random() * container.offsetWidth + 'px';
+    light.style.top = Math.random() * container.offsetHeight + 'px';
+    light.style.background = `radial-gradient(circle, ${['#ffd700', '#ff00ff', '#00ffff'][Math.floor(Math.random() * 3)]} 0%, transparent 70%)`;
+    
+    container.appendChild(light);
+    setTimeout(() => light.remove(), 1000);
+}
+
+// Create warrior effects (for loser)
+function createWarriorEffects(container) {
+    const message = document.createElement('div');
+    message.style.cssText = `
+        font-size: 1.2rem;
+        color: rgba(255,255,255,0.7);
+        text-align: center;
+        animation: messageFloat 2s ease-in-out infinite;
+    `;
+    message.textContent = 'Every loss is a lesson. Keep fighting!';
+    container.appendChild(message);
+}
+
+// Create draw effects
+function createDrawEffects(container) {
+    const message = document.createElement('div');
+    message.style.cssText = `
+        font-size: 1.2rem;
+        color: rgba(255,255,255,0.7);
+        text-align: center;
+        animation: messageFloat 2s ease-in-out infinite;
+    `;
+    message.textContent = 'Well played! Both warriors stood strong!';
+    container.appendChild(message);
+}
+
+// Request replay
+function requestReplay() {
+    socket.emit('ttt-replay-request', {
+        gameId: currentGameState.gameId,
+        requesterName: currentUser
+    });
+    
+    showNotification('Replay request sent!', 'info');
+    document.getElementById('tttReplayBtn').disabled = true;
+    document.getElementById('tttReplayBtn').innerHTML = '<i class="fas fa-clock"></i> Waiting...';
+}
+
+// Show replay popup
+function showReplayPopup(data) {
+    const popup = document.getElementById('tttReplayPopup');
+    document.getElementById('replayRequesterName').textContent = data.requesterName;
+    
+    popup.style.display = 'block';
+    popup.dataset.requesterId = data.requesterId;
+    popup.dataset.gameId = data.gameId;
+}
+
+// Hide replay popup
+function hideReplayPopup() {
+    document.getElementById('tttReplayPopup').style.display = 'none';
+}
+
+// Accept replay
+function acceptReplay() {
+    const popup = document.getElementById('tttReplayPopup');
+    const requesterId = popup.dataset.requesterId;
+    const gameId = popup.dataset.gameId;
+    
+    hideReplayPopup();
+    
+    socket.emit('ttt-replay-accepted', {
+        gameId: gameId,
+        requesterId: requesterId
+    });
+}
+
+// Decline replay
+function declineReplay() {
+    const popup = document.getElementById('tttReplayPopup');
+    const requesterId = popup.dataset.requesterId;
+    
+    hideReplayPopup();
+    
+    socket.emit('ttt-replay-declined', {
+        requesterId: requesterId,
+        declinerName: currentUser
+    });
+    
+    showNotification('Replay declined', 'info');
+}
+
+// Start replay game
+function startReplayGame(gameData) {
+    document.getElementById('tttResultWindow').style.display = 'none';
+    document.getElementById('tttGameWindow').style.display = 'flex';
+    
+    // Reset game state
+    currentGameState.board = Array(9).fill(null);
+    currentGameState.isMyTurn = gameData.isMyTurn;
+    currentGameState.gameActive = true;
+    
+    resetBoard();
+    updateTurnIndicator();
+}
+
+// Exit game
+function exitGame() {
+    if (confirm('Are you sure you want to leave the game?')) {
+        socket.emit('ttt-player-left', {
+            gameId: currentGameState.gameId,
+            playerName: currentUser
+        });
+        
+        returnToChat();
+    }
+}
+
+// Show left popup
+function showTTTLeftPopup(data) {
+    const popup = document.getElementById('tttLeftPopup');
+    document.getElementById('leftPlayerName').textContent = data.playerName;
+    popup.style.display = 'block';
+}
+
+// Hide left popup
+function hideTTTLeftPopup() {
+    document.getElementById('tttLeftPopup').style.display = 'none';
+}
+
+// Return to chat
+function returnToChat() {
+    document.getElementById('tttGameWindow').style.display = 'none';
+    document.getElementById('tttResultWindow').style.display = 'none';
+    document.getElementById('tttOpponentWindow').style.display = 'none';
+    document.getElementById('chatScreen').style.display = 'flex';
+    
+    // Reset game state
+    currentGameState = {
+        gameId: null,
+        opponent: null,
+        mySymbol: null,
+        opponentSymbol: null,
+        isMyTurn: false,
+        board: Array(9).fill(null),
+        gameActive: false
+    };
+    console.log('🎮 Game started!');
+console.log('My symbol:', currentGameState.mySymbol);
+console.log('Opponent symbol:', currentGameState.opponentSymbol);
+console.log('Is my turn:', currentGameState.isMyTurn);
+console.log('Opponent:', currentGameState.opponent.name);
+    // Notify server
+    socket.emit('ttt-game-ended');
+}
+
+// ===== SOCKET EVENTS FOR TIC-TAC-TOE =====
+
+// Socket event: Receive opponents list
+socket.on('ttt-opponents-list', function(users) {
+    displayTTTOpponents(users);
+});
+
+// Socket event: Receive challenge
+socket.on('ttt-challenge-received', function(data) {
+    showChallengePopup(data);
+});
+
+// Socket event: Challenge declined
+socket.on('ttt-challenge-declined', function(data) {
+    showNotification(`${data.declinerName} declined your challenge`, 'info');
+});
+
+// Socket event: Challenge timeout
+socket.on('ttt-challenge-timeout', function() {
+    showNotification('Challenge expired', 'info');
+});
+
+// Socket event: Game started
+socket.on('ttt-game-started', function(data) {
+    startTTTGame(data);
+});
+
+// Socket event: Opponent move
+socket.on('ttt-opponent-move', function(data) {
+    receiveOpponentMove(data);
+});
+
+// Socket event: Replay request received
+socket.on('ttt-replay-request-received', function(data) {
+    showReplayPopup(data);
+});
+
+// Socket event: Replay declined
+socket.on('ttt-replay-declined', function(data) {
+    showNotification(`${data.declinerName} declined the replay`, 'info');
+    document.getElementById('tttReplayBtn').disabled = false;
+    document.getElementById('tttReplayBtn').innerHTML = '<i class="fas fa-redo"></i> Play Again';
+});
+
+// Socket event: Replay accepted
+socket.on('ttt-replay-accepted', function(data) {
+    startReplayGame(data);
+});
+
+// Socket event: Opponent left
+socket.on('ttt-opponent-left', function(data) {
+    currentGameState.gameActive = false;
+    showTTTLeftPopup(data);
+});
+
+// Socket event: Update user game status
+socket.on('user-game-status-updated', function(data) {
+    // Update user list with game status icons
+    const userElements = document.querySelectorAll('.user-list-item, .ttt-opponent-item');
+    userElements.forEach(element => {
+        const nameElement = element.querySelector('.user-list-name, .ttt-opponent-name');
+        if (nameElement && nameElement.textContent.includes(data.username)) {
+            // Remove existing game status
+            const existingStatus = element.querySelector('.user-game-status');
+            if (existingStatus) existingStatus.remove();
+            
+            // Add new game status if in game
+            if (data.inGame) {
+                const statusIcon = document.createElement('i');
+                statusIcon.className = 'fas fa-gamepad user-game-status';
+                statusIcon.title = 'In Game';
+                nameElement.appendChild(statusIcon);
+            }
+        }
+    });
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTicTacToe();
+});
+
+// Clean up on page unload
+window.addEventListener('beforeunload', function() {
+    if (currentGameState.gameActive) {
+        socket.emit('ttt-player-left', {
+            gameId: currentGameState.gameId,
+            playerName: currentUser
+        });
+    }
+});
+
+console.log('✅ Tic-Tac-Toe system initialized!');

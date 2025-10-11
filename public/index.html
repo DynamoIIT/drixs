@@ -265,27 +265,47 @@
             </button>
         </div>
         
-        <!-- Gen-Z Style Container Grid -->
-        <div class="genz-container-grid">
-            <div class="genz-container" id="onlineUsersContainer">
-                <div class="genz-header">
-                    <i class="fas fa-users"></i>
-                    <span>ONLINE USERS</span>
+       <!-- Gen-Z Style Container Grid - UPDATED WITH GAMES -->
+<div class="genz-container-grid">
+    <div class="genz-container" id="onlineUsersContainer">
+        <div class="genz-header">
+            <i class="fas fa-users"></i>
+            <span>ONLINE USERS</span>
+        </div>
+        <div class="users-list-container" id="usersListContainer">
+            <!-- Users will be populated here -->
+        </div>
+    </div>
+    
+    <div class="genz-container" id="gamesContainer">
+        <div class="genz-header">
+            <i class="fas fa-gamepad"></i>
+            <span>GAMES</span>
+        </div>
+        <div class="games-list">
+            <div class="game-item" id="ticTacToeGame">
+                <div class="game-icon">
+                    <i class="fas fa-times"></i>
+                    <i class="fas fa-circle"></i>
                 </div>
-                <div class="users-list-container" id="usersListContainer">
-                    <!-- Users will be populated here -->
+                <div class="game-info">
+                    <div class="game-name">Tic-Tac-Toe</div>
+                    <div class="game-desc">Classic X-O Battle</div>
+                </div>
+                <div class="game-play-btn">
+                    <i class="fas fa-play"></i>
                 </div>
             </div>
-            
-            <div class="genz-container" id="postsContainer">
-                <div class="genz-header">
-                    <i class="fas fa-newspaper"></i>
-                    <span>POSTS-UNDERCONSTRUCTION</span>
-                </div>
-                <div class="posts-preview">
-                    <p>Discover what's trending</p>
-                </div>
-            </div>
+        </div>
+    </div>
+    
+    <div class="genz-container" id="postsContainer">
+        <div class="genz-header">
+            <i class="fas fa-newspaper"></i>
+            <span>POSTS</span>
+        </div>
+        <div class="posts-preview">
+            <p>Discover what's trending</p>
         </div>
     </div>
 </div>
@@ -424,6 +444,134 @@
     <script src="script.js"></script>
     <!-- Phonk audio fallback (optional, if needed for some browsers) -->
 <audio id="phonkAudio" src="phonk.mp3" preload="auto"></audio>
+<!-- TIC-TAC-TOE GAME WINDOWS -->
+
+<!-- Opponent Selection Window -->
+<div class="ttt-opponent-window" id="tttOpponentWindow">
+    <div class="ttt-opponent-header">
+        <button class="ttt-back-btn" id="tttOpponentBackBtn">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2>Choose Your Opponent</h2>
+    </div>
+    <div class="ttt-opponent-list" id="tttOpponentList">
+        <!-- Opponents will be loaded here -->
+    </div>
+</div>
+
+<!-- Challenge Popup (appears for challenged user) -->
+<div class="ttt-challenge-popup" id="tttChallengePopup">
+    <div class="challenge-popup-content">
+        <div class="challenge-progress-bar">
+            <div class="challenge-progress-fill"></div>
+        </div>
+        <div class="challenge-icon">
+            <i class="fas fa-gamepad"></i>
+        </div>
+        <div class="challenge-text">
+            <strong id="challengerName">Player</strong> challenged you for X-O!
+        </div>
+        <div class="challenge-actions">
+            <button class="challenge-accept-btn" id="challengeAcceptBtn">
+                <i class="fas fa-check"></i> Accept
+            </button>
+            <button class="challenge-decline-btn" id="challengeDeclineBtn">
+                <i class="fas fa-times"></i> Decline
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tic-Tac-Toe Game Window -->
+<div class="ttt-game-window" id="tttGameWindow">
+    <div class="ttt-game-header">
+        <div class="ttt-player-info">
+            <div class="ttt-player">
+                <div class="ttt-player-avatar" id="tttPlayer1Avatar"></div>
+                <div class="ttt-player-name" id="tttPlayer1Name">Player 1</div>
+                <div class="ttt-player-symbol" id="tttPlayer1Symbol">X</div>
+            </div>
+            <div class="ttt-vs">VS</div>
+            <div class="ttt-player">
+                <div class="ttt-player-avatar" id="tttPlayer2Avatar"></div>
+                <div class="ttt-player-name" id="tttPlayer2Name">Player 2</div>
+                <div class="ttt-player-symbol" id="tttPlayer2Symbol">O</div>
+            </div>
+        </div>
+        <button class="ttt-exit-btn" id="tttExitBtn">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <div class="ttt-game-content">
+        <div class="ttt-turn-indicator" id="tttTurnIndicator">
+            Your Turn!
+        </div>
+        
+        <div class="ttt-board" id="tttBoard">
+            <div class="ttt-cell" data-index="0"></div>
+            <div class="ttt-cell" data-index="1"></div>
+            <div class="ttt-cell" data-index="2"></div>
+            <div class="ttt-cell" data-index="3"></div>
+            <div class="ttt-cell" data-index="4"></div>
+            <div class="ttt-cell" data-index="5"></div>
+            <div class="ttt-cell" data-index="6"></div>
+            <div class="ttt-cell" data-index="7"></div>
+            <div class="ttt-cell" data-index="8"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Game Result Window -->
+<div class="ttt-result-window" id="tttResultWindow">
+    <div class="ttt-result-content">
+        <div class="ttt-result-animation" id="tttResultAnimation"></div>
+        <div class="ttt-result-message" id="tttResultMessage">You Won!</div>
+        <div class="ttt-result-actions">
+            <button class="ttt-replay-btn" id="tttReplayBtn">
+                <i class="fas fa-redo"></i> Play Again
+            </button>
+            <button class="ttt-home-btn" id="tttResultHomeBtn">
+                <i class="fas fa-home"></i> Home
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Replay Request Popup -->
+<div class="ttt-replay-popup" id="tttReplayPopup">
+    <div class="replay-popup-content">
+        <div class="replay-icon">
+            <i class="fas fa-redo"></i>
+        </div>
+        <div class="replay-text">
+            <strong id="replayRequesterName">Player</strong> wants another round!
+        </div>
+        <div class="replay-actions">
+            <button class="replay-accept-btn" id="replayAcceptBtn">
+                <i class="fas fa-check"></i> Accept
+            </button>
+            <button class="replay-decline-btn" id="replayDeclineBtn">
+                <i class="fas fa-times"></i> Decline
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Opponent Left Popup -->
+<div class="ttt-left-popup" id="tttLeftPopup">
+    <div class="left-popup-content">
+        <div class="left-icon">
+            <i class="fas fa-door-open"></i>
+        </div>
+        <div class="left-text">
+            <strong id="leftPlayerName">Player</strong> has left the game
+        </div>
+        <button class="left-ok-btn" id="leftOkBtn">
+            <i class="fas fa-check"></i> OK
+        </button>
+    </div>
+</div>
 
 </body>
 </html>
