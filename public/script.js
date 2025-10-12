@@ -2919,7 +2919,6 @@ function handleBoardClick(event) {
 }
 
 // Make move
-// Make move
 function makeMove(index) {
     console.log('🎯 Making move at index:', index);
     
@@ -2937,12 +2936,11 @@ function makeMove(index) {
     socket.emit('ttt-move-made', {
         gameId: currentGameState.gameId,
         index: index,
-        symbol: currentGameState.mySymbol,
-        board: currentGameState.board
+        symbol: currentGameState.mySymbol
     });
     console.log('📤 Sent move to server');
 
-    // Switch turn to opponent - NOW it's their turn
+    // ✅ Switch turn to opponent - NOW it's their turn
     currentGameState.isMyTurn = false;
     console.log('✅ Set isMyTurn to FALSE');
     
@@ -2975,30 +2973,49 @@ function enableBoard() {
 }
 
 // Receive opponent's move
-// Receive opponent's move
 function receiveOpponentMove(data) {
-    console.log('📥 Received opponent move:', data);
+    console.log('📥 CLIENT: Processing opponent move:', data);
+    
+    if (!currentGameState.gameId) {
+        console.log('❌ CLIENT: No active game');
+        return;
+    }
     
     if (data.gameId !== currentGameState.gameId) {
-        console.log('❌ Game ID mismatch');
+        console.log('❌ CLIENT: Game ID mismatch. Expected:', currentGameState.gameId, 'Got:', data.gameId);
+        return;
+    }
+
+    if (!currentGameState.gameActive) {
+        console.log('❌ CLIENT: Game is not active');
         return;
     }
 
     // Update board from server
     currentGameState.board = data.board;
+    console.log('✅ CLIENT: Board synced with server:', currentGameState.board);
     
-    // Update UI for the move
+    // Update UI for the opponent's move
     const cell = document.querySelector(`.ttt-cell[data-index="${data.index}"]`);
-    if (cell && !cell.classList.contains('ttt-cell-disabled')) {
+    if (cell) {
+        if (cell.classList.contains('ttt-cell-disabled')) {
+            console.log('⚠️ CLIENT: Cell already disabled');
+        }
+        
         cell.textContent = data.symbol;
         cell.classList.add(`ttt-cell-${data.symbol.toLowerCase()}`);
         cell.classList.add('ttt-cell-disabled');
-        console.log('✅ Updated cell', data.index, 'with', data.symbol);
+        console.log('✅ CLIENT: Updated cell', data.index, 'with', data.symbol);
+        
+        // Add animation
+        cell.style.animation = 'cellAppear 0.5s ease-out';
+    } else {
+        console.log('❌ CLIENT: Cell not found for index', data.index);
     }
 
-    // NOW it's MY turn
+    // Now it's my turn
     currentGameState.isMyTurn = true;
-    console.log('✅ Set isMyTurn to TRUE');
+    console.log('✅ CLIENT: Set isMyTurn to TRUE');
     
     // Update turn indicator and enable board
     updateTurnIndicator();
@@ -3358,11 +3375,13 @@ socket.on('ttt-challenge-timeout', function() {
 
 // Socket event: Game started
 socket.on('ttt-game-started', function(data) {
+    console.log('🎮 CLIENT: Game started event received!', data);
     startTTTGame(data);
 });
 
-// Socket event: Opponent move
+// ✅ THIS IS THE CRITICAL ONE - Make sure it exists!
 socket.on('ttt-opponent-move', function(data) {
+    console.log('📥 CLIENT: Opponent move received!', data);
     receiveOpponentMove(data);
 });
 
@@ -3387,6 +3406,11 @@ socket.on('ttt-replay-accepted', function(data) {
 socket.on('ttt-opponent-left', function(data) {
     currentGameState.gameActive = false;
     showTTTLeftPopup(data);
+});
+
+// Socket event: Update user game status
+socket.on('user-game-status-updated', function(data) {
+    console.log('🎮 Game status update:', data);
 });
 
 // Socket event: Update user game status

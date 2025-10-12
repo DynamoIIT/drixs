@@ -1093,31 +1093,36 @@ socket.on('ttt-challenge-timeout', (data) => {
 // ===== Move Made =====
 socket.on('ttt-move-made', (data) => {
     try {
+        console.log('🎮 SERVER: Received move from', socket.id, 'at index', data.index);
+        
         const game = activeGames.get(data.gameId);
         if (!game || !game.active) {
-            console.log('❌ Game not found or inactive:', data.gameId);
+            console.log('❌ SERVER: Game not found or inactive:', data.gameId);
             return;
         }
 
-        // Verify it's the player's turn
+        // Find which player made the move
         const player = game.player1.id === socket.id ? game.player1 : game.player2;
+        
+        // Verify it's their turn
         if (game.currentTurn !== player.symbol) {
-            console.log(`❌ Invalid turn: ${player.name} tried to play ${player.symbol} but it's ${game.currentTurn}'s turn`);
+            console.log(`❌ SERVER: Invalid turn - ${player.name} tried to play but it's ${game.currentTurn}'s turn`);
             return;
         }
 
-        // Update board on server
+        // Update server board
         game.board[data.index] = data.symbol;
+        console.log('✅ SERVER: Board updated at index', data.index, 'with', data.symbol);
         
         // Switch turn
-        const previousTurn = game.currentTurn;
         game.currentTurn = game.currentTurn === 'X' ? 'O' : 'X';
-
-        console.log(`🎮 Move accepted: ${player.name} (${player.symbol}) at position ${data.index}`);
-        console.log(`🎮 Turn switched from ${previousTurn} to ${game.currentTurn}`);
+        console.log('✅ SERVER: Turn switched to', game.currentTurn);
 
         // Get opponent ID
         const opponentId = game.player1.id === socket.id ? game.player2.id : game.player1.id;
+        const opponent = game.player1.id === socket.id ? game.player2 : game.player1;
+
+        console.log('📤 SERVER: Sending move to opponent', opponent.name, '(', opponentId, ')');
 
         // Send move to opponent
         io.to(opponentId).emit('ttt-opponent-move', {
@@ -1127,13 +1132,12 @@ socket.on('ttt-move-made', (data) => {
             board: game.board
         });
 
-        console.log(`📤 Sent move to opponent ${opponentId}`);
+        console.log('✅ SERVER: Move sent successfully');
 
     } catch (error) {
-        console.error('Error in ttt-move-made:', error);
+        console.error('❌ SERVER: Error in ttt-move-made:', error);
     }
 });
-
   // ===== Replay Request =====
 socket.on('ttt-replay-request', (data) => {
     try {
