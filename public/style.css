@@ -5580,6 +5580,25 @@ html, body {
     border-color: var(--neon-pink);
 }
 
+/* ================= MODERATOR STYLES ================= */
+
+/* Golden tick for Developer */
+.developer-badge {
+    color: #FFD700 !important;
+}
+
+/* Blue tick for Moderator */
+.moderator-badge {
+    color: #1DA1F2 !important;
+}
+
+/* Moderator name styling */
+.moderator-name {
+    background: linear-gradient(45deg, #1DA1F2, #00D9FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 [data-theme="cyberpunk"] .ttt-cell:hover:not(.ttt-cell-disabled) {
     border-color: var(--neon-blue);
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);

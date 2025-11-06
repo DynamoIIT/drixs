@@ -177,6 +177,7 @@ let isTyping = false;
 let selectedMessage = null;
 let replyingTo = null;
 let isDeveloper = false;
+let isModerator = false;
 let onlineUsers = new Map();
 let phonkAudio = new Audio();
 phonkAudio.loop = false;
@@ -255,30 +256,38 @@ function initializeEventListeners() {
     developerUsername.addEventListener('input', checkEliteCredentials);
     developerPassword.addEventListener('input', checkEliteCredentials);
 
-    eliteLoginBtn.addEventListener('click', function() {
-        const username = developerUsername.value.trim();
-        const password = developerPassword.value.trim();
-        
-        if (username.toLowerCase() === 'developer' && password === 'dynamobro8085') {
-            isDeveloper = true;
-            currentUser = 'DEVELOPER';
-            startChat();
+eliteLoginBtn.addEventListener('click', function() {
+    const username = developerUsername.value.trim();
+    const password = developerPassword.value.trim();
+    
+    // Check Developer credentials
+    if (username.toLowerCase() === 'developer' && password === 'dynamobro8085') {
+        isDeveloper = true;
+        isModerator = false;
+        currentUser = 'DEVELOPER';
+        startChat();
 
-            // Play Phonk track once per session
-            if (!sessionStorage.getItem('phonkPlayed')) {
-                phonkAudio.src = 'phonk.mp3'; // <-- replace with actual path
-                phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
-                
-                phonkAudio.onended = () => {
-                    phonkAudio.src = ''; // unload track
-                };
-                
-                sessionStorage.setItem('phonkPlayed', 'true'); // mark as played
-            }
-        } else {
-            alert('Invalid developer credentials!');
+        // Play Phonk track once per session
+        if (!sessionStorage.getItem('phonkPlayed')) {
+            phonkAudio.src = 'phonk.mp3';
+            phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
+            phonkAudio.onended = () => {
+                phonkAudio.src = '';
+            };
+            sessionStorage.setItem('phonkPlayed', 'true');
         }
-    });
+    } 
+    // Check Moderator credentials
+    else if (username === 'BSE SENSEX' && password === 'noordhaliwal0001') {
+        isDeveloper = false;
+        isModerator = true;
+        currentUser = 'BSE SENSEX';
+        startChat();
+    } 
+    else {
+        alert('Invalid credentials!');
+    }
+});
 
     eliteLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
     developerPassword.addEventListener('keypress', function(e) {
@@ -446,12 +455,13 @@ function startChat() {
     let username;
 
     if (isDeveloper) {
-        username = "DEVELOPER";  // force dev username
-    } else {
-        username = usernameInput.value.trim();
-        if (username.length < 2) return;
-    }
-
+    username = "DEVELOPER";
+} else if (isModerator) {
+    username = "BSE SENSEX";
+} else {
+    username = usernameInput.value.trim();
+    if (username.length < 2) return;
+}
     currentUser = username;
     // Initialize DM system
     initializeDMSystem();
@@ -477,7 +487,11 @@ function startChat() {
     
     setTimeout(() => {
         // Connect to socket
-        socket.emit('user-joined', { username: username, isDeveloper: isDeveloper });
+        socket.emit('user-joined', { 
+    username: username, 
+    isDeveloper: isDeveloper,
+    isModerator: isModerator 
+});
 
         // Show developer controls if developer
         if (isDeveloper) {
@@ -729,8 +743,8 @@ function addMessage(data) {
                 <span class="username" style="color: ${data.color}">
     ${data.username}
     ${data.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
-</span>
-                <span class="timestamp">${formatTime(data.timestamp)}</span>
+    ${data.isModerator ? '<i class="fas fa-check-circle moderator-badge" title="Verified Moderator"></i>' : ''}
+</span>                <span class="timestamp">${formatTime(data.timestamp)}</span>
             </div>
             <div class="message-content">${escapeHtml(data.message)}</div>
             <div class="message-reactions"></div>

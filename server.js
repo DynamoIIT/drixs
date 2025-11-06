@@ -93,7 +93,7 @@ app.get('/', (req, res) => {
 const activeGames = new Map(); // gameId -> game object
 const userGameStatus = new Map(); // userId -> gameId
 
-const restrictedUsernames = ['developer', 'DEVELOPER', 'Developer', 'DEVEL0PER', 'devel0per'];
+const restrictedUsernames = ['developer', 'DEVELOPER', 'Developer', 'DEVEL0PER', 'devel0per', 'BSE SENSEX', 'bse sensex', 'BSE', 'bse'];
 const userColors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
     '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
@@ -215,16 +215,16 @@ io.on('connection', (socket) => {
     // ===== User joined =====
     socket.on('user-joined', (userData) => {
         try {
-            let username, isDeveloper = false;
+            let username, isDeveloper = false, isModerator = false;
 
-            // Handle string or object format
-            if (typeof userData === 'string') {
-                username = userData.trim();
-            } else {
-                username = userData.username ? userData.username.trim() : '';
-                isDeveloper = userData.isDeveloper || false;
-            }
-
+// Handle string or object format
+if (typeof userData === 'string') {
+    username = userData.trim();
+} else {
+    username = userData.username ? userData.username.trim() : '';
+    isDeveloper = userData.isDeveloper || false;
+    isModerator = userData.isModerator || false;
+}
             if (!username || username.length === 0) {
                 socket.emit('error-message', { message: 'Invalid username provided' });
                 return;
@@ -288,12 +288,18 @@ io.on('connection', (socket) => {
 
 
             // Developer validation
-            if (isDeveloper) {
-                if (cleanUsername !== 'DEVELOPER') {
-                    socket.emit('error-message', { message: 'Invalid developer credentials' });
-                    return;
-                }
-            } else {
+            // Developer validation
+if (isDeveloper) {
+    if (cleanUsername !== 'DEVELOPER') {
+        socket.emit('error-message', { message: 'Invalid developer credentials' });
+        return;
+    }
+} else if (isModerator) {
+    if (cleanUsername !== 'BSE SENSEX') {
+        socket.emit('error-message', { message: 'Invalid moderator credentials' });
+        return;
+    }
+}else {
                 if (restrictedUsernames.some(restricted => cleanUsername.toLowerCase() === restricted.toLowerCase())) {
                     socket.emit('error-message', { message: 'This username is reserved. Please choose another one.' });
                     return;
@@ -319,14 +325,14 @@ io.on('connection', (socket) => {
                              'Unknown';
 
             // Add user
-            onlineUsers.set(socket.id, {
-                username: cleanUsername,
-                color: userColor,
-                joinTime: new Date(),
-                isDeveloper: isDeveloper,
-                ip: clientIP
-            });
-
+ onlineUsers.set(socket.id, {
+    username: cleanUsername,
+    color: userColor,
+    joinTime: new Date(),
+    isDeveloper: isDeveloper,
+    isModerator: isModerator,
+    ip: clientIP
+});
             // Update counts & list
             io.emit('update-online-count', onlineUsers.size);
             io.emit('online-users-list', Array.from(onlineUsers.values()));
@@ -551,11 +557,11 @@ socket.on("changePhonk", (trackPath) => {
         if (message.length === 0 || message.length > 1000) return;
 
         // ===== CHECK FOR BLOCKED WORDS (Skip for developers) =====
-if (!user.isDeveloper && containsBlockedWord(message)) {
+// Skip word filter for Developer and Moderator
+if (!user.isDeveloper && !user.isModerator && containsBlockedWord(message)) {
     handleMessageViolation(socket, user);
-    return; // Stop message from being sent
+    return;
 }
-
         // AI command
         if (message.startsWith('/ai ')) {
             const aiPrompt = message.substring(4).trim();
@@ -579,15 +585,15 @@ if (!user.isDeveloper && containsBlockedWord(message)) {
         } else {
             // Normal chat
             const messageData = {
-                message,
-                username: user.username,
-                color: user.color,
-                timestamp: new Date(),
-                messageId: Date.now() + Math.random(),
-                replyTo: data.replyTo || null,
-                isDeveloper: user.isDeveloper
-            };
-            io.emit('chat-message', messageData);
+    message,
+    username: user.username,
+    color: user.color,
+    timestamp: new Date(),
+    messageId: Date.now() + Math.random(),
+    replyTo: data.replyTo || null,
+    isDeveloper: user.isDeveloper,
+    isModerator: user.isModerator
+};            io.emit('chat-message', messageData);
         }
     } catch (error) {
         console.error('Error in chat-message:', error);
