@@ -331,7 +331,10 @@ if (isDeveloper) {
     joinTime: new Date(),
     isDeveloper: isDeveloper,
     isModerator: isModerator,
-    ip: clientIP
+    ip: clientIP,
+    // 🎯 NEW: Stone system tracking
+    totalWords: 0,
+    hasReceivedStone: false
 });
             // Update counts & list
             io.emit('update-online-count', onlineUsers.size);
@@ -556,13 +559,112 @@ socket.on("changePhonk", (trackPath) => {
         const message = data.message.trim();
         if (message.length === 0 || message.length > 1000) return;
 
-        // ===== CHECK FOR BLOCKED WORDS (Skip for developers) =====
+// 🔍 STONE SYSTEM DEBUG VERSION
+console.log('🔍 DEBUG: Message received from', user.username);
+
 // Skip word filter for Developer and Moderator
 if (!user.isDeveloper && !user.isModerator && containsBlockedWord(message)) {
     handleMessageViolation(socket, user);
     return;
 }
-        // AI command
+
+// 🎊 STONE SYSTEM: Count words for stone eligibility
+if (user && !user.hasReceivedStone) {
+    const wordCount = message.split(/\s+/).filter(word => word.length > 0).length;
+    user.totalWords += wordCount;
+    
+    // Calculate time online in minutes
+    const timeOnline = (new Date() - new Date(user.joinTime)) / 1000 / 60;
+    
+    // ⚙️ EDIT THESE VALUES TO CHANGE REQUIREMENTS:
+    const REQUIRED_TIME = 30; // 30 SECONDS for testing (change to 30 for 30 minutes)
+    const REQUIRED_WORDS = 120; // 10 words for testing (change to 150 for production)
+    
+    // 🔍 DEBUG LOGS
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('👤 User:', user.username);
+    console.log('📝 Words in this message:', wordCount);
+    console.log('📊 Total words so far:', user.totalWords);
+    console.log('⏱️  Time online (minutes):', timeOnline.toFixed(2));
+    console.log('🎯 Required time:', REQUIRED_TIME, 'minutes');
+    console.log('🎯 Required words:', REQUIRED_WORDS);
+    console.log('✅ Qualifies?', timeOnline >= REQUIRED_TIME && user.totalWords >= REQUIRED_WORDS);
+    console.log('🎁 Already received?', user.hasReceivedStone);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    // 👇 NEW ULTRA RANDOM SECTION STARTS HERE
+    // Check if user qualifies for a stone
+    if (timeOnline >= REQUIRED_TIME && user.totalWords >= REQUIRED_WORDS) {
+        user.hasReceivedStone = true;
+        
+        // 🎲 STONE DEFINITIONS with unique emojis
+        const stones = [
+            { 
+                name: 'GRILL STONE', 
+                emoji: '💎🔥',
+                description: 'The stone of charisma and charm'
+            },
+            { 
+                name: 'RIZZLER STONE', 
+                emoji: '✨💫',
+                description: 'The stone of ultimate rizz'
+            },
+            { 
+                name: 'AURA STONE', 
+                emoji: '🌟⚡',
+                description: 'The stone of powerful presence'
+            },
+            { 
+                name: 'THE LOYAL BADGE', 
+                emoji: '🏆👑',
+                description: 'DRIXS KA KHAAS'
+            },
+            { 
+                name: 'DESTINY STONE', 
+                emoji: '🔮💠',
+                description: 'The stone that shapes fate'
+            }
+        ];
+        
+        // 🎲 CRYPTO-LEVEL RANDOMNESS
+        const getUltraRandomIndex = () => {
+            let cryptoRandom = 0;
+            if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                const array = new Uint32Array(1);
+                crypto.getRandomValues(array);
+                cryptoRandom = array[0];
+            }
+            
+            const timestamp = Date.now();
+            const mathRandom = Math.random() * 1000000;
+            const socketEntropy = socket.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const combined = (cryptoRandom + timestamp + mathRandom + socketEntropy);
+            
+            return combined % stones.length;
+        };
+        
+        const shuffled = stones
+            .map(stone => ({ stone, sort: Math.random() }))
+            .sort((a, b) => a.sort - b.sort)
+            .map(({ stone }) => stone);
+        
+        const ultraRandomIndex = getUltraRandomIndex();
+        const randomStone = shuffled[ultraRandomIndex];
+        
+        console.log('🎊 AWARDING STONE TO:', user.username);
+        console.log('🎁 Stone:', randomStone.name, randomStone.emoji);
+        console.log('🎲 Ultra-random index:', ultraRandomIndex);
+        
+        socket.emit('stone-awarded', {
+            username: user.username,
+            stone: randomStone,
+            timestamp: new Date()
+        });
+        
+        console.log('✅ Stone emission complete!');
+    }
+}
+             // AI command
         if (message.startsWith('/ai ')) {
             const aiPrompt = message.substring(4).trim();
             if (aiPrompt.length === 0) {

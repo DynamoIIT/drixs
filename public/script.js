@@ -610,6 +610,151 @@ socket.on('ai-typing', function(isTyping) {
     }
 });
 
+// 🔍 STONE AWARD DEBUG VERSION - Replace your socket listener with this
+
+socket.on('stone-awarded', function(data) {
+    console.log('🎊🎊🎊 STONE AWARDED EVENT RECEIVED! 🎊🎊🎊');
+    console.log('Data received:', data);
+    console.log('Username:', data.username);
+    console.log('Stone:', data.stone);
+    
+    try {
+        showStoneAwardMessage(data);
+        console.log('✅ showStoneAwardMessage() called successfully');
+    } catch (error) {
+        console.error('❌ ERROR in showStoneAwardMessage:', error);
+    }
+});
+
+// Function to display the stone award with cool effects
+function showStoneAwardMessage(data) {
+    console.log('🎨 Creating stone award visual...');
+    
+    const stoneDiv = document.createElement('div');
+    stoneDiv.className = 'stone-award-message';
+    
+    stoneDiv.innerHTML = `
+        <div class="stone-award-content">
+            <div class="stone-award-fireworks"></div>
+            <div class="stone-award-glow"></div>
+            
+            <div class="stone-award-header">
+                <div class="stone-emoji-large">${data.stone.emoji}</div>
+                <div class="stone-sparkles">✨✨✨</div>
+            </div>
+            
+            <div class="stone-award-text">
+                <h2>🎉 CONGRATULATIONS ${data.username.toUpperCase()}! 🎉</h2>
+                <div class="stone-name">${data.stone.name}</div>
+                <div class="stone-description">${data.stone.description}</div>
+                <div class="stone-screenshot-prompt">
+                    📸 TAKE SCREENSHOT FAST! 📸
+                </div>
+            </div>
+            
+            <div class="stone-confetti-container" id="stoneConfetti-${Date.now()}"></div>
+        </div>
+    `;
+    
+    console.log('📍 Appending to chatMessages...');
+    chatMessages.appendChild(stoneDiv);
+    scrollToBottom();
+    console.log('✅ Stone message added to DOM');
+    
+    // Create confetti explosion
+    setTimeout(() => {
+        console.log('🎊 Creating confetti...');
+        createStoneConfetti(stoneDiv.querySelector('.stone-confetti-container'));
+    }, 100);
+    
+    // Play celebration sound
+    setTimeout(() => {
+        console.log('🔊 Playing sound...');
+        playStoneAwardSound();
+    }, 200);
+    
+    // Auto-remove after 30 seconds
+    setTimeout(() => {
+        console.log('⏱️ Starting fade out...');
+        stoneDiv.style.animation = 'fadeOut 1s ease-out forwards';
+        setTimeout(() => {
+            stoneDiv.remove();
+            console.log('🗑️ Stone message removed');
+        }, 1000);
+    }, 30000);
+}
+
+// Create confetti effect - UPDATED to accept container parameter
+function createStoneConfetti(container) {
+    if (!container) {
+        console.error('❌ Confetti container not found!');
+        return;
+    }
+    
+    console.log('🎊 Creating 50 confetti pieces...');
+    const colors = ['#FFD700', '#FF69B4', '#00CED1', '#FF1493', '#7B68EE', '#00FF7F'];
+    const emojis = ['💎', '✨', '⭐', '💫', '🌟', '⚡'];
+    
+    for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.className = 'stone-confetti';
+            
+            // Random: emoji or colored square
+            if (Math.random() > 0.5) {
+                confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                confetti.style.fontSize = (Math.random() * 20 + 15) + 'px';
+            } else {
+                confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                confetti.style.height = confetti.style.width;
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.animationDelay = Math.random() * 0.5 + 's';
+            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            
+            container.appendChild(confetti);
+            
+            setTimeout(() => confetti.remove(), 4000);
+        }, i * 20);
+    }
+    console.log('✅ Confetti created');
+}
+
+// Play celebration sound
+function playStoneAwardSound() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create a cheerful sound
+        const frequencies = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C (major chord)
+        
+        frequencies.forEach((freq, index) => {
+            setTimeout(() => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }, index * 100);
+        });
+        console.log('✅ Sound played');
+    } catch (error) {
+        console.error('❌ Error playing sound:', error);
+    }
+}
+
 socket.on('online-users-list', function(users) {
     displayOnlineUsers(users);
 });
