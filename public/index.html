@@ -111,6 +111,32 @@
         <div class="logo-pulse"></div>
     </div>
     
+ <!-- Add this right after the logo-mini div and before theme-toggle-container -->
+<div class="bulb-container" id="bulbContainer">
+    <button class="bulb-btn" id="bulbBtn">
+        <div class="bulb-icon">
+            <div class="bulb-glass"></div>
+            <div class="bulb-filament"></div>
+            <div class="bulb-base"></div>
+        </div>
+    </button>
+</div>
+
+<!-- Stranger Things Modal (GLOBAL) -->
+<div class="st-modal" id="stModal">
+    <div class="st-overlay"></div>
+    <div class="st-content">
+        <div class="st-image-container" id="stImageContainer">
+            <img src="/stranger-things-logo.png" class="st-logo">
+        </div>
+        <div class="st-video-container" id="stVideoContainer">
+            <video id="stVideo" autoplay muted playsinline>
+                <source src="/st.mp4" type="video/mp4">
+            </video>
+        </div>
+    </div>
+</div>
+
     <!-- Regular User Hamburger Button -->
     <div class="regular-user-controls" id="regularUserControls">
         <button class="user-hamburger-btn" id="userHamburgerBtn">
@@ -572,6 +598,14 @@
         </button>
     </div>
 </div>
+
+
+<!-- Upside Down Overlay -->
+<div class="upside-down-overlay" id="upsideDownOverlay">
+    <div class="dust-particles" id="dustParticles"></div>
+    <div class="flickering-light"></div>
+</div>
+
 
 </body>
 </html>

@@ -3594,6 +3594,198 @@ socket.on('user-game-status-updated', function(data) {
     });
 });
 
+// ================= STRANGER THINGS SEASON =================
+
+let stActive = false;
+let stVideoPlayed = false;
+
+// Initialize Stranger Things System
+function initializeStrangerThings() {
+    const bulbBtn = document.getElementById('bulbBtn');
+    const bulbContainer = document.getElementById('bulbContainer');
+    const stModal = document.getElementById('stModal');
+    const stImageContainer = document.getElementById('stImageContainer');
+    const stVideoContainer = document.getElementById('stVideoContainer');
+    const stVideo = document.getElementById('stVideo');
+    const upsideDownOverlay = document.getElementById('upsideDownOverlay');
+    const stLogo = document.querySelector('.st-logo');
+
+    if (!bulbBtn) return;
+
+    bulbBtn.addEventListener('click', function() {
+        if (!stActive) {
+            // Activate Stranger Things mode
+            stActive = true;
+            bulbContainer.classList.add('bulb-active', 'bulb-flickering');
+            
+            // Show modal after brief delay
+            setTimeout(() => {
+                showStrangerThingsSequence();
+            }, 500);
+            
+        } else {
+            // Deactivate Stranger Things mode
+            deactivateStrangerThings();
+        }
+    });
+
+    // Video ended event
+    if (stVideo) {
+        stVideo.addEventListener('ended', function() {
+            activateUpsideDown();
+        });
+    }
+}
+
+function showStrangerThingsSequence() {
+    const stModal = document.getElementById('stModal');
+    const stImageContainer = document.getElementById('stImageContainer');
+    const stLogo = document.querySelector('.st-logo');
+
+    // Show modal
+    stModal.classList.add('active');
+    
+    // Show logo with fade in
+    setTimeout(() => {
+        stImageContainer.classList.add('show');
+    }, 300);
+
+    // Start whip zoom animation
+    setTimeout(() => {
+        stLogo.classList.add('whip-zoom');
+    }, 1500);
+
+    // After whip zoom, show video
+    setTimeout(() => {
+        showStrangerThingsVideo();
+    }, 3500); // 1.5s delay + 2s animation
+}
+
+function showStrangerThingsVideo() {
+    const stImageContainer = document.getElementById('stImageContainer');
+    const stVideoContainer = document.getElementById('stVideoContainer');
+    const stVideo = document.getElementById('stVideo');
+
+    // Hide image
+    stImageContainer.classList.remove('show');
+    
+    // Show video
+    setTimeout(() => {
+        stVideoContainer.classList.add('show');
+        stVideo.play().catch(err => {
+            console.log('Video autoplay prevented:', err);
+            // If autoplay fails, try with user interaction
+            stVideo.muted = true;
+            stVideo.play();
+        });
+    }, 500);
+}
+
+function activateUpsideDown() {
+    const stModal = document.getElementById('stModal');
+    const upsideDownOverlay = document.getElementById('upsideDownOverlay');
+    const dustParticles = document.getElementById('dustParticles');
+
+    // Hide modal
+    stModal.classList.remove('active');
+
+    // Show upside down overlay with flip effect
+    setTimeout(() => {
+        upsideDownOverlay.classList.add('active');
+        
+        // Create dust particles
+        createDustParticles(dustParticles);
+        
+        // Continue creating particles periodically
+        setInterval(() => {
+            if (stActive) {
+                createDustParticles(dustParticles);
+            }
+        }, 3000);
+    }, 500);
+}
+
+function createDustParticles(container) {
+    if (!container) return;
+    
+    // Create 30 dust particles
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+            const particle = document.createElement('div');
+            particle.className = 'dust-particle';
+            
+            // Random starting position
+            const startX = Math.random() * window.innerWidth;
+            const startY = Math.random() * window.innerHeight;
+            
+            particle.style.left = startX + 'px';
+            particle.style.top = startY + 'px';
+            
+            // Random movement
+            const moveX = (Math.random() - 0.5) * 200;
+            const moveY = (Math.random() - 0.5) * 200;
+            const duration = 5 + Math.random() * 5;
+            
+            particle.style.setProperty('--tx', moveX + 'px');
+            particle.style.setProperty('--ty', moveY + 'px');
+            particle.style.animationDuration = duration + 's';
+            
+            container.appendChild(particle);
+            
+            // Remove particle after animation
+            setTimeout(() => {
+                particle.remove();
+            }, duration * 1000);
+        }, i * 100);
+    }
+}
+
+function deactivateStrangerThings() {
+    const bulbContainer = document.getElementById('bulbContainer');
+    const stModal = document.getElementById('stModal');
+    const stImageContainer = document.getElementById('stImageContainer');
+    const stVideoContainer = document.getElementById('stVideoContainer');
+    const stVideo = document.getElementById('stVideo');
+    const upsideDownOverlay = document.getElementById('upsideDownOverlay');
+    const stLogo = document.querySelector('.st-logo');
+    const dustParticles = document.getElementById('dustParticles');
+
+    stActive = false;
+    stVideoPlayed = false;
+
+    // Remove all active classes
+    bulbContainer.classList.remove('bulb-active', 'bulb-flickering');
+    stModal.classList.remove('active');
+    stImageContainer.classList.remove('show');
+    stVideoContainer.classList.remove('show');
+    upsideDownOverlay.classList.remove('active');
+    
+    if (stLogo) {
+        stLogo.classList.remove('whip-zoom');
+    }
+
+    // Stop and reset video
+    if (stVideo) {
+        stVideo.pause();
+        stVideo.currentTime = 0;
+    }
+
+    // Clear dust particles
+    if (dustParticles) {
+        dustParticles.innerHTML = '';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeStrangerThings();
+});
+
+// Clean up on page unload
+window.addEventListener('beforeunload', function() {
+    deactivateStrangerThings();
+});
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     initializeTicTacToe();
