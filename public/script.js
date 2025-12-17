@@ -1,11 +1,20 @@
 // Socket.IO Connection
 const socket = io();
 
+// Firebase Imports
+import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, doc, getDoc, setDoc, collection, query, where, getDocs } from './firebase-config.js';
+
 // DOM Elements
 const welcomeScreen = document.getElementById('welcomeScreen');
 const chatScreen = document.getElementById('chatScreen');
-const usernameInput = document.getElementById('usernameInput');
-const startChatBtn = document.getElementById('startChatBtn');
+// const usernameInput = document.getElementById('usernameInput'); // Removed
+// const startChatBtn = document.getElementById('startChatBtn'); // Removed
+const googleLoginBtn = document.getElementById('googleLoginBtn');
+const profileSetupContainer = document.getElementById('profileSetupContainer');
+const googleLoginContainer = document.getElementById('googleLoginContainer');
+const newUsernameInput = document.getElementById('newUsernameInput');
+const newPasswordInput = document.getElementById('newPasswordInput');
+const createAccountBtn = document.getElementById('createAccountBtn');
 const chatMessages = document.getElementById('chatMessages');
 const messageInput = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
@@ -21,6 +30,7 @@ const loadingScreen = document.getElementById('loadingScreen');
 
 // Global Variables
 let currentUser = null;
+let firebaseUser = null; // Store Firebase User object
 let userColor = '#ffffff';
 let typingTimer = null;
 // DM System Variables
@@ -41,9 +51,9 @@ function initializeTheme() {
     const savedTheme = localStorage.getItem('brochatz-theme') || 'default';
     const themeIcon = document.getElementById('themeIcon');
     const body = document.body;
-    
+
     currentTheme = savedTheme;
-    
+
     if (savedTheme === 'cyberpunk') {
         body.setAttribute('data-theme', 'cyberpunk');
         themeIcon.className = 'fas fa-moon theme-icon';
@@ -56,23 +66,23 @@ function initializeTheme() {
 function toggleTheme() {
     const themeIcon = document.getElementById('themeIcon');
     const body = document.body;
-    
+
     if (currentTheme === 'default') {
         // Activate Cyberpunk Mode
         currentTheme = 'cyberpunk';
         body.setAttribute('data-theme', 'cyberpunk');
         themeIcon.className = 'fas fa-moon theme-icon';
         localStorage.setItem('brochatz-theme', 'cyberpunk');
-        
+
         showThemeActivation('CYBERPUNK MODE ACTIVATED', 'cyberpunk');
-        
+
     } else {
         // Activate Default Mode  
         currentTheme = 'default';
         body.removeAttribute('data-theme');
         themeIcon.className = 'fas fa-sun theme-icon';
         localStorage.setItem('brochatz-theme', 'default');
-        
+
         showThemeActivation('RGB MODE ACTIVATED', 'default');
     }
 }
@@ -84,8 +94,8 @@ function showThemeActivation(message, theme) {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: ${theme === 'cyberpunk' ? 
-            'linear-gradient(45deg, #ff00ff, #00ffff, #00ff41)' : 
+        background: ${theme === 'cyberpunk' ?
+            'linear-gradient(45deg, #ff00ff, #00ffff, #00ff41)' :
             'linear-gradient(45deg, #ff006e, #3a86ff, #00ff88)'
         };
         color: ${theme === 'cyberpunk' ? '#0a0a0f' : '#ffffff'};
@@ -104,20 +114,20 @@ function showThemeActivation(message, theme) {
     `;
     activation.textContent = message;
     document.body.appendChild(activation);
-    
+
     // Create particles effect
     createThemeParticles(theme);
-    
+
     setTimeout(() => {
         activation.remove();
     }, 2500);
 }
 
 function createThemeParticles(theme) {
-    const colors = theme === 'cyberpunk' ? 
-        ['#ff00ff', '#00ffff', '#00ff41', '#ff6600'] : 
+    const colors = theme === 'cyberpunk' ?
+        ['#ff00ff', '#00ffff', '#00ff41', '#ff6600'] :
         ['#ff006e', '#3a86ff', '#00ff88', '#ffbe0b'];
-    
+
     for (let i = 0; i < 20; i++) {
         setTimeout(() => {
             const particle = document.createElement('div');
@@ -135,15 +145,15 @@ function createThemeParticles(theme) {
                 transform: translate(-50%, -50%);
                 box-shadow: 0 0 10px currentColor;
             `;
-            
+
             const angle = (360 / 20) * i;
             const distance = 200 + Math.random() * 100;
-            
+
             particle.style.setProperty('--angle', angle + 'deg');
             particle.style.setProperty('--distance', distance + 'px');
-            
+
             document.body.appendChild(particle);
-            
+
             setTimeout(() => particle.remove(), 1500);
         }, i * 50);
     }
@@ -166,9 +176,9 @@ particleStyle.textContent = `
 document.head.appendChild(particleStyle);
 
 // Initialize theme on load and add event listener
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeTheme();
-    
+
     // Theme toggle event
     document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
 });
@@ -183,13 +193,13 @@ let phonkAudio = new Audio();
 phonkAudio.loop = false;
 
 // Initialize App
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     createParticleField();
     initializeEventListeners();
 
-    
+
     // Auto-resize textarea
-    messageInput.addEventListener('input', function() {
+    messageInput.addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 120) + 'px';
     });
@@ -230,16 +240,22 @@ document.head.appendChild(style);
 // Initialize Event Listeners
 function initializeEventListeners() {
     // Welcome Screen Events
-    usernameInput.addEventListener('input', function() {
-        const value = this.value.trim();
-        startChatBtn.disabled = value.length < 2;
-        
-        if (value.length >= 2) {
-            startChatBtn.classList.add('ready');
-        } else {
-            startChatBtn.classList.remove('ready');
-        }
-    });
+    // Auth Events
+    if (googleLoginBtn) googleLoginBtn.addEventListener('click', handleGoogleLogin);
+
+    if (newUsernameInput && newPasswordInput && createAccountBtn) {
+        const checkInputs = () => {
+            const u = newUsernameInput.value.trim();
+            const p = newPasswordInput.value.trim();
+            createAccountBtn.disabled = !(u.length >= 3 && p.length >= 6);
+            if (!createAccountBtn.disabled) createAccountBtn.classList.add('ready');
+            else createAccountBtn.classList.remove('ready');
+        };
+
+        newUsernameInput.addEventListener('input', checkInputs);
+        newPasswordInput.addEventListener('input', checkInputs);
+        createAccountBtn.addEventListener('click', handleCreateAccount);
+    }
     initializePostsSystem();
     // Elite Mode Events
     const developerUsername = document.getElementById('developerUsername');
@@ -249,48 +265,48 @@ function initializeEventListeners() {
     function checkEliteCredentials() {
         const username = developerUsername.value.trim();
         const password = developerPassword.value.trim();
-        
+
         eliteLoginBtn.disabled = !(username && password);
     }
 
     developerUsername.addEventListener('input', checkEliteCredentials);
     developerPassword.addEventListener('input', checkEliteCredentials);
 
-eliteLoginBtn.addEventListener('click', function() {
-    const username = developerUsername.value.trim();
-    const password = developerPassword.value.trim();
-    
-    // Check Developer credentials
-    if (username.toLowerCase() === 'developer' && password === 'dynamobro8085') {
-        isDeveloper = true;
-        isModerator = false;
-        currentUser = 'DEVELOPER';
-        startChat();
+    eliteLoginBtn.addEventListener('click', function () {
+        const username = developerUsername.value.trim();
+        const password = developerPassword.value.trim();
 
-        // Play Phonk track once per session
-        if (!sessionStorage.getItem('phonkPlayed')) {
-            phonkAudio.src = 'phonk.mp3';
-            phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
-            phonkAudio.onended = () => {
-                phonkAudio.src = '';
-            };
-            sessionStorage.setItem('phonkPlayed', 'true');
+        // Check Developer credentials
+        if (username.toLowerCase() === 'developer' && password === 'dynamobro8085') {
+            isDeveloper = true;
+            isModerator = false;
+            currentUser = 'DEVELOPER';
+            startChat();
+
+            // Play Phonk track once per session
+            if (!sessionStorage.getItem('phonkPlayed')) {
+                phonkAudio.src = 'phonk.mp3';
+                phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
+                phonkAudio.onended = () => {
+                    phonkAudio.src = '';
+                };
+                sessionStorage.setItem('phonkPlayed', 'true');
+            }
         }
-    } 
-    // Check Moderator credentials
-    else if (username === 'BSE SENSEX' && password === 'noordhaliwal0001') {
-        isDeveloper = false;
-        isModerator = true;
-        currentUser = 'BSE SENSEX';
-        startChat();
-    } 
-    else {
-        alert('Invalid credentials!');
-    }
-});
+        // Check Moderator credentials
+        else if (username === 'BSE SENSEX' && password === 'noordhaliwal0001') {
+            isDeveloper = false;
+            isModerator = true;
+            currentUser = 'BSE SENSEX';
+            startChat();
+        }
+        else {
+            alert('Invalid credentials!');
+        }
+    });
 
     eliteLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    developerPassword.addEventListener('keypress', function(e) {
+    developerPassword.addEventListener('keypress', function (e) {
         if (e.key === 'Enter' && !eliteLoginBtn.disabled) {
             eliteLoginBtn.click();
         }
@@ -305,13 +321,13 @@ eliteLoginBtn.addEventListener('click', function() {
     const sendWarnBtn = document.getElementById('sendWarnBtn');
     const cancelWarnBtn = document.getElementById('cancelWarnBtn');
 
-    hamburgerBtn.addEventListener('click', function() {
+    hamburgerBtn.addEventListener('click', function () {
         this.classList.toggle('active');
         developerPanel.classList.toggle('open');
         requestOnlineUsers();
     });
 
-    panelCloseBtn.addEventListener('click', function() {
+    panelCloseBtn.addEventListener('click', function () {
         hamburgerBtn.classList.remove('active');
         developerPanel.classList.remove('open');
     });
@@ -320,10 +336,10 @@ eliteLoginBtn.addEventListener('click', function() {
     warnCloseBtn.addEventListener('click', closeWarnModal);
     cancelWarnBtn.addEventListener('click', closeWarnModal);
 
-    sendWarnBtn.addEventListener('click', function() {
+    sendWarnBtn.addEventListener('click', function () {
         const reason = document.getElementById('warnReason').value.trim();
         const userName = document.getElementById('warnUserName').textContent;
-        
+
         if (reason) {
             socket.emit('warn-user', { username: userName, reason: reason });
             closeWarnModal();
@@ -332,28 +348,24 @@ eliteLoginBtn.addEventListener('click', function() {
         }
     });
 
-    usernameInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !startChatBtn.disabled) {
-            startChat();
-        }
-    });
 
-    startChatBtn.addEventListener('click', startChat);
+
+    // startChatBtn.addEventListener('click', startChat);
 
     // Chat Screen Events
-    messageInput.addEventListener('keypress', function(e) {
+    messageInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
     });
 
-    messageInput.addEventListener('input', function() {
+    messageInput.addEventListener('input', function () {
         if (!isTyping && this.value.trim()) {
             isTyping = true;
             socket.emit('typing-start');
         }
-        
+
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
             if (isTyping) {
@@ -370,11 +382,11 @@ eliteLoginBtn.addEventListener('click', function() {
     aiCloseBtn.addEventListener('click', closeAIModal);
 
     // Click outside to close modals
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (!reactionPicker.contains(e.target) && !e.target.closest('.message-bubble')) {
             hideReactionPicker();
         }
-        
+
         if (e.target === aiModal) {
             closeAIModal();
         }
@@ -382,7 +394,7 @@ eliteLoginBtn.addEventListener('click', function() {
 
     // Long press for mobile
     let longPressTimer;
-    chatMessages.addEventListener('touchstart', function(e) {
+    chatMessages.addEventListener('touchstart', function (e) {
         const messageBubble = e.target.closest('.message-bubble');
         if (messageBubble) {
             longPressTimer = setTimeout(() => {
@@ -391,12 +403,12 @@ eliteLoginBtn.addEventListener('click', function() {
         }
     });
 
-    chatMessages.addEventListener('touchend', function() {
+    chatMessages.addEventListener('touchend', function () {
         clearTimeout(longPressTimer);
     });
 
     // Context menu for desktop
-    chatMessages.addEventListener('contextmenu', function(e) {
+    chatMessages.addEventListener('contextmenu', function (e) {
         e.preventDefault();
         const messageBubble = e.target.closest('.message-bubble');
         if (messageBubble) {
@@ -405,37 +417,37 @@ eliteLoginBtn.addEventListener('click', function() {
     });
 
     // Reaction picker events
-document.querySelectorAll('.reaction-emoji').forEach(emoji => {
-    emoji.addEventListener('click', function() {
-        if (!selectedMessage) return;
+    document.querySelectorAll('.reaction-emoji').forEach(emoji => {
+        emoji.addEventListener('click', function () {
+            if (!selectedMessage) return;
 
-        const emojiValue = this.dataset.emoji;
-        addReactionAnimation(this);
+            const emojiValue = this.dataset.emoji;
+            addReactionAnimation(this);
 
-        // 👇 Check where the message lives
-        if (selectedMessage.closest('.dm-messages')) {
-            // DM message
-            const dmContainer = selectedMessage.closest('.dm-messages');
-            const dmUserId = dmContainer.getAttribute('data-userid');
+            // 👇 Check where the message lives
+            if (selectedMessage.closest('.dm-messages')) {
+                // DM message
+                const dmContainer = selectedMessage.closest('.dm-messages');
+                const dmUserId = dmContainer.getAttribute('data-userid');
 
-            socket.emit('dm-reaction', {
-                targetUserId: dmUserId,
-                messageId: selectedMessage.dataset.messageId,
-                emoji: emojiValue
-            });
-        } else {
-            // Global chat
-            socket.emit('message-reaction', {
-                messageId: selectedMessage.dataset.messageId,
-                emoji: emojiValue
-            });
-        }
+                socket.emit('dm-reaction', {
+                    targetUserId: dmUserId,
+                    messageId: selectedMessage.dataset.messageId,
+                    emoji: emojiValue
+                });
+            } else {
+                // Global chat
+                socket.emit('message-reaction', {
+                    messageId: selectedMessage.dataset.messageId,
+                    emoji: emojiValue
+                });
+            }
 
-        hideReactionPicker();
+            hideReactionPicker();
+        });
     });
-});
 
-    document.getElementById('replyBtn').addEventListener('click', function() {
+    document.getElementById('replyBtn').addEventListener('click', function () {
         if (selectedMessage) {
             if (reactionPicker.dataset.dmUserId) {
                 // DM reply functionality can be added here
@@ -455,13 +467,13 @@ function startChat() {
     let username;
 
     if (isDeveloper) {
-    username = "DEVELOPER";
-} else if (isModerator) {
-    username = "BSE SENSEX";
-} else {
-    username = usernameInput.value.trim();
-    if (username.length < 2) return;
-}
+        username = "DEVELOPER";
+    } else if (isModerator) {
+        username = "BSE SENSEX";
+    } else {
+        username = currentUser;
+        // if (username.length < 2) return;
+    }
     currentUser = username;
     // Initialize DM system
     initializeDMSystem();
@@ -481,23 +493,23 @@ function startChat() {
 
     // Show loading screen
     showLoadingScreen();
-    
-    // Add button click animation
-    startChatBtn.classList.add('clicked');
-    
+
+
+
     setTimeout(() => {
         // Connect to socket
-        socket.emit('user-joined', { 
-    username: username, 
-    isDeveloper: isDeveloper,
-    isModerator: isModerator 
-});
+        socket.emit('user-joined', {
+            username: username,
+            isDeveloper: isDeveloper,
+            isModerator: isModerator,
+            uid: firebaseUser ? firebaseUser.uid : null
+        });
 
         // Show developer controls if developer
         if (isDeveloper) {
             document.getElementById('developerControls').style.display = 'block';
         }
-        
+
         // Transition to chat screen
         setTimeout(() => {
             welcomeScreen.classList.remove('active');
@@ -548,28 +560,28 @@ function sendMessage() {
 }
 
 // Socket Event Listeners
-socket.on('user-color-assigned', function(data) {
+socket.on('user-color-assigned', function (data) {
     userColor = data.color;
 });
 
-socket.on('admin-message', function(data) {
+socket.on('admin-message', function (data) {
     addAdminMessage(data.message);
 });
 
-socket.on('chat-message', function(data) {
+socket.on('chat-message', function (data) {
     addMessage(data);
     playMessageSound();
 });
 
-socket.on('user-notification', function(data) {
+socket.on('user-notification', function (data) {
     showUserNotification(data);
 });
 
-socket.on('update-online-count', function(count) {
+socket.on('update-online-count', function (count) {
     updateOnlineCount(count);
 });
 
-socket.on('user-typing', function(data) {
+socket.on('user-typing', function (data) {
     if (data.isTyping) {
         showTypingIndicator(data);
     } else {
@@ -577,7 +589,7 @@ socket.on('user-typing', function(data) {
     }
 });
 
-socket.on('message-reaction', function(data) {
+socket.on('message-reaction', function (data) {
     addMessageReaction(data);
     if (data.username !== currentUser) {
         showReactionNotification(data);
@@ -597,12 +609,12 @@ socket.on('dm-reaction', data => {
 });
 
 
-socket.on('ai-response', function(data) {
+socket.on('ai-response', function (data) {
     hideAITyping();
     addAIMessage(data.response, 'bot');
 });
 
-socket.on('ai-typing', function(isTyping) {
+socket.on('ai-typing', function (isTyping) {
     if (isTyping) {
         showAITyping();
     } else {
@@ -612,12 +624,12 @@ socket.on('ai-typing', function(isTyping) {
 
 // 🔍 STONE AWARD DEBUG VERSION - Replace your socket listener with this
 
-socket.on('stone-awarded', function(data) {
+socket.on('stone-awarded', function (data) {
     console.log('🎊🎊🎊 STONE AWARDED EVENT RECEIVED! 🎊🎊🎊');
     console.log('Data received:', data);
     console.log('Username:', data.username);
     console.log('Stone:', data.stone);
-    
+
     try {
         showStoneAwardMessage(data);
         console.log('✅ showStoneAwardMessage() called successfully');
@@ -629,10 +641,10 @@ socket.on('stone-awarded', function(data) {
 // Function to display the stone award with cool effects
 function showStoneAwardMessage(data) {
     console.log('🎨 Creating stone award visual...');
-    
+
     const stoneDiv = document.createElement('div');
     stoneDiv.className = 'stone-award-message';
-    
+
     stoneDiv.innerHTML = `
         <div class="stone-award-content">
             <div class="stone-award-fireworks"></div>
@@ -655,24 +667,24 @@ function showStoneAwardMessage(data) {
             <div class="stone-confetti-container" id="stoneConfetti-${Date.now()}"></div>
         </div>
     `;
-    
+
     console.log('📍 Appending to chatMessages...');
     chatMessages.appendChild(stoneDiv);
     scrollToBottom();
     console.log('✅ Stone message added to DOM');
-    
+
     // Create confetti explosion
     setTimeout(() => {
         console.log('🎊 Creating confetti...');
         createStoneConfetti(stoneDiv.querySelector('.stone-confetti-container'));
     }, 100);
-    
+
     // Play celebration sound
     setTimeout(() => {
         console.log('🔊 Playing sound...');
         playStoneAwardSound();
     }, 200);
-    
+
     // Auto-remove after 30 seconds
     setTimeout(() => {
         console.log('⏱️ Starting fade out...');
@@ -690,16 +702,16 @@ function createStoneConfetti(container) {
         console.error('❌ Confetti container not found!');
         return;
     }
-    
+
     console.log('🎊 Creating 50 confetti pieces...');
     const colors = ['#FFD700', '#FF69B4', '#00CED1', '#FF1493', '#7B68EE', '#00FF7F'];
     const emojis = ['💎', '✨', '⭐', '💫', '🌟', '⚡'];
-    
+
     for (let i = 0; i < 50; i++) {
         setTimeout(() => {
             const confetti = document.createElement('div');
             confetti.className = 'stone-confetti';
-            
+
             // Random: emoji or colored square
             if (Math.random() > 0.5) {
                 confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
@@ -709,13 +721,13 @@ function createStoneConfetti(container) {
                 confetti.style.height = confetti.style.width;
                 confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
             }
-            
+
             confetti.style.left = Math.random() * 100 + '%';
             confetti.style.animationDelay = Math.random() * 0.5 + 's';
             confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-            
+
             container.appendChild(confetti);
-            
+
             setTimeout(() => confetti.remove(), 4000);
         }, i * 20);
     }
@@ -726,25 +738,25 @@ function createStoneConfetti(container) {
 function playStoneAwardSound() {
     try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         // Create a cheerful sound
         const frequencies = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C (major chord)
-        
+
         frequencies.forEach((freq, index) => {
             setTimeout(() => {
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
-                
+
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
-                
+
                 oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
                 oscillator.type = 'sine';
-                
+
                 gainNode.gain.setValueAtTime(0, audioContext.currentTime);
                 gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
+
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.5);
             }, index * 100);
@@ -755,11 +767,11 @@ function playStoneAwardSound() {
     }
 }
 
-socket.on('online-users-list', function(users) {
+socket.on('online-users-list', function (users) {
     displayOnlineUsers(users);
 });
 
-socket.on('user-kicked', function(data) {
+socket.on('user-kicked', function (data) {
     if (data.username === currentUser && !isDeveloper) {
         alert('You have been kicked out by the developer!');
         location.reload();
@@ -767,9 +779,9 @@ socket.on('user-kicked', function(data) {
 });
 
 // Message blocked notification
-socket.on('message-blocked', function(data) {
+socket.on('message-blocked', function (data) {
     showNotification(data.message, 'error');
-    
+
     // Visual warning effect
     const inputArea = document.querySelector('.message-input-area');
     inputArea.style.animation = 'shake 0.5s';
@@ -778,23 +790,23 @@ socket.on('message-blocked', function(data) {
     }, 500);
 });
 
-socket.on('user-warned', function(data) {
+socket.on('user-warned', function (data) {
     if (data.username === currentUser) {
         alert(`âš ï¸ WARNING: You are being warned for: ${data.reason}`);
     }
 });
 
-socket.on('kick-notification', function(data) {
+socket.on('kick-notification', function (data) {
     addAdminMessage(`ðŸš« ${data.username} was kicked out by DEVELOPER`);
 });
 
 // DM Socket Events
-socket.on('users-for-dm', function(users) {
+socket.on('users-for-dm', function (users) {
     displayUsersForDM(users);
 });
 
 // DM message handler
-socket.on('dm-message', function(data) {
+socket.on('dm-message', function (data) {
     const messageData = {
         ...data,
         isOwn: false,
@@ -820,29 +832,29 @@ socket.on('dm-message', function(data) {
 });
 
 
-socket.on('dm-typing-start', function(data) {
+socket.on('dm-typing-start', function (data) {
     showDMTypingIndicator(data.senderId, data.username, data.color);
 });
 
-socket.on('dm-typing-stop', function(data) {
+socket.on('dm-typing-stop', function (data) {
     hideDMTypingIndicator(data.senderId);
 });
 
-socket.on('dm-message-status', function(data) {
+socket.on('dm-message-status', function (data) {
     // Update message status (read/delivered)
     const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
         const statusElement = messageElement.querySelector('.dm-message-status');
         if (statusElement) {
-            const icon = data.status === 'read' ? 
-                '<i class="fas fa-check-double message-status-double"></i>' : 
+            const icon = data.status === 'read' ?
+                '<i class="fas fa-check-double message-status-double"></i>' :
                 '<i class="fas fa-check message-status-single"></i>';
             statusElement.innerHTML = icon;
         }
     }
 });
 
-socket.on('dm-reaction', function(data) {
+socket.on('dm-reaction', function (data) {
     // Add reaction to DM message
     const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
@@ -852,7 +864,7 @@ socket.on('dm-reaction', function(data) {
 });
 
 // Developer login sound (Phonk broadcast)
-socket.on("playPhonk", function(data) {
+socket.on("playPhonk", function (data) {
     try {
         const audio = new Audio(data.track);
         audio.volume = 0.5; // adjust volume if needed
@@ -871,7 +883,7 @@ function addMessage(data) {
     messageDiv.dataset.messageId = data.messageId;
 
     const isOwnMessage = data.username === currentUser;
-    
+
     let replyHtml = '';
     if (data.replyTo) {
         replyHtml = `
@@ -898,7 +910,7 @@ function addMessage(data) {
 
     chatMessages.appendChild(messageDiv);
     scrollToBottom();
-    
+
     // Add entrance animation
     setTimeout(() => {
         messageDiv.style.transform = 'translateY(0)';
@@ -909,7 +921,7 @@ function addMessage(data) {
 function addAdminMessage(message) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message admin-message';
-    
+
     messageDiv.innerHTML = `
         <div class="message-bubble">
             <div class="message-content">
@@ -925,9 +937,9 @@ function addAdminMessage(message) {
 function addAIMessage(message, type) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `ai-chat-message ai-${type}-message`;
-    
+
     const avatar = type === 'user' ? '🗿' : '💎ᴠɪᴘ';
-    
+
     messageDiv.innerHTML = `
         <div class="message-header">
             <span>${avatar} ${type === 'user' ? 'You' : 'AI Assistant'}</span>
@@ -943,11 +955,11 @@ function addAIMessage(message, type) {
 function showTypingIndicator(data) {
     // Remove existing indicator for this user
     hideTypingIndicator(data.username);
-    
+
     const typingDiv = document.createElement('div');
     typingDiv.className = 'typing-indicator';
     typingDiv.dataset.username = data.username;
-    
+
     typingDiv.innerHTML = `
         <span style="color: ${data.color}">${data.username}</span> is typing
         <div class="typing-dots">
@@ -956,7 +968,7 @@ function showTypingIndicator(data) {
             <div class="typing-dot"></div>
         </div>
     `;
-    
+
     typingIndicators.appendChild(typingDiv);
     scrollToBottom();
 }
@@ -1009,12 +1021,12 @@ function hideAITyping() {
 // Reaction System
 function showReactionPicker(event, messageBubble) {
     selectedMessage = messageBubble.closest('.message');
-    
+
     const rect = messageBubble.getBoundingClientRect();
     reactionPicker.style.display = 'block';
     reactionPicker.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
     reactionPicker.style.top = (rect.top - reactionPicker.offsetHeight - 10) + 'px';
-    
+
     // Add show animation
     reactionPicker.style.animation = 'pickerSlideIn 0.3s ease-out';
 }
@@ -1035,9 +1047,9 @@ function addReactionAnimation(emojiElement) {
     floatingEmoji.style.pointerEvents = 'none';
     floatingEmoji.style.zIndex = '9999';
     floatingEmoji.style.animation = 'reactionFloat 1s ease-out forwards';
-    
+
     document.body.appendChild(floatingEmoji);
-    
+
     setTimeout(() => {
         floatingEmoji.remove();
     }, 1000);
@@ -1063,10 +1075,10 @@ function addMessageReaction(data) {
     const message = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (message) {
         const reactionsContainer = message.querySelector('.message-reactions');
-        
+
         // Check if reaction already exists
         let existingReaction = reactionsContainer.querySelector(`[data-emoji="${data.emoji}"]`);
-        
+
         if (existingReaction) {
             const count = existingReaction.querySelector('.reaction-count');
             count.textContent = parseInt(count.textContent) + 1;
@@ -1089,13 +1101,13 @@ function startReply(messageElement) {
     const username = messageElement.querySelector('.username').textContent;
     const messageContent = messageElement.querySelector('.message-content').textContent;
     const userColor = messageElement.querySelector('.username').style.color;
-    
+
     replyingTo = {
         username: username,
         message: messageContent,
         color: userColor
     };
-    
+
     replyPreview.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
@@ -1119,10 +1131,10 @@ function clearReply() {
 function showUserNotification(data) {
     const notification = document.createElement('div');
     notification.className = `notification ${data.type}`;
-    
+
     let icon, message;
-    
-    switch(data.type) {
+
+    switch (data.type) {
         case 'join':
             icon = '🌟';
             message = `<strong style="color: ${data.color}">${data.username}</strong> ${data.message}`;
@@ -1144,15 +1156,15 @@ function showUserNotification(data) {
             icon = '📢';
             message = `<strong style="color: ${data.color}">${data.username}</strong> ${data.message}`;
     }
-    
+
     notification.innerHTML = `
         <div class="notification-content">
             ${icon} ${message}
         </div>
     `;
-    
+
     notificationContainer.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.classList.add('notification-burst');
         setTimeout(() => {
@@ -1165,15 +1177,15 @@ function showUserNotification(data) {
 function showReactionNotification(data) {
     const notification = document.createElement('div');
     notification.className = 'notification reaction';
-    
+
     notification.innerHTML = `
         <div class="notification-content">
             ${data.emoji} <strong style="color: ${data.color}">${data.username}</strong> reacted to your message
         </div>
     `;
-    
+
     notificationContainer.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.classList.add('notification-burst');
         setTimeout(() => {
@@ -1203,7 +1215,7 @@ function showDMNotificationPopup(from, message) {
 // Utility Functions
 function updateOnlineCount(count) {
     onlineCount.textContent = count;
-    
+
     // Add pulse animation
     onlineCount.style.animation = 'none';
     setTimeout(() => {
@@ -1274,17 +1286,17 @@ function playMessageSound() {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
+
     oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
     oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-    
+
     gainNode.gain.setValueAtTime(0, audioContext.currentTime);
     gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
     gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2);
-    
+
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.2);
 }
@@ -1298,7 +1310,7 @@ function hideLoadingScreen() {
 }
 
 // Initialize particle effects on scroll
-chatMessages.addEventListener('scroll', function() {
+chatMessages.addEventListener('scroll', function () {
     if (Math.random() > 0.95) { // 5% chance on scroll
         createScrollParticle();
     }
@@ -1315,9 +1327,9 @@ function createScrollParticle() {
     particle.style.top = Math.random() * chatMessages.offsetHeight + 'px';
     particle.style.pointerEvents = 'none';
     particle.style.animation = 'particleFade 2s ease-out forwards';
-    
+
     chatMessages.appendChild(particle);
-    
+
     setTimeout(() => {
         particle.remove();
     }, 2000);
@@ -1334,7 +1346,7 @@ particleFadeStyle.textContent = `
 document.head.appendChild(particleFadeStyle);
 
 // Add some final polish effects
-document.addEventListener('mousemove', function(e) {
+document.addEventListener('mousemove', function (e) {
     if (Math.random() > 0.99) { // Very rare cursor trail
         createCursorTrail(e.clientX, e.clientY);
     }
@@ -1352,9 +1364,9 @@ function createCursorTrail(x, y) {
     trail.style.pointerEvents = 'none';
     trail.style.zIndex = '999';
     trail.style.animation = 'trailFade 1s ease-out forwards';
-    
+
     document.body.appendChild(trail);
-    
+
     setTimeout(() => {
         trail.remove();
     }, 1000);
@@ -1380,7 +1392,7 @@ function requestOnlineUsers() {
 function displayOnlineUsers(users) {
     const usersList = document.getElementById('onlineUsersList');
     usersList.innerHTML = '';
-    
+
     users.forEach(user => {
         if (user.username !== 'DEVELOPER') { // Don't show developer in the list
             const userDiv = document.createElement('div');
@@ -1425,19 +1437,19 @@ function initializeDMSystem() {
     // Show regular user hamburger for everyone
     document.getElementById('regularUserControls').style.display = 'block';
 
-    userHamburgerBtn.addEventListener('click', function() {
+    userHamburgerBtn.addEventListener('click', function () {
         this.classList.toggle('active');
         userHamburgerMenu.classList.toggle('open');
         requestUsersList();
     });
 
-    userHamburgerClose.addEventListener('click', function() {
+    userHamburgerClose.addEventListener('click', function () {
         userHamburgerBtn.classList.remove('active');
         userHamburgerMenu.classList.remove('open');
     });
 
     // Click outside to close
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (!userHamburgerMenu.contains(e.target) && !userHamburgerBtn.contains(e.target)) {
             userHamburgerBtn.classList.remove('active');
             userHamburgerMenu.classList.remove('open');
@@ -1460,7 +1472,7 @@ function displayUsersForDM(users) {
             userDiv.onclick = () => openDMWindow(user);
 
             const firstLetter = user.username.charAt(0).toUpperCase();
-            
+
             userDiv.innerHTML = `
                 <div class="user-list-avatar" style="background: ${user.color}">
                     ${firstLetter}
@@ -1493,7 +1505,7 @@ function openDMWindow(user) {
     const dmWindow = document.createElement('div');
     dmWindow.className = 'dm-window';
     dmWindow.style.zIndex = dmWindowZIndex++;
-   
+
 
     const firstLetter = user.username.charAt(0).toUpperCase();
 
@@ -1550,7 +1562,7 @@ function setupDMInputEvents(userId) {
     let isDMTyping = false;
 
     // Auto-resize textarea
-    input.addEventListener('input', function() {
+    input.addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 80) + 'px';
 
@@ -1570,7 +1582,7 @@ function setupDMInputEvents(userId) {
     });
 
     // Enter to send
-    input.addEventListener('keypress', function(e) {
+    input.addEventListener('keypress', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendDMMessage(userId);
@@ -1578,37 +1590,37 @@ function setupDMInputEvents(userId) {
     });
 
     // Make window draggable
-    
+
 }
 
 function makeDMWindowDraggable(userId) {
     const dmWindow = openDMWindows.get(userId);
     const header = dmWindow.querySelector('.dm-header');
-    
+
     let isDragging = false;
     let currentX, currentY, initialX, initialY;
 
-    header.addEventListener('mousedown', function(e) {
+    header.addEventListener('mousedown', function (e) {
         if (e.target.closest('button')) return;
-        
+
         isDragging = true;
         dmWindow.style.zIndex = dmWindowZIndex++;
-        
+
         initialX = e.clientX - dmWindow.offsetLeft;
         initialY = e.clientY - dmWindow.offsetTop;
     });
 
-    document.addEventListener('mousemove', function(e) {
+    document.addEventListener('mousemove', function (e) {
         if (!isDragging) return;
-        
+
         currentX = e.clientX - initialX;
         currentY = e.clientY - initialY;
-        
+
         dmWindow.style.left = Math.max(0, Math.min(currentX, window.innerWidth - dmWindow.offsetWidth)) + 'px';
         dmWindow.style.top = Math.max(0, Math.min(currentY, window.innerHeight - dmWindow.offsetHeight)) + 'px';
     });
 
-    document.addEventListener('mouseup', function() {
+    document.addEventListener('mouseup', function () {
         isDragging = false;
     });
 }
@@ -1616,7 +1628,7 @@ function makeDMWindowDraggable(userId) {
 function sendDMMessage(userId) {
     const input = document.getElementById(`dmInput-${userId}`);
     const message = input.value.trim();
-    
+
     if (!message) return;
 
     const messageData = {
@@ -1649,16 +1661,16 @@ function addDMMessageToWindow(userId, messageData) {
     messageDiv.dataset.messageId = messageData.messageId;
 
     const timeStr = new Date(messageData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
+
     let statusIcon = '';
     if (messageData.isOwn) {
-        statusIcon = messageData.status === 'read' ? 
-            '<i class="fas fa-check-double message-status-double"></i>' : 
+        statusIcon = messageData.status === 'read' ?
+            '<i class="fas fa-check-double message-status-double"></i>' :
             '<i class="fas fa-check message-status-single"></i>';
     }
 
     let contentHtml = escapeHtml(messageData.message);
-    
+
     // Handle GIF content
     if (messageData.isGIF) {
         contentHtml = `<div class="gif-container"><img src="${messageData.message}" class="gif-image" alt="GIF"></div>`;
@@ -1676,7 +1688,7 @@ function addDMMessageToWindow(userId, messageData) {
     `;
 
     // Context menu for reactions and reply
-    messageDiv.addEventListener('contextmenu', function(e) {
+    messageDiv.addEventListener('contextmenu', function (e) {
         e.preventDefault();
         showDMReactionPicker(e, messageDiv, userId);
     });
@@ -1723,14 +1735,14 @@ function minimizeDMWindow(userId) {
 function deleteDMMessage(userId, messageId) {
     if (confirm('Delete this message?')) {
         socket.emit('delete-dm-message', { targetUserId: userId, messageId: messageId });
-        
+
         // Remove from UI
         const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
         if (messageElement) {
             messageElement.style.animation = 'messageSlideOut 0.3s ease-in forwards';
             setTimeout(() => messageElement.remove(), 300);
         }
-        
+
         // Remove from local storage
         const messages = dmMessages.get(userId);
         if (messages) {
@@ -1744,12 +1756,12 @@ function deleteDMMessage(userId, messageId) {
 
 function showDMReactionPicker(event, messageElement, userId) {
     selectedMessage = messageElement;
-    
+
     const rect = messageElement.getBoundingClientRect();
     reactionPicker.style.display = 'block';
     reactionPicker.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
     reactionPicker.style.top = (rect.top - reactionPicker.offsetHeight - 10) + 'px';
-    
+
     // Store DM context
     reactionPicker.dataset.dmUserId = userId;
     reactionPicker.style.animation = 'pickerSlideIn 0.3s ease-out';
@@ -1772,7 +1784,7 @@ function handleGIFUpload(userId, input) {
     }
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         const messageData = {
             targetUserId: userId,
             message: e.target.result,
@@ -1792,7 +1804,7 @@ function handleGIFUpload(userId, input) {
         });
     };
     reader.readAsDataURL(file);
-    
+
     // Clear input
     input.value = '';
 }
@@ -1820,7 +1832,7 @@ function hideDMTypingIndicator(userId) {
     }
 }
 // Smooth close for DM windows
-document.addEventListener("click", function(e) {
+document.addEventListener("click", function (e) {
     if (e.target.closest(".dm-close")) {     // when clicking the close button
         const dmWindow = e.target.closest(".dm-window");
         if (dmWindow) {
@@ -1871,10 +1883,138 @@ function initializePostsSystem() {
     const createPostWindow = document.getElementById('createPostWindow');
     const commentsWindow = document.getElementById('commentsWindow');
     const editPostModal = document.getElementById('editPostModal');
-   // ================= POSTS EVENT DELEGATION =================
-const postsFeed = document.getElementById("postsFeed");
-if (postsFeed) {
-    postsFeed.addEventListener("click", function(e) {
+    // ================= POSTS EVENT DELEGATION =================
+    const postsFeed = document.getElementById("postsFeed");
+    if (postsFeed) {
+        postsFeed.addEventListener("click", function (e) {
+            const postElement = e.target.closest(".post-item");
+            if (!postElement) return;
+            const postId = postElement.dataset.postId;
+
+            // ❤️ Reaction
+            if (e.target.classList.contains("react-btn")) {
+                socket.emit("post-reaction", { postId, emoji: "❤️" });
+            }
+
+            // 🗑️ Delete
+            if (e.target.classList.contains("delete-btn")) {
+                if (confirm("Delete this post?")) {
+                    socket.emit("delete-post", { postId });
+                }
+            }
+
+            // ✏️ Edit
+            if (e.target.classList.contains("edit-btn")) {
+                const post = postsData.get(postId);
+                if (!post) return;
+                document.getElementById("editPostContent").value = post.content;
+                document.getElementById("editPostModal").style.display = "flex";
+
+                document.getElementById("editSaveBtn").onclick = () => {
+                    const newContent = document.getElementById("editPostContent").value.trim();
+                    if (newContent) {
+                        socket.emit("edit-post", { postId, content: newContent });
+                        document.getElementById("editPostModal").style.display = "none";
+                    }
+                };
+            }
+
+            // 💬 Open comments
+            if (e.target.classList.contains("comment-btn")) {
+                selectedPostForComment = postId;
+                document.getElementById("commentsWindow").style.display = "flex";
+                socket.emit("get-post-comments", { postId });
+            }
+        });
+    }
+
+    // ================= COMMENT SEND BUTTON =================
+    const sendCommentBtn = document.getElementById("sendCommentBtn");
+    if (sendCommentBtn) {
+        sendCommentBtn.addEventListener("click", () => {
+            const content = document.getElementById("commentInput").value.trim();
+            if (content && selectedPostForComment) {
+                socket.emit("post-comment", {
+                    id: generatePostId(),
+                    postId: selectedPostForComment,
+                    content
+                });
+                document.getElementById("commentInput").value = "";
+            }
+        });
+    }
+
+
+    // Posts container click
+    postsContainer.addEventListener('click', function () {
+        document.getElementById('userHamburgerMenu').classList.remove('open');
+        document.getElementById('userHamburgerBtn').classList.remove('active');
+        showPostsWindow();
+    });
+
+    // Posts window controls
+    document.getElementById('postsBackBtn').addEventListener('click', function () {
+        hidePostsWindow();
+    });
+
+    document.getElementById('postsRefreshBtn').addEventListener('click', function () {
+        refreshPosts();
+    });
+
+    document.getElementById('postsHomeBtn').addEventListener('click', function () {
+        hidePostsWindow();
+    });
+
+    document.getElementById('postsCreateBtn').addEventListener('click', function () {
+        showCreatePostWindow();
+    });
+
+    // Navigation buttons
+    document.getElementById('featuredPostsBtn').addEventListener('click', function () {
+        switchPostView('featured');
+    });
+
+    document.getElementById('myPostsBtn').addEventListener('click', function () {
+        switchPostView('my-posts');
+    });
+
+    // Create post controls
+    document.getElementById('createBackBtn').addEventListener('click', function () {
+        hideCreatePostWindow();
+    });
+
+    document.getElementById('cancelPostBtn').addEventListener('click', function () {
+        hideCreatePostWindow();
+    });
+
+    document.getElementById('publishPostBtn').addEventListener('click', function () {
+        publishPost();
+    });
+
+    // Comments controls
+    document.getElementById('commentsBackBtn').addEventListener('click', function () {
+        hideCommentsWindow();
+    });
+
+    document.getElementById('sendCommentBtn').addEventListener('click', function () {
+        sendComment();
+    });
+
+    // Edit post controls
+    document.getElementById('editCloseBtn').addEventListener('click', function () {
+        hideEditPostModal();
+    });
+
+    document.getElementById('editCancelBtn').addEventListener('click', function () {
+        hideEditPostModal();
+    });
+
+    document.getElementById('editSaveBtn').addEventListener('click', function () {
+        saveEditedPost();
+    });
+
+    // Event delegation for post actions
+    document.getElementById("postsFeed").addEventListener("click", function (e) {
         const postElement = e.target.closest(".post-item");
         if (!postElement) return;
         const postId = postElement.dataset.postId;
@@ -1914,141 +2054,13 @@ if (postsFeed) {
             socket.emit("get-post-comments", { postId });
         }
     });
-}
-
-// ================= COMMENT SEND BUTTON =================
-const sendCommentBtn = document.getElementById("sendCommentBtn");
-if (sendCommentBtn) {
-    sendCommentBtn.addEventListener("click", () => {
-        const content = document.getElementById("commentInput").value.trim();
-        if (content && selectedPostForComment) {
-            socket.emit("post-comment", {
-                id: generatePostId(),
-                postId: selectedPostForComment,
-                content
-            });
-            document.getElementById("commentInput").value = "";
-        }
-    });
-}
-
-
-    // Posts container click
-    postsContainer.addEventListener('click', function() {
-        document.getElementById('userHamburgerMenu').classList.remove('open');
-        document.getElementById('userHamburgerBtn').classList.remove('active');
-        showPostsWindow();
-    });
-
-    // Posts window controls
-    document.getElementById('postsBackBtn').addEventListener('click', function() {
-        hidePostsWindow();
-    });
-
-    document.getElementById('postsRefreshBtn').addEventListener('click', function() {
-        refreshPosts();
-    });
-
-    document.getElementById('postsHomeBtn').addEventListener('click', function() {
-        hidePostsWindow();
-    });
-
-    document.getElementById('postsCreateBtn').addEventListener('click', function() {
-        showCreatePostWindow();
-    });
-
-    // Navigation buttons
-    document.getElementById('featuredPostsBtn').addEventListener('click', function() {
-        switchPostView('featured');
-    });
-
-    document.getElementById('myPostsBtn').addEventListener('click', function() {
-        switchPostView('my-posts');
-    });
-
-    // Create post controls
-    document.getElementById('createBackBtn').addEventListener('click', function() {
-        hideCreatePostWindow();
-    });
-
-    document.getElementById('cancelPostBtn').addEventListener('click', function() {
-        hideCreatePostWindow();
-    });
-
-    document.getElementById('publishPostBtn').addEventListener('click', function() {
-        publishPost();
-    });
-
-    // Comments controls
-    document.getElementById('commentsBackBtn').addEventListener('click', function() {
-        hideCommentsWindow();
-    });
-
-    document.getElementById('sendCommentBtn').addEventListener('click', function() {
-        sendComment();
-    });
-
-    // Edit post controls
-    document.getElementById('editCloseBtn').addEventListener('click', function() {
-        hideEditPostModal();
-    });
-
-    document.getElementById('editCancelBtn').addEventListener('click', function() {
-        hideEditPostModal();
-    });
-
-    document.getElementById('editSaveBtn').addEventListener('click', function() {
-        saveEditedPost();
-    });
-
-   // Event delegation for post actions
-document.getElementById("postsFeed").addEventListener("click", function(e) {
-    const postElement = e.target.closest(".post-item");
-    if (!postElement) return;
-    const postId = postElement.dataset.postId;
-
-    // ❤️ Reaction
-    if (e.target.classList.contains("react-btn")) {
-        socket.emit("post-reaction", { postId, emoji: "❤️" });
-    }
-
-    // 🗑️ Delete
-    if (e.target.classList.contains("delete-btn")) {
-        if (confirm("Delete this post?")) {
-            socket.emit("delete-post", { postId });
-        }
-    }
-
-    // ✏️ Edit
-    if (e.target.classList.contains("edit-btn")) {
-        const post = postsData.get(postId);
-        if (!post) return;
-        document.getElementById("editPostContent").value = post.content;
-        document.getElementById("editPostModal").style.display = "flex";
-
-        document.getElementById("editSaveBtn").onclick = () => {
-            const newContent = document.getElementById("editPostContent").value.trim();
-            if (newContent) {
-                socket.emit("edit-post", { postId, content: newContent });
-                document.getElementById("editPostModal").style.display = "none";
-            }
-        };
-    }
-
-    // 💬 Open comments
-    if (e.target.classList.contains("comment-btn")) {
-        selectedPostForComment = postId;
-        document.getElementById("commentsWindow").style.display = "flex";
-        socket.emit("get-post-comments", { postId });
-    }
-});
 
 
     // Image upload
     document.getElementById('postImageInput').addEventListener('change', handleImageUpload);
 
     // Comment input enter key
-    document.getElementById('commentInput').addEventListener('keypress', function(e) {
+    document.getElementById('commentInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendComment();
@@ -2056,13 +2068,13 @@ document.getElementById("postsFeed").addEventListener("click", function(e) {
     });
 
     // Auto-resize comment input
-    document.getElementById('commentInput').addEventListener('input', function() {
+    document.getElementById('commentInput').addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 100) + 'px';
     });
 
     // Close dropdowns on outside click
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (!e.target.closest('.post-menu-btn')) {
             closeAllDropdowns();
         }
@@ -2120,25 +2132,25 @@ function hideEditPostModal() {
 // Post Navigation
 function switchPostView(view) {
     currentPostView = view;
-    
+
     // Update active button
     document.querySelectorAll('.posts-nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    
+
     if (view === 'featured') {
         document.getElementById('featuredPostsBtn').classList.add('active');
     } else {
         document.getElementById('myPostsBtn').classList.add('active');
     }
-    
+
     loadPosts();
 }
 
 // Load Posts
 function loadPosts() {
     const feed = document.getElementById('postsFeed');
-    
+
     // Show loading
     feed.innerHTML = `
         <div class="loading-posts">
@@ -2155,10 +2167,10 @@ function loadPosts() {
 
 function getFilteredPosts() {
     const posts = Array.from(postsData.values());
-    
+
     if (currentPostView === 'my-posts') {
         return posts.filter(post => post.author === currentUser)
-                   .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     } else {
         return posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
@@ -2166,7 +2178,7 @@ function getFilteredPosts() {
 
 function renderPosts(posts) {
     const feed = document.getElementById('postsFeed');
-    
+
     if (posts.length === 0) {
         feed.innerHTML = `
             <div class="empty-posts">
@@ -2179,7 +2191,7 @@ function renderPosts(posts) {
     }
 
     feed.innerHTML = posts.map(post => createPostHTML(post)).join('');
-    
+
     // Add event listeners to new posts
     addPostEventListeners();
 }
@@ -2188,7 +2200,7 @@ function createPostHTML(post) {
     const isOwnPost = post.author === currentUser;
     const timeStr = formatTime(post.timestamp);
     const avatarLetter = post.author.charAt(0).toUpperCase();
-    
+
     return `
         <div class="post-item" data-post-id="${post.id}">
             <div class="post-header">
@@ -2249,10 +2261,10 @@ function createPostHTML(post) {
 function togglePostDropdown(postId) {
     const dropdown = document.getElementById(`dropdown-${postId}`);
     const isVisible = dropdown.style.display === 'block';
-    
+
     // Close all dropdowns
     closeAllDropdowns();
-    
+
     // Toggle current dropdown
     if (!isVisible) {
         dropdown.style.display = 'block';
@@ -2272,17 +2284,17 @@ function editPost(postId) {
 
 function deletePost(postId) {
     closeAllDropdowns();
-    
+
     if (confirm('Are you sure you want to delete this post?')) {
         // Emit delete event to server
         socket.emit('delete-post', { postId: postId });
-        
+
         // Remove from local storage
         postsData.delete(postId);
-        
+
         // Refresh posts view
         loadPosts();
-        
+
         showNotification('Post deleted successfully', 'success');
     }
 }
@@ -2290,12 +2302,12 @@ function deletePost(postId) {
 function togglePostReaction(postId, emoji) {
     const post = postsData.get(postId);
     if (!post) return;
-    
+
     // Initialize reactions if not exists
     if (!post.reactions) {
         post.reactions = {};
     }
-    
+
     // Toggle reaction
     if (post.userReactions && post.userReactions.includes(emoji)) {
         // Remove reaction
@@ -2307,14 +2319,14 @@ function togglePostReaction(postId, emoji) {
         if (!post.userReactions) post.userReactions = [];
         post.userReactions.push(emoji);
     }
-    
+
     // Emit to server
     socket.emit('post-reaction', {
         postId: postId,
         emoji: emoji,
         username: currentUser
     });
-    
+
     // Update UI
     loadPosts();
 }
@@ -2324,17 +2336,17 @@ function publishPost() {
     const content = document.getElementById('postContent').value.trim();
     const imagePreview = document.getElementById('imagePreview');
     const image = imagePreview.querySelector('img')?.src || null;
-    
+
     if (!content) {
         showNotification('Please write something to post', 'error');
         return;
     }
-    
+
     if (content.length > 500) {
         showNotification('Post content is too long (max 500 characters)', 'error');
         return;
     }
-    
+
     const postData = {
         id: Date.now() + Math.random(),
         content: content,
@@ -2347,21 +2359,21 @@ function publishPost() {
         comments: [],
         impressions: 0
     };
-    
+
     // Add to local storage
     postsData.set(postData.id, postData);
-    
+
     // Emit to server
     socket.emit('create-post', postData);
-    
+
     // Close create window
     hideCreatePostWindow();
-    
+
     // Refresh posts if on featured view
     if (currentPostView === 'featured') {
         loadPosts();
     }
-    
+
     showNotification('Post published successfully!', 'success');
 }
 
@@ -2374,21 +2386,21 @@ function clearCreatePostForm() {
 function handleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
         showNotification('Image size must be less than 5MB', 'error');
         return;
     }
-    
+
     // Check file type
     if (!file.type.startsWith('image/')) {
         showNotification('Please select an image file', 'error');
         return;
     }
-    
+
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         const preview = document.getElementById('imagePreview');
         preview.innerHTML = `
             <img src="${e.target.result}" alt="Preview">
@@ -2409,31 +2421,31 @@ function removeImagePreview() {
 // Edit Post
 function saveEditedPost() {
     if (!currentEditingPost) return;
-    
+
     const newContent = document.getElementById('editPostContent').value.trim();
-    
+
     if (!newContent) {
         showNotification('Post content cannot be empty', 'error');
         return;
     }
-    
+
     if (newContent.length > 500) {
         showNotification('Post content is too long (max 500 characters)', 'error');
         return;
     }
-    
+
     const post = postsData.get(currentEditingPost);
     if (post) {
         post.content = newContent;
         post.edited = true;
         post.editedAt = new Date();
-        
+
         // Emit to server
         socket.emit('edit-post', {
             postId: currentEditingPost,
             content: newContent
         });
-        
+
         hideEditPostModal();
         loadPosts();
         showNotification('Post updated successfully!', 'success');
@@ -2444,7 +2456,7 @@ function saveEditedPost() {
 function loadOriginalPost(postId) {
     const post = postsData.get(postId);
     if (!post) return;
-    
+
     const originalPost = document.getElementById('originalPost');
     originalPost.innerHTML = createPostHTML(post);
 }
@@ -2452,10 +2464,10 @@ function loadOriginalPost(postId) {
 function loadComments(postId) {
     const post = postsData.get(postId);
     if (!post) return;
-    
+
     const commentsSection = document.getElementById('commentsSection');
     const comments = post.comments || [];
-    
+
     if (comments.length === 0) {
         commentsSection.innerHTML = `
             <div class="empty-posts">
@@ -2466,14 +2478,14 @@ function loadComments(postId) {
         `;
         return;
     }
-    
+
     commentsSection.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
 }
 
 function createCommentHTML(comment) {
     const timeStr = formatTime(comment.timestamp);
     const avatarLetter = comment.author.charAt(0).toUpperCase();
-    
+
     return `
         <div class="comment-item" data-comment-id="${comment.id}">
             <div class="comment-header">
@@ -2498,20 +2510,20 @@ function createCommentHTML(comment) {
 
 function sendComment() {
     if (!selectedPostForComment) return;
-    
+
     const commentInput = document.getElementById('commentInput');
     const content = commentInput.value.trim();
-    
+
     if (!content) {
         showNotification('Please write a comment', 'error');
         return;
     }
-    
+
     if (content.length > 300) {
         showNotification('Comment is too long (max 300 characters)', 'error');
         return;
     }
-    
+
     const commentData = {
         id: Date.now() + Math.random(),
         postId: selectedPostForComment,
@@ -2521,23 +2533,23 @@ function sendComment() {
         isDeveloper: isDeveloper,
         timestamp: new Date()
     };
-    
+
     // Add to post
     const post = postsData.get(selectedPostForComment);
     if (post) {
         if (!post.comments) post.comments = [];
         post.comments.push(commentData);
-        
+
         // Emit to server
         socket.emit('post-comment', commentData);
-        
+
         // Clear input
         commentInput.value = '';
         commentInput.style.height = 'auto';
-        
+
         // Reload comments
         loadComments(selectedPostForComment);
-        
+
         showNotification('Comment added!', 'success');
     }
 }
@@ -2552,7 +2564,7 @@ function replyToComment(commentId) {
 function refreshPosts() {
     const refreshBtn = document.getElementById('postsRefreshBtn');
     refreshBtn.style.animation = 'spin 1s linear';
-    
+
     setTimeout(() => {
         refreshBtn.style.animation = '';
         loadPosts();
@@ -2569,9 +2581,9 @@ function showNotification(message, type = 'info') {
             ${message}
         </div>
     `;
-    
+
     document.getElementById('notificationContainer').appendChild(notification);
-    
+
     setTimeout(() => {
         notification.classList.add('notification-burst');
         setTimeout(() => {
@@ -2581,53 +2593,53 @@ function showNotification(message, type = 'info') {
 }
 
 // Socket Events for Posts
-socket.on('post-created', function(postData) {
+socket.on('post-created', function (postData) {
     postsData.set(postData.id, postData);
-    
+
     if (currentPostView === 'featured' && document.getElementById('postsWindow').style.display === 'flex') {
         loadPosts();
     }
-    
+
     // Show notification if not own post
     if (postData.author !== currentUser) {
         showNotification(`${postData.author} created a new post`, 'info');
     }
 });
 
-socket.on('post-updated', function(data) {
+socket.on('post-updated', function (data) {
     const post = postsData.get(data.postId);
     if (post) {
         post.content = data.content;
         post.edited = true;
         post.editedAt = data.editedAt;
-        
+
         if (document.getElementById('postsWindow').style.display === 'flex') {
             loadPosts();
         }
     }
 });
 
-socket.on('post-deleted', function(data) {
+socket.on('post-deleted', function (data) {
     postsData.delete(data.postId);
-    
+
     if (document.getElementById('postsWindow').style.display === 'flex') {
         loadPosts();
     }
-    
+
     showNotification(`Post deleted`, 'info');
 });
 
-socket.on('post-comment', function(commentData) {
+socket.on('post-comment', function (commentData) {
     const post = postsData.get(commentData.postId);
     if (post) {
         if (!post.comments) post.comments = [];
         post.comments.push(commentData);
-        
+
         // If viewing comments for this post, reload
         if (selectedPostForComment === commentData.postId) {
             loadComments(commentData.postId);
         }
-        
+
         // Show notification if someone commented on your post
         if (post.author === currentUser && commentData.author !== currentUser) {
             showNotification(`${commentData.author} commented on your post`, 'info');
@@ -2635,12 +2647,12 @@ socket.on('post-comment', function(commentData) {
     }
 });
 
-socket.on('post-reaction', function(data) {
+socket.on('post-reaction', function (data) {
     const post = postsData.get(data.postId);
     if (post) {
         if (!post.reactions) post.reactions = {};
         post.reactions[data.emoji] = data.count;
-        
+
         if (document.getElementById('postsWindow').style.display === 'flex') {
             loadPosts();
         }
@@ -2650,7 +2662,7 @@ socket.on('post-reaction', function(data) {
 // ===== Extra Socket Events for Posts =====
 
 // Comment notification
-socket.on('comment-notification', function(data) {
+socket.on('comment-notification', function (data) {
     showUserNotification({
         type: 'comment',
         username: data.commenterName,
@@ -2660,7 +2672,7 @@ socket.on('comment-notification', function(data) {
 });
 
 // Post impression update
-socket.on('post-impression-update', function(data) {
+socket.on('post-impression-update', function (data) {
     const postElement = document.querySelector(`[data-post-id="${data.postId}"]`);
     if (postElement) {
         const impressionsEl = postElement.querySelector('.post-impressions');
@@ -2672,7 +2684,7 @@ socket.on('post-impression-update', function(data) {
 
 
 // ================= POSTS EXTRA SOCKET EVENTS =================
-socket.on('comment-notification', function(data) {
+socket.on('comment-notification', function (data) {
     showUserNotification({
         type: 'comment',
         username: data.commenterName,
@@ -2681,7 +2693,7 @@ socket.on('comment-notification', function(data) {
     });
 });
 
-socket.on('post-impression-update', function(data) {
+socket.on('post-impression-update', function (data) {
     const postElement = document.querySelector(`[data-post-id="${data.postId}"]`);
     if (postElement) {
         const impressionsEl = postElement.querySelector('.post-impressions');
@@ -2716,10 +2728,10 @@ function formatPostTime(timestamp) {
 function addPostEventListeners() {
     // Click on post to increment impressions
     document.querySelectorAll('.post-item').forEach(postEl => {
-        postEl.addEventListener('click', function(e) {
+        postEl.addEventListener('click', function (e) {
             // Don't count clicks on buttons
             if (e.target.closest('button') || e.target.closest('.post-actions')) return;
-            
+
             const postId = this.dataset.postId;
             const post = postsData.get(postId);
             if (post) {
@@ -2749,7 +2761,7 @@ function initializeTicTacToe() {
     // Game container click
     const ticTacToeGame = document.getElementById('ticTacToeGame');
     if (ticTacToeGame) {
-        ticTacToeGame.addEventListener('click', function() {
+        ticTacToeGame.addEventListener('click', function () {
             showTTTOpponentWindow();
         });
     }
@@ -2757,7 +2769,7 @@ function initializeTicTacToe() {
     // Opponent window controls
     const tttOpponentBackBtn = document.getElementById('tttOpponentBackBtn');
     if (tttOpponentBackBtn) {
-        tttOpponentBackBtn.addEventListener('click', function() {
+        tttOpponentBackBtn.addEventListener('click', function () {
             hideTTTOpponentWindow();
         });
     }
@@ -2765,11 +2777,11 @@ function initializeTicTacToe() {
     // Challenge popup controls
     const challengeAcceptBtn = document.getElementById('challengeAcceptBtn');
     const challengeDeclineBtn = document.getElementById('challengeDeclineBtn');
-    
+
     if (challengeAcceptBtn) {
         challengeAcceptBtn.addEventListener('click', acceptChallenge);
     }
-    
+
     if (challengeDeclineBtn) {
         challengeDeclineBtn.addEventListener('click', declineChallenge);
     }
@@ -2801,11 +2813,11 @@ function initializeTicTacToe() {
     // Replay popup controls
     const replayAcceptBtn = document.getElementById('replayAcceptBtn');
     const replayDeclineBtn = document.getElementById('replayDeclineBtn');
-    
+
     if (replayAcceptBtn) {
         replayAcceptBtn.addEventListener('click', acceptReplay);
     }
-    
+
     if (replayDeclineBtn) {
         replayDeclineBtn.addEventListener('click', declineReplay);
     }
@@ -2813,7 +2825,7 @@ function initializeTicTacToe() {
     // Left popup OK button
     const leftOkBtn = document.getElementById('leftOkBtn');
     if (leftOkBtn) {
-        leftOkBtn.addEventListener('click', function() {
+        leftOkBtn.addEventListener('click', function () {
             hideTTTLeftPopup();
             returnToChat();
         });
@@ -2825,7 +2837,7 @@ function showTTTOpponentWindow() {
     document.getElementById('userHamburgerMenu').classList.remove('open');
     document.getElementById('userHamburgerBtn').classList.remove('active');
     document.getElementById('tttOpponentWindow').style.display = 'flex';
-    
+
     // Request users list
     socket.emit('get-ttt-opponents');
 }
@@ -2847,7 +2859,7 @@ function displayTTTOpponents(users) {
 
             const firstLetter = user.username.charAt(0).toUpperCase();
             const isInGame = user.inGame ? '<i class="fas fa-gamepad user-game-status"></i>' : '';
-            
+
             opponentDiv.innerHTML = `
                 <div class="ttt-opponent-avatar" style="background: ${user.color}">
                     ${firstLetter}
@@ -2866,7 +2878,7 @@ function displayTTTOpponents(users) {
             `;
 
             const challengeBtn = opponentDiv.querySelector('.ttt-challenge-btn');
-            challengeBtn.addEventListener('click', function() {
+            challengeBtn.addEventListener('click', function () {
                 if (!this.disabled) {
                     sendChallenge(user);
                 }
@@ -2918,9 +2930,9 @@ function sendChallenge(opponent) {
 function showChallengePopup(data) {
     const popup = document.getElementById('tttChallengePopup');
     document.getElementById('challengerName').textContent = data.challengerName;
-    
+
     popup.style.display = 'block';
-    
+
     // Store challenge data
     popup.dataset.challengerId = data.challengerId;
     popup.dataset.challengerName = data.challengerName;
@@ -3002,11 +3014,11 @@ function startTTTGame(gameData) {
     gameWindow.style.display = 'flex';
 
     // Setup player info
-    const player1 = gameData.mySymbol === 'X' ? 
+    const player1 = gameData.mySymbol === 'X' ?
         { name: currentUser, color: userColor, symbol: 'X' } :
         { name: gameData.opponent.name, color: gameData.opponent.color, symbol: 'X' };
 
-    const player2 = gameData.mySymbol === 'O' ? 
+    const player2 = gameData.mySymbol === 'O' ?
         { name: currentUser, color: userColor, symbol: 'O' } :
         { name: gameData.opponent.name, color: gameData.opponent.color, symbol: 'O' };
 
@@ -3037,7 +3049,7 @@ function resetBoard() {
         cell.style.cursor = 'pointer';
         cell.style.opacity = '1';
     });
-    
+
     // Update turn indicator immediately
     updateTurnIndicator();
 }
@@ -3046,9 +3058,9 @@ function resetBoard() {
 // Update turn indicator
 function updateTurnIndicator() {
     const indicator = document.getElementById('tttTurnIndicator');
-    
+
     console.log('🔄 Updating turn indicator. isMyTurn:', currentGameState.isMyTurn);
-    
+
     if (currentGameState.isMyTurn) {
         indicator.textContent = 'Your Turn!';
         indicator.style.color = '#00ff41';
@@ -3080,10 +3092,10 @@ function handleBoardClick(event) {
 // Make move
 function makeMove(index) {
     console.log('🎯 Making move at index:', index);
-    
+
     // Update local board
     currentGameState.board[index] = currentGameState.mySymbol;
-    
+
     // Update UI immediately
     const cell = document.querySelector(`.ttt-cell[data-index="${index}"]`);
     cell.textContent = currentGameState.mySymbol;
@@ -3102,7 +3114,7 @@ function makeMove(index) {
     // ✅ Switch turn to opponent - NOW it's their turn
     currentGameState.isMyTurn = false;
     console.log('✅ Set isMyTurn to FALSE');
-    
+
     // Update turn indicator and disable board
     updateTurnIndicator();
 
@@ -3134,12 +3146,12 @@ function enableBoard() {
 // Receive opponent's move
 function receiveOpponentMove(data) {
     console.log('📥 CLIENT: Processing opponent move:', data);
-    
+
     if (!currentGameState.gameId) {
         console.log('❌ CLIENT: No active game');
         return;
     }
-    
+
     if (data.gameId !== currentGameState.gameId) {
         console.log('❌ CLIENT: Game ID mismatch. Expected:', currentGameState.gameId, 'Got:', data.gameId);
         return;
@@ -3153,19 +3165,19 @@ function receiveOpponentMove(data) {
     // Update board from server
     currentGameState.board = data.board;
     console.log('✅ CLIENT: Board synced with server:', currentGameState.board);
-    
+
     // Update UI for the opponent's move
     const cell = document.querySelector(`.ttt-cell[data-index="${data.index}"]`);
     if (cell) {
         if (cell.classList.contains('ttt-cell-disabled')) {
             console.log('⚠️ CLIENT: Cell already disabled');
         }
-        
+
         cell.textContent = data.symbol;
         cell.classList.add(`ttt-cell-${data.symbol.toLowerCase()}`);
         cell.classList.add('ttt-cell-disabled');
         console.log('✅ CLIENT: Updated cell', data.index, 'with', data.symbol);
-        
+
         // Add animation
         cell.style.animation = 'cellAppear 0.5s ease-out';
     } else {
@@ -3175,14 +3187,14 @@ function receiveOpponentMove(data) {
     // Now it's my turn
     currentGameState.isMyTurn = true;
     console.log('✅ CLIENT: Set isMyTurn to TRUE');
-    
+
     // Update turn indicator and enable board
     updateTurnIndicator();
 
     // Check for win/draw
     checkGameResult();
 }
-    
+
 // Check game result
 function checkGameResult() {
     const board = currentGameState.board;
@@ -3227,7 +3239,7 @@ function highlightWinningCells(pattern) {
 // Show game result
 function showGameResult(result) {
     document.getElementById('tttGameWindow').style.display = 'none';
-    
+
     const resultWindow = document.getElementById('tttResultWindow');
     const resultMessage = document.getElementById('tttResultMessage');
     const resultAnimation = document.getElementById('tttResultAnimation');
@@ -3304,17 +3316,17 @@ function createFirework(container) {
         firework.style.left = centerX + 'px';
         firework.style.top = centerY + 'px';
         firework.style.background = colors[Math.floor(Math.random() * colors.length)];
-        
+
         const angle = (Math.PI * 2 * i) / 20;
         const velocity = 50 + Math.random() * 50;
         const tx = Math.cos(angle) * velocity;
         const ty = Math.sin(angle) * velocity;
-        
+
         firework.style.setProperty('--tx', tx + 'px');
         firework.style.setProperty('--ty', ty + 'px');
-        
+
         container.appendChild(firework);
-        
+
         setTimeout(() => firework.remove(), 1000);
     }
 }
@@ -3327,7 +3339,7 @@ function createConfetti(container) {
     confetti.style.top = '-10px';
     confetti.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
     confetti.style.animationDelay = Math.random() * 0.5 + 's';
-    
+
     container.appendChild(confetti);
     setTimeout(() => confetti.remove(), 3000);
 }
@@ -3339,15 +3351,15 @@ function createStar(container) {
     star.textContent = '⭐';
     star.style.left = container.offsetWidth / 2 + 'px';
     star.style.top = container.offsetHeight / 2 + 'px';
-    
+
     const angle = Math.random() * Math.PI * 2;
     const distance = 100 + Math.random() * 150;
     const tx = Math.cos(angle) * distance;
     const ty = Math.sin(angle) * distance;
-    
+
     star.style.setProperty('--tx', tx + 'px');
     star.style.setProperty('--ty', ty + 'px');
-    
+
     container.appendChild(star);
     setTimeout(() => star.remove(), 2000);
 }
@@ -3359,7 +3371,7 @@ function createLight(container) {
     light.style.left = Math.random() * container.offsetWidth + 'px';
     light.style.top = Math.random() * container.offsetHeight + 'px';
     light.style.background = `radial-gradient(circle, ${['#ffd700', '#ff00ff', '#00ffff'][Math.floor(Math.random() * 3)]} 0%, transparent 70%)`;
-    
+
     container.appendChild(light);
     setTimeout(() => light.remove(), 1000);
 }
@@ -3396,7 +3408,7 @@ function requestReplay() {
         gameId: currentGameState.gameId,
         requesterName: currentUser
     });
-    
+
     showNotification('Replay request sent!', 'info');
     document.getElementById('tttReplayBtn').disabled = true;
     document.getElementById('tttReplayBtn').innerHTML = '<i class="fas fa-clock"></i> Waiting...';
@@ -3406,7 +3418,7 @@ function requestReplay() {
 function showReplayPopup(data) {
     const popup = document.getElementById('tttReplayPopup');
     document.getElementById('replayRequesterName').textContent = data.requesterName;
-    
+
     popup.style.display = 'block';
     popup.dataset.requesterId = data.requesterId;
     popup.dataset.gameId = data.gameId;
@@ -3422,9 +3434,9 @@ function acceptReplay() {
     const popup = document.getElementById('tttReplayPopup');
     const requesterId = popup.dataset.requesterId;
     const gameId = popup.dataset.gameId;
-    
+
     hideReplayPopup();
-    
+
     socket.emit('ttt-replay-accepted', {
         gameId: gameId,
         requesterId: requesterId
@@ -3435,14 +3447,14 @@ function acceptReplay() {
 function declineReplay() {
     const popup = document.getElementById('tttReplayPopup');
     const requesterId = popup.dataset.requesterId;
-    
+
     hideReplayPopup();
-    
+
     socket.emit('ttt-replay-declined', {
         requesterId: requesterId,
         declinerName: currentUser
     });
-    
+
     showNotification('Replay declined', 'info');
 }
 
@@ -3450,12 +3462,12 @@ function declineReplay() {
 function startReplayGame(gameData) {
     document.getElementById('tttResultWindow').style.display = 'none';
     document.getElementById('tttGameWindow').style.display = 'flex';
-    
+
     // Reset game state
     currentGameState.board = Array(9).fill(null);
     currentGameState.isMyTurn = gameData.isMyTurn;
     currentGameState.gameActive = true;
-    
+
     resetBoard();
     updateTurnIndicator();
 }
@@ -3467,7 +3479,7 @@ function exitGame() {
             gameId: currentGameState.gameId,
             playerName: currentUser
         });
-        
+
         returnToChat();
     }
 }
@@ -3490,7 +3502,7 @@ function returnToChat() {
     document.getElementById('tttResultWindow').style.display = 'none';
     document.getElementById('tttOpponentWindow').style.display = 'none';
     document.getElementById('chatScreen').style.display = 'flex';
-    
+
     // Reset game state
     currentGameState = {
         gameId: null,
@@ -3502,10 +3514,10 @@ function returnToChat() {
         gameActive: false
     };
     console.log('🎮 Game started!');
-console.log('My symbol:', currentGameState.mySymbol);
-console.log('Opponent symbol:', currentGameState.opponentSymbol);
-console.log('Is my turn:', currentGameState.isMyTurn);
-console.log('Opponent:', currentGameState.opponent.name);
+    console.log('My symbol:', currentGameState.mySymbol);
+    console.log('Opponent symbol:', currentGameState.opponentSymbol);
+    console.log('Is my turn:', currentGameState.isMyTurn);
+    console.log('Opponent:', currentGameState.opponent.name);
     // Notify server
     socket.emit('ttt-game-ended');
 }
@@ -3513,67 +3525,67 @@ console.log('Opponent:', currentGameState.opponent.name);
 // ===== SOCKET EVENTS FOR TIC-TAC-TOE =====
 
 // Socket event: Receive opponents list
-socket.on('ttt-opponents-list', function(users) {
+socket.on('ttt-opponents-list', function (users) {
     displayTTTOpponents(users);
 });
 
 // Socket event: Receive challenge
-socket.on('ttt-challenge-received', function(data) {
+socket.on('ttt-challenge-received', function (data) {
     showChallengePopup(data);
 });
 
 // Socket event: Challenge declined
-socket.on('ttt-challenge-declined', function(data) {
+socket.on('ttt-challenge-declined', function (data) {
     showNotification(`${data.declinerName} declined your challenge`, 'info');
 });
 
 // Socket event: Challenge timeout
-socket.on('ttt-challenge-timeout', function() {
+socket.on('ttt-challenge-timeout', function () {
     showNotification('Challenge expired', 'info');
 });
 
 // Socket event: Game started
-socket.on('ttt-game-started', function(data) {
+socket.on('ttt-game-started', function (data) {
     console.log('🎮 CLIENT: Game started event received!', data);
     startTTTGame(data);
 });
 
 // ✅ THIS IS THE CRITICAL ONE - Make sure it exists!
-socket.on('ttt-opponent-move', function(data) {
+socket.on('ttt-opponent-move', function (data) {
     console.log('📥 CLIENT: Opponent move received!', data);
     receiveOpponentMove(data);
 });
 
 // Socket event: Replay request received
-socket.on('ttt-replay-request-received', function(data) {
+socket.on('ttt-replay-request-received', function (data) {
     showReplayPopup(data);
 });
 
 // Socket event: Replay declined
-socket.on('ttt-replay-declined', function(data) {
+socket.on('ttt-replay-declined', function (data) {
     showNotification(`${data.declinerName} declined the replay`, 'info');
     document.getElementById('tttReplayBtn').disabled = false;
     document.getElementById('tttReplayBtn').innerHTML = '<i class="fas fa-redo"></i> Play Again';
 });
 
 // Socket event: Replay accepted
-socket.on('ttt-replay-accepted', function(data) {
+socket.on('ttt-replay-accepted', function (data) {
     startReplayGame(data);
 });
 
 // Socket event: Opponent left
-socket.on('ttt-opponent-left', function(data) {
+socket.on('ttt-opponent-left', function (data) {
     currentGameState.gameActive = false;
     showTTTLeftPopup(data);
 });
 
 // Socket event: Update user game status
-socket.on('user-game-status-updated', function(data) {
+socket.on('user-game-status-updated', function (data) {
     console.log('🎮 Game status update:', data);
 });
 
 // Socket event: Update user game status
-socket.on('user-game-status-updated', function(data) {
+socket.on('user-game-status-updated', function (data) {
     // Update user list with game status icons
     const userElements = document.querySelectorAll('.user-list-item, .ttt-opponent-item');
     userElements.forEach(element => {
@@ -3582,7 +3594,7 @@ socket.on('user-game-status-updated', function(data) {
             // Remove existing game status
             const existingStatus = element.querySelector('.user-game-status');
             if (existingStatus) existingStatus.remove();
-            
+
             // Add new game status if in game
             if (data.inGame) {
                 const statusIcon = document.createElement('i');
@@ -3612,17 +3624,17 @@ function initializeStrangerThings() {
 
     if (!bulbBtn) return;
 
-    bulbBtn.addEventListener('click', function() {
+    bulbBtn.addEventListener('click', function () {
         if (!stActive) {
             // Activate Stranger Things mode
             stActive = true;
             bulbContainer.classList.add('bulb-active', 'bulb-flickering');
-            
+
             // Show modal after brief delay
             setTimeout(() => {
                 showStrangerThingsSequence();
             }, 500);
-            
+
         } else {
             // Deactivate Stranger Things mode
             deactivateStrangerThings();
@@ -3631,7 +3643,7 @@ function initializeStrangerThings() {
 
     // Video ended event
     if (stVideo) {
-        stVideo.addEventListener('ended', function() {
+        stVideo.addEventListener('ended', function () {
             activateUpsideDown();
         });
     }
@@ -3644,7 +3656,7 @@ function showStrangerThingsSequence() {
 
     // Show modal
     stModal.classList.add('active');
-    
+
     // Show logo with fade in
     setTimeout(() => {
         stImageContainer.classList.add('show');
@@ -3668,7 +3680,7 @@ function showStrangerThingsVideo() {
 
     // Hide image
     stImageContainer.classList.remove('show');
-    
+
     // Show video
     setTimeout(() => {
         stVideoContainer.classList.add('show');
@@ -3692,10 +3704,10 @@ function activateUpsideDown() {
     // Show upside down overlay with flip effect
     setTimeout(() => {
         upsideDownOverlay.classList.add('active');
-        
+
         // Create dust particles
         createDustParticles(dustParticles);
-        
+
         // Continue creating particles periodically
         setInterval(() => {
             if (stActive) {
@@ -3707,31 +3719,31 @@ function activateUpsideDown() {
 
 function createDustParticles(container) {
     if (!container) return;
-    
+
     // Create 30 dust particles
     for (let i = 0; i < 30; i++) {
         setTimeout(() => {
             const particle = document.createElement('div');
             particle.className = 'dust-particle';
-            
+
             // Random starting position
             const startX = Math.random() * window.innerWidth;
             const startY = Math.random() * window.innerHeight;
-            
+
             particle.style.left = startX + 'px';
             particle.style.top = startY + 'px';
-            
+
             // Random movement
             const moveX = (Math.random() - 0.5) * 200;
             const moveY = (Math.random() - 0.5) * 200;
             const duration = 5 + Math.random() * 5;
-            
+
             particle.style.setProperty('--tx', moveX + 'px');
             particle.style.setProperty('--ty', moveY + 'px');
             particle.style.animationDuration = duration + 's';
-            
+
             container.appendChild(particle);
-            
+
             // Remove particle after animation
             setTimeout(() => {
                 particle.remove();
@@ -3759,7 +3771,7 @@ function deactivateStrangerThings() {
     stImageContainer.classList.remove('show');
     stVideoContainer.classList.remove('show');
     upsideDownOverlay.classList.remove('active');
-    
+
     if (stLogo) {
         stLogo.classList.remove('whip-zoom');
     }
@@ -3777,22 +3789,22 @@ function deactivateStrangerThings() {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeStrangerThings();
 });
 
 // Clean up on page unload
-window.addEventListener('beforeunload', function() {
+window.addEventListener('beforeunload', function () {
     deactivateStrangerThings();
 });
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeTicTacToe();
 });
 
 // Clean up on page unload
-window.addEventListener('beforeunload', function() {
+window.addEventListener('beforeunload', function () {
     if (currentGameState.gameActive) {
         socket.emit('ttt-player-left', {
             gameId: currentGameState.gameId,
@@ -3802,3 +3814,68 @@ window.addEventListener('beforeunload', function() {
 });
 
 console.log('✅ Tic-Tac-Toe system initialized!');
+
+// Auth Functions
+async function handleGoogleLogin() {
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        firebaseUser = user;
+
+        // Check if user exists in Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+            // User exists, login directly
+            const userData = userDoc.data();
+            currentUser = userData.username;
+            startChat();
+        } else {
+            // New user, show profile setup
+            googleLoginContainer.style.display = 'none';
+            profileSetupContainer.style.display = 'block';
+            newUsernameInput.focus();
+        }
+    } catch (error) {
+        console.error("Login Failed:", error);
+        alert("Login failed: " + error.message);
+    }
+}
+
+async function handleCreateAccount() {
+    const username = newUsernameInput.value.trim();
+    const password = newPasswordInput.value.trim();
+
+    if (username.length < 3 || password.length < 6) {
+        alert("Username must be at least 3 chars and password 6 chars.");
+        return;
+    }
+
+    try {
+        // Check if username is taken
+        const q = query(collection(db, "users"), where("username", "==", username));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            alert("Username already taken. Please choose another.");
+            return;
+        }
+
+        // Save user to Firestore
+        await setDoc(doc(db, "users", firebaseUser.uid), {
+            username: username,
+            email: firebaseUser.email,
+            password: password, // Storing password as requested (Not recommended for production)
+            createdAt: new Date(),
+            uid: firebaseUser.uid
+        });
+
+        currentUser = username;
+        startChat();
+
+    } catch (error) {
+        console.error("Account Creation Failed:", error);
+        alert("Error creating account: " + error.message);
+    }
+}

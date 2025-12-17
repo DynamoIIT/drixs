@@ -21,20 +21,33 @@ body {
     width: 100%;
     height: 100%;
     z-index: -1;
-    background: radial-gradient(circle at 50% 50%, 
-        rgba(138, 43, 226, 0.1) 0%, 
-        rgba(0, 191, 255, 0.1) 25%, 
-        rgba(255, 20, 147, 0.1) 50%, 
-        rgba(0, 255, 127, 0.1) 75%, 
-        rgba(255, 69, 0, 0.1) 100%);
+    background: radial-gradient(circle at 50% 50%,
+            rgba(138, 43, 226, 0.1) 0%,
+            rgba(0, 191, 255, 0.1) 25%,
+            rgba(255, 20, 147, 0.1) 50%,
+            rgba(0, 255, 127, 0.1) 75%,
+            rgba(255, 69, 0, 0.1) 100%);
     animation: bgPulse 8s ease-in-out infinite;
 }
 
 @keyframes bgPulse {
-    0%, 100% { filter: hue-rotate(0deg) brightness(1); }
-    25% { filter: hue-rotate(90deg) brightness(1.2); }
-    50% { filter: hue-rotate(180deg) brightness(0.8); }
-    75% { filter: hue-rotate(270deg) brightness(1.1); }
+
+    0%,
+    100% {
+        filter: hue-rotate(0deg) brightness(1);
+    }
+
+    25% {
+        filter: hue-rotate(90deg) brightness(1.2);
+    }
+
+    50% {
+        filter: hue-rotate(180deg) brightness(0.8);
+    }
+
+    75% {
+        filter: hue-rotate(270deg) brightness(1.1);
+    }
 }
 
 .floating-orbs {
@@ -96,18 +109,37 @@ body {
 }
 
 @keyframes floatOrb {
-    0% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
-    25% { transform: translate(50px, -100px) rotate(90deg); opacity: 1; }
-    50% { transform: translate(-30px, -200px) rotate(180deg); opacity: 0.5; }
-    75% { transform: translate(-80px, -50px) rotate(270deg); opacity: 0.8; }
-    100% { transform: translate(0, 0) rotate(360deg); opacity: 0.7; }
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+        opacity: 0.7;
+    }
+
+    25% {
+        transform: translate(50px, -100px) rotate(90deg);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translate(-30px, -200px) rotate(180deg);
+        opacity: 0.5;
+    }
+
+    75% {
+        transform: translate(-80px, -50px) rotate(270deg);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(360deg);
+        opacity: 0.7;
+    }
 }
 
 .grid-overlay {
     position: absolute;
     width: 100%;
     height: 100%;
-    background-image: 
+    background-image:
         linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 0, 255, 0.03) 1px, transparent 1px);
     background-size: 50px 50px;
@@ -115,8 +147,13 @@ body {
 }
 
 @keyframes gridMove {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(50px, 50px); }
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(50px, 50px);
+    }
 }
 
 /* ================= CYBERPUNK THEME SYSTEM ================= */
@@ -215,7 +252,7 @@ body {
     background: rgba(22, 33, 62, 0.6);
     border-color: var(--neon-pink);
     color: var(--neon-blue);
-    box-shadow: 
+    box-shadow:
         0 0 20px rgba(0, 255, 255, 0.3),
         inset 0 0 20px rgba(255, 0, 255, 0.1);
 }
@@ -227,7 +264,7 @@ body {
 
 [data-theme="cyberpunk"] .theme-toggle-btn:hover {
     transform: scale(1.05);
-    box-shadow: 
+    box-shadow:
         0 0 40px var(--neon-pink),
         0 0 60px rgba(0, 255, 255, 0.4),
         inset 0 0 30px rgba(255, 0, 255, 0.2);
@@ -245,7 +282,7 @@ body {
 }
 
 [data-theme="cyberpunk"] .bg-effects {
-    background: 
+    background:
         radial-gradient(circle at 20% 20%, rgba(255, 0, 255, 0.15) 0%, transparent 50%),
         radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.15) 0%, transparent 50%),
         repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.03) 2px, rgba(0, 255, 255, 0.03) 4px);
@@ -258,7 +295,7 @@ body {
 }
 
 [data-theme="cyberpunk"] .grid-overlay {
-    background-image: 
+    background-image:
         linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 0, 255, 0.1) 1px, transparent 1px);
     background-size: 30px 30px;
@@ -414,39 +451,75 @@ body {
 
 /* Animations */
 @keyframes rotateGlow {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes cyberpunkPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.05); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.05);
+    }
 }
 
 @keyframes cyberpunkBgPulse {
-    0%, 100% { filter: hue-rotate(0deg) brightness(1); }
-    50% { filter: hue-rotate(180deg) brightness(1.2); }
+
+    0%,
+    100% {
+        filter: hue-rotate(0deg) brightness(1);
+    }
+
+    50% {
+        filter: hue-rotate(180deg) brightness(1.2);
+    }
 }
 
 @keyframes cyberpunkGradient {
-    0%, 100% { background-position: 0% 50%; }
-    25% { background-position: 100% 50%; }
-    50% { background-position: 50% 100%; }
-    75% { background-position: 50% 0%; }
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    25% {
+        background-position: 100% 50%;
+    }
+
+    50% {
+        background-position: 50% 100%;
+    }
+
+    75% {
+        background-position: 50% 0%;
+    }
 }
 
 @keyframes themeActivation {
-    0% { 
-        opacity: 0; 
-        transform: scale(0.5); 
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
     }
-    50% { 
-        opacity: 1; 
-        transform: scale(1.2); 
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
     }
-    100% { 
-        opacity: 0; 
-        transform: scale(1); 
+
+    100% {
+        opacity: 0;
+        transform: scale(1);
     }
 }
 
@@ -457,24 +530,26 @@ body {
         height: 45px;
         font-size: 1.1rem;
     }
-    
+
     .theme-toggle-container {
         margin-left: 10px;
     }
 }
 
 @keyframes themeTransition {
-    0% { 
-        opacity: 0; 
-        transform: translate(-50%, -50%) scale(0.5); 
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
     }
-    50% { 
-        opacity: 1; 
-        transform: translate(-50%, -50%) scale(1.1); 
+
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
     }
-    100% { 
-        opacity: 0; 
-        transform: translate(-50%, -50%) scale(1); 
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1);
     }
 }
 
@@ -518,18 +593,27 @@ body {
     transform: translate(-50%, -50%);
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, 
-        rgba(255, 0, 150, 0.3) 0%, 
-        rgba(0, 255, 255, 0.2) 50%, 
-        transparent 70%);
+    background: radial-gradient(circle,
+            rgba(255, 0, 150, 0.3) 0%,
+            rgba(0, 255, 255, 0.2) 50%,
+            transparent 70%);
     border-radius: 50%;
     animation: logoGlow 4s ease-in-out infinite;
     z-index: -1;
 }
 
 @keyframes logoGlow {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.4; }
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0.4;
+    }
 }
 
 .main-title {
@@ -542,8 +626,8 @@ body {
 
 .title-line {
     display: block;
-    background: linear-gradient(45deg, 
-        #ff006e, #ffbe0b, #8338ec, #3a86ff, #06ffa5);
+    background: linear-gradient(45deg,
+            #ff006e, #ffbe0b, #8338ec, #3a86ff, #06ffa5);
     background-size: 300% 300%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -559,8 +643,15 @@ body {
 }
 
 @keyframes gradientShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
 }
 
 .subtitle {
@@ -575,8 +666,15 @@ body {
 }
 
 @keyframes subtitleFloat {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-5px); }
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
 }
 
 .input-section {
@@ -605,8 +703,17 @@ body {
 }
 
 @keyframes inputGlow {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50% { opacity: 0.8; transform: scale(1.02); }
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
 }
 
 #usernameInput {
@@ -669,8 +776,15 @@ body {
 }
 
 @keyframes btnBgShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
 }
 
 .btn-glow {
@@ -693,8 +807,15 @@ body {
 }
 
 @keyframes btnGlowPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 .btn-text {
@@ -767,7 +888,7 @@ body {
 
 .chat-header {
     position: relative;
-    height: 80px;
+    height: 70px;
     display: flex;
     align-items: center;
     z-index: 100;
@@ -823,8 +944,17 @@ body {
 }
 
 @keyframes logoPulse {
-    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-    50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
 }
 
 .online-counter {
@@ -866,8 +996,17 @@ body {
 }
 
 @keyframes blink {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.3; transform: scale(0.8); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
 }
 
 .counter-text {
@@ -908,6 +1047,7 @@ body {
         opacity: 0;
         transform: translateY(20px) scale(0.95);
     }
+
     100% {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -934,9 +1074,9 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(45deg, 
-        rgba(255, 255, 255, 0.05) 0%, 
-        rgba(255, 255, 255, 0.02) 100%);
+    background: linear-gradient(45deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
     border-radius: 20px;
     z-index: -1;
 }
@@ -977,17 +1117,24 @@ body {
 }
 
 .admin-message .message-bubble {
-    background: linear-gradient(45deg, 
-        rgba(255, 0, 110, 0.2), 
-        rgba(58, 134, 255, 0.2));
+    background: linear-gradient(45deg,
+            rgba(255, 0, 110, 0.2),
+            rgba(58, 134, 255, 0.2));
     border: 1px solid rgba(255, 255, 255, 0.2);
     margin: 0 auto;
     animation: adminMessageGlow 2s ease-in-out infinite;
 }
 
 @keyframes adminMessageGlow {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 110, 0.3); }
-    50% { box-shadow: 0 0 30px rgba(58, 134, 255, 0.4); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 30px rgba(58, 134, 255, 0.4);
+    }
 }
 
 .reply-preview {
@@ -1001,9 +1148,9 @@ body {
 }
 
 .ai-message {
-    background: linear-gradient(45deg, 
-        rgba(138, 43, 226, 0.2), 
-        rgba(0, 191, 255, 0.2));
+    background: linear-gradient(45deg,
+            rgba(138, 43, 226, 0.2),
+            rgba(0, 191, 255, 0.2));
     border: 1px solid rgba(138, 43, 226, 0.3);
 }
 
@@ -1036,8 +1183,15 @@ body {
 }
 
 @keyframes typingSlideIn {
-    0% { opacity: 0; transform: translateX(-20px); }
-    100% { opacity: 1; transform: translateX(0); }
+    0% {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .typing-dots {
@@ -1053,13 +1207,31 @@ body {
     animation: typingWave 1.4s ease-in-out infinite;
 }
 
-.typing-dot:nth-child(1) { animation-delay: 0s; }
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+.typing-dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
 
 @keyframes typingWave {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-    30% { transform: translateY(-8px); opacity: 1; }
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+
+    30% {
+        transform: translateY(-8px);
+        opacity: 1;
+    }
 }
 
 /* Message Input Area */
@@ -1077,9 +1249,9 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(45deg, 
-        rgba(255, 0, 110, 0.05), 
-        rgba(58, 134, 255, 0.05));
+    background: linear-gradient(45deg,
+            rgba(255, 0, 110, 0.05),
+            rgba(58, 134, 255, 0.05));
     z-index: -1;
 }
 
@@ -1094,8 +1266,15 @@ body {
 }
 
 @keyframes replySlideDown {
-    0% { opacity: 0; transform: translateY(-10px); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .input-wrapper {
@@ -1130,7 +1309,7 @@ body {
 
 #messageInput {
     width: 100%;
-    min-height: 45px;
+    min-height: 42px;
     max-height: 120px;
     padding: 12px 20px;
     background: rgba(255, 255, 255, 0.1);
@@ -1237,6 +1416,7 @@ body {
         opacity: 0;
         transform: translateX(100px);
     }
+
     100% {
         opacity: 1;
         transform: translateX(0);
@@ -1269,9 +1449,20 @@ body {
 }
 
 @keyframes notificationBurst {
-    0% { transform: scale(1) translateX(0); opacity: 1; }
-    50% { transform: scale(1.1) translateX(20px); opacity: 0.7; }
-    100% { transform: scale(0) translateX(50px); opacity: 0; }
+    0% {
+        transform: scale(1) translateX(0);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1) translateX(20px);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(0) translateX(50px);
+        opacity: 0;
+    }
 }
 
 /* Reaction Picker */
@@ -1288,8 +1479,15 @@ body {
 }
 
 @keyframes pickerSlideIn {
-    0% { opacity: 0; transform: scale(0.8) translateY(20px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .reaction-grid {
@@ -1355,8 +1553,13 @@ body {
 }
 
 @keyframes modalFadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 
 .ai-modal-content {
@@ -1373,8 +1576,15 @@ body {
 }
 
 @keyframes modalSlideIn {
-    0% { transform: scale(0.8) translateY(50px); opacity: 0; }
-    100% { transform: scale(1) translateY(0); opacity: 1; }
+    0% {
+        transform: scale(0.8) translateY(50px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
 }
 
 .ai-header {
@@ -1409,8 +1619,17 @@ body {
 }
 
 @keyframes aiPulse {
-    0%, 100% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.1); opacity: 1; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
 }
 
 .ai-close {
@@ -1447,8 +1666,15 @@ body {
 }
 
 @keyframes aiMessageSlideIn {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .ai-user-message {
@@ -1506,7 +1732,7 @@ body {
 }
 
 .spinner-ring:nth-child(2) {
-    border-right-color: #3a86ff; 
+    border-right-color: #3a86ff;
     animation-delay: 0.3s;
 }
 
@@ -1516,8 +1742,13 @@ body {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .loading-text {
@@ -1531,8 +1762,15 @@ body {
 }
 
 @keyframes loadingTextPulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
 }
 
 /* Elite Mode Styles */
@@ -1610,7 +1848,7 @@ body {
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
-.elite-input-container input:focus + .elite-input-glow {
+.elite-input-container input:focus+.elite-input-glow {
     opacity: 0.6;
 }
 
@@ -1654,8 +1892,15 @@ body {
 }
 
 @keyframes eliteBgShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
 }
 
 .elite-btn:hover:not(:disabled) .elite-btn-bg {
@@ -1889,8 +2134,15 @@ body {
 }
 
 @keyframes warnModalSlideIn {
-    0% { transform: scale(0.8) translateY(50px); opacity: 0; }
-    100% { transform: scale(1) translateY(0); opacity: 1; }
+    0% {
+        transform: scale(0.8) translateY(50px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
 }
 
 .warn-header {
@@ -1962,7 +2214,8 @@ body {
     justify-content: flex-end;
 }
 
-.warn-send-btn, .warn-cancel-btn {
+.warn-send-btn,
+.warn-cancel-btn {
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
@@ -2024,13 +2277,14 @@ body {
 
 
 @keyframes dmWindowSlideOut {
-    0% { 
-        opacity: 1; 
-        transform: translateY(0); 
+    0% {
+        opacity: 1;
+        transform: translateY(0);
     }
-    100% { 
-        opacity: 0; 
-        transform: translateY(100%); 
+
+    100% {
+        opacity: 0;
+        transform: translateY(100%);
     }
 }
 
@@ -2046,9 +2300,9 @@ body {
     justify-content: space-between;
     padding: 15px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background: linear-gradient(45deg, 
-        rgba(255, 0, 110, 0.1), 
-        rgba(58, 134, 255, 0.1));
+    background: linear-gradient(45deg,
+            rgba(255, 0, 110, 0.1),
+            rgba(58, 134, 255, 0.1));
 }
 
 .dm-user-info {
@@ -2081,7 +2335,8 @@ body {
     gap: 10px;
 }
 
-.dm-home-btn, .dm-close-btn {
+.dm-home-btn,
+.dm-close-btn {
     width: 35px;
     height: 35px;
     background: rgba(255, 255, 255, 0.1);
@@ -2095,7 +2350,8 @@ body {
     transition: all 0.3s ease;
 }
 
-.dm-home-btn:hover, .dm-close-btn:hover {
+.dm-home-btn:hover,
+.dm-close-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
 }
@@ -2503,21 +2759,21 @@ body {
 }
 
 /* Mobile Responsive for DM */
-    
-    .user-hamburger-menu {
-        width: 100%;
-        left: -100%;
-    }
-    
-    .regular-user-controls {
-        margin-right: 10px;
-    }
+
+.user-hamburger-menu {
+    width: 100%;
+    left: -100%;
 }
 
-    
-    .dm-message-bubble {
-        max-width: 85%;
-    }
+.regular-user-controls {
+    margin-right: 10px;
+}
+}
+
+
+.dm-message-bubble {
+    max-width: 85%;
+}
 }
 
 /* Responsive adjustments */
@@ -2526,7 +2782,7 @@ body {
         width: 100%;
         left: -100%;
     }
-    
+
     .user-actions {
         position: relative;
         right: auto;
@@ -2537,45 +2793,46 @@ body {
         visibility: visible;
     }
 }
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .main-title {
         font-size: 2.5rem;
     }
-    
+
     .features-preview {
         gap: 20px;
     }
-    
+
     .header-content {
         padding: 0 20px;
     }
-    
+
     .logo-text {
         font-size: 1.2rem;
     }
-    
+
     .chat-messages {
         padding: 15px;
     }
-    
+
     .message-bubble {
         max-width: 85%;
     }
-    
+
     .message-input-area {
         padding: 15px;
     }
-    
+
     .notification-container {
         right: 10px;
         top: 90px;
     }
-    
+
     .notification {
         max-width: 250px;
     }
-    
+
     .ai-modal-content {
         width: 95%;
         height: 80%;
@@ -2586,152 +2843,165 @@ body {
     .welcome-container {
         width: 95%;
     }
-    
+
     .main-title {
         font-size: 2rem;
     }
-    
+
     .subtitle {
         font-size: 1.1rem;
     }
-    
+
     .features-preview {
         gap: 15px;
     }
-    
+
     .feature-item {
         font-size: 0.8rem;
     }
-    
+
     .header-content {
         padding: 0 15px;
     }
-    
+
     .online-counter {
         padding: 8px 12px;
         font-size: 0.8rem;
     }
-    
+
     .chat-messages {
         padding: 10px;
     }
-    
+
     .message-input-area {
         padding: 10px;
     }
-    
+
     .input-wrapper {
         gap: 10px;
     }
-    
+
     .emoji-btn,
     .send-btn {
         width: 40px;
         height: 40px;
     }
 
-/* 1. Fix chat input bar at bottom */
-.message-input-area {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 200;
-}
-
-/* Make space so messages don’t hide behind input */
-.chat-messages {
-    padding-bottom: 100px; /* height of input bar */
-    overflow-y: auto;
-}
-
-/* 2. Enable scrollbar */
-html, body {
-    height: 100%;
-    overflow-y: auto;
-}
-
-/* 3. Fix welcome screen overlay issue */
-.welcome-screen {
-    z-index: 500; /* lower than hamburger */
-}
-
-/* 4. If you want hamburger always on top */
-.user-hamburger-btn, .hamburger-btn {
-    z-index: 1001;
-}
-
-
-
-
-
-
-/* Messages inside DM */
-.dm-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-}
-
-@keyframes dmWindowSlideIn {
-    0% {
-        opacity: 0;
-        transform: translateY(100%);
+    /* 1. Fix chat input bar at bottom */
+    .message-input-area {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 200;
     }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
+
+    /* Make space so messages don’t hide behind input */
+    .chat-messages {
+        padding-bottom: 100px;
+        /* height of input bar */
+        overflow-y: auto;
     }
-}
 
+    /* 2. Enable scrollbar */
+    html,
+    body {
+        height: 100%;
+        overflow-y: auto;
+    }
 
-/* Force DM windows to fullscreen like global chat */
-.dm-window {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    border: none !important;
-    background: rgba(0,0,0,0.95) !important;
-    backdrop-filter: blur(20px) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    z-index: 3000 !important;
-}
-/* Make sure typing indicator always sits just above input bar */
-.typing-indicators {
-  position: relative;
-  bottom: auto;
-  margin: 6px 12px;     /* slightly larger margin for mobile */
-  font-size: 0.9em;
-  color: gray;
-  z-index: 10;          /* ensure it's above input effects */
-}
+    /* 3. Fix welcome screen overlay issue */
+    .welcome-screen {
+        z-index: 500;
+        /* lower than hamburger */
+    }
 
-.dm-messages {
-  overflow-y: auto;   /* allow scrolling */
-  overflow-x: hidden; /* prevent sideways scroll */
-}
-
-#reactionPicker {
-  position: fixed;    /* float above all windows */
-  z-index: 9999;      /* ensure it’s always visible */
-}
+    /* 4. If you want hamburger always on top */
+    .user-hamburger-btn,
+    .hamburger-btn {
+        z-index: 1001;
+    }
 
 
 
-/* Mobile-specific adjustments */
-@media (max-width: 768px) {
-  .typing-indicators {
-    margin-bottom: 60px;   /* push it above the fixed input bar */
-  }
-}
+
+
+
+    /* Messages inside DM */
+    .dm-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+    }
+
+    @keyframes dmWindowSlideIn {
+        0% {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+
+    /* Force DM windows to fullscreen like global chat */
+    .dm-window {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border: none !important;
+        background: rgba(0, 0, 0, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        z-index: 3000 !important;
+    }
+
+    /* Make sure typing indicator always sits just above input bar */
+    .typing-indicators {
+        position: relative;
+        bottom: auto;
+        margin: 6px 12px;
+        /* slightly larger margin for mobile */
+        font-size: 0.9em;
+        color: gray;
+        z-index: 10;
+        /* ensure it's above input effects */
+    }
+
+    .dm-messages {
+        overflow-y: auto;
+        /* allow scrolling */
+        overflow-x: hidden;
+        /* prevent sideways scroll */
+    }
+
+    #reactionPicker {
+        position: fixed;
+        /* float above all windows */
+        z-index: 9999;
+        /* ensure it’s always visible */
+    }
+
+
+
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .typing-indicators {
+            margin-bottom: 60px;
+            /* push it above the fixed input bar */
+        }
+    }
 
 
 }
@@ -2802,8 +3072,15 @@ html, body {
 }
 
 @keyframes postsSlideIn {
-    0% { opacity: 0; transform: translateY(100%); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .posts-header {
@@ -2830,8 +3107,13 @@ html, body {
 }
 
 @keyframes cyberpunkBorder {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 300% 50%; }
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 300% 50%;
+    }
 }
 
 .posts-header h2 {
@@ -2975,8 +3257,15 @@ html, body {
 }
 
 @keyframes postSlideIn {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .post-item:hover {
@@ -3346,8 +3635,15 @@ html, body {
 }
 
 @keyframes commentSlideIn {
-    0% { opacity: 0; transform: translateX(-20px); }
-    100% { opacity: 1; transform: translateX(0); }
+    0% {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .comment-header {
@@ -3587,8 +3883,15 @@ html, body {
 }
 
 @keyframes dropdownSlideIn {
-    0% { opacity: 0; transform: translateY(-10px); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dropdown-item {
@@ -3635,19 +3938,19 @@ html, body {
         gap: 10px;
         padding: 15px;
     }
-    
+
     .posts-header {
         padding: 15px 20px;
     }
-    
+
     .posts-header h2 {
         font-size: 1.4rem;
     }
-    
+
     .posts-controls {
         gap: 8px;
     }
-    
+
     .posts-refresh-btn,
     .posts-home-btn,
     .posts-create-btn {
@@ -3655,36 +3958,36 @@ html, body {
         height: 35px;
         font-size: 0.9rem;
     }
-    
+
     .create-post-form {
         padding: 20px;
     }
-    
+
     #postContent {
         height: 150px;
         padding: 15px;
     }
-    
+
     .post-item {
         margin-bottom: 15px;
     }
-    
+
     .post-header {
         padding: 12px 15px;
     }
-    
+
     .post-content {
         padding: 15px;
     }
-    
+
     .post-actions {
         padding: 12px 15px;
     }
-    
+
     .post-action-group {
         gap: 15px;
     }
-    
+
     .edit-post-content {
         width: 95%;
     }
@@ -3694,28 +3997,28 @@ html, body {
     .genz-container-grid {
         padding: 10px;
     }
-    
+
     .posts-header h2 {
         font-size: 1.2rem;
     }
-    
+
     .create-post-header h2 {
         font-size: 1.3rem;
     }
-    
+
     .posts-nav-btn {
         padding: 12px 15px;
         font-size: 0.8rem;
     }
-    
+
     .post-user-name {
         font-size: 0.9rem;
     }
-    
+
     .post-text {
         font-size: 0.95rem;
     }
-    
+
     .post-action-btn {
         padding: 6px 10px;
         font-size: 0.8rem;
@@ -3762,11 +4065,22 @@ html, body {
     margin-bottom: 10px;
     color: rgba(255, 255, 255, 0.7);
 }
+
 /* Blocked message shake animation */
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    75% { transform: translateX(10px); }
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-10px);
+    }
+
+    75% {
+        transform: translateX(10px);
+    }
 }
 
 /* ================= TIC-TAC-TOE GAME SYSTEM ================= */
@@ -3851,8 +4165,15 @@ html, body {
 }
 
 @keyframes gamePulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* ===== OPPONENT SELECTION WINDOW ===== */
@@ -3870,8 +4191,15 @@ html, body {
 }
 
 @keyframes windowSlideIn {
-    0% { opacity: 0; transform: translateY(100%); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .ttt-opponent-header {
@@ -3997,8 +4325,15 @@ html, body {
 }
 
 @keyframes popupSlideDown {
-    0% { opacity: 0; transform: translateX(-50%) translateY(-100px); }
-    100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-100px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 .challenge-popup-content {
@@ -4030,8 +4365,13 @@ html, body {
 }
 
 @keyframes progressShrink {
-    0% { width: 100%; }
-    100% { width: 0%; }
+    0% {
+        width: 100%;
+    }
+
+    100% {
+        width: 0%;
+    }
 }
 
 .challenge-icon {
@@ -4043,8 +4383,15 @@ html, body {
 }
 
 @keyframes iconBounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 .challenge-text {
@@ -4205,8 +4552,17 @@ html, body {
 }
 
 @keyframes indicatorPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.05); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.05);
+    }
 }
 
 .ttt-board {
@@ -4274,8 +4630,15 @@ html, body {
 }
 
 @keyframes cellAppear {
-    0% { transform: scale(0) rotate(180deg); opacity: 0; }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0% {
+        transform: scale(0) rotate(180deg);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
 }
 
 .ttt-cell.winning-cell {
@@ -4283,11 +4646,14 @@ html, body {
 }
 
 @keyframes winningCellPulse {
-    0%, 100% { 
+
+    0%,
+    100% {
         border-color: #00ff41;
         box-shadow: 0 0 30px rgba(0, 255, 65, 0.6);
     }
-    50% { 
+
+    50% {
         border-color: #ff00ff;
         box-shadow: 0 0 50px rgba(255, 0, 255, 0.8);
     }
@@ -4329,8 +4695,15 @@ html, body {
 }
 
 @keyframes messageFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
 }
 
 .ttt-result-message.winner {
@@ -4403,6 +4776,7 @@ html, body {
         transform: translate(0, 0) scale(1);
         opacity: 1;
     }
+
     100% {
         transform: translate(var(--tx), var(--ty)) scale(0);
         opacity: 0;
@@ -4421,6 +4795,7 @@ html, body {
         transform: translateY(0) rotate(0deg);
         opacity: 1;
     }
+
     100% {
         transform: translateY(400px) rotate(720deg);
         opacity: 0;
@@ -4438,9 +4813,11 @@ html, body {
         transform: translate(0, 0) scale(0) rotate(0deg);
         opacity: 1;
     }
+
     50% {
         opacity: 1;
     }
+
     100% {
         transform: translate(var(--tx), var(--ty)) scale(2) rotate(720deg);
         opacity: 0;
@@ -4457,8 +4834,17 @@ html, body {
 }
 
 @keyframes lightPulse {
-    0%, 100% { opacity: 0; transform: scale(0); }
-    50% { opacity: 0.8; transform: scale(1.5); }
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.5);
+    }
 }
 
 .winner-banner {
@@ -4483,9 +4869,11 @@ html, body {
         opacity: 0;
         transform: translate(-50%, -50%) scale(0) rotate(-180deg);
     }
+
     60% {
         transform: translate(-50%, -50%) scale(1.2) rotate(10deg);
     }
+
     100% {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1) rotate(0deg);
@@ -4505,9 +4893,19 @@ html, body {
 }
 
 @keyframes popupBounce {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-    50% { transform: translate(-50%, -50%) scale(1.1); }
-    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 
 .replay-popup-content,
@@ -4531,8 +4929,15 @@ html, body {
 }
 
 @keyframes iconSpin {
-    0%, 100% { transform: rotate(0deg); }
-    50% { transform: rotate(180deg); }
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(180deg);
+    }
 }
 
 .replay-text,
@@ -4595,29 +5000,29 @@ html, body {
         gap: 8px;
         padding: 12px;
     }
-    
+
     .ttt-cell {
         font-size: 2.5rem;
     }
-    
+
     .ttt-player-info {
         gap: 15px;
         font-size: 0.9rem;
     }
-    
+
     .ttt-player-avatar {
         width: 35px;
         height: 35px;
     }
-    
+
     .ttt-result-message {
         font-size: 2rem;
     }
-    
+
     .winner-banner {
         font-size: 3rem;
     }
-    
+
     .challenge-popup-content,
     .replay-popup-content,
     .left-popup-content {
@@ -4633,19 +5038,19 @@ html, body {
         gap: 6px;
         padding: 10px;
     }
-    
+
     .ttt-cell {
         font-size: 2rem;
     }
-    
+
     .ttt-turn-indicator {
         font-size: 1.4rem;
     }
-    
+
     .ttt-result-message {
         font-size: 1.5rem;
     }
-    
+
     .winner-banner {
         font-size: 2rem;
     }
@@ -4759,8 +5164,15 @@ html, body {
 }
 
 @keyframes gamePulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* ===== OPPONENT SELECTION WINDOW ===== */
@@ -4778,8 +5190,15 @@ html, body {
 }
 
 @keyframes windowSlideIn {
-    0% { opacity: 0; transform: translateY(100%); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .ttt-opponent-header {
@@ -4905,8 +5324,15 @@ html, body {
 }
 
 @keyframes popupSlideDown {
-    0% { opacity: 0; transform: translateX(-50%) translateY(-100px); }
-    100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-100px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 .challenge-popup-content {
@@ -4938,8 +5364,13 @@ html, body {
 }
 
 @keyframes progressShrink {
-    0% { width: 100%; }
-    100% { width: 0%; }
+    0% {
+        width: 100%;
+    }
+
+    100% {
+        width: 0%;
+    }
 }
 
 .challenge-icon {
@@ -4951,8 +5382,15 @@ html, body {
 }
 
 @keyframes iconBounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 .challenge-text {
@@ -5113,8 +5551,17 @@ html, body {
 }
 
 @keyframes indicatorPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.05); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.05);
+    }
 }
 
 .ttt-board {
@@ -5182,8 +5629,15 @@ html, body {
 }
 
 @keyframes cellAppear {
-    0% { transform: scale(0) rotate(180deg); opacity: 0; }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0% {
+        transform: scale(0) rotate(180deg);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
 }
 
 .ttt-cell.winning-cell {
@@ -5191,11 +5645,14 @@ html, body {
 }
 
 @keyframes winningCellPulse {
-    0%, 100% { 
+
+    0%,
+    100% {
         border-color: #00ff41;
         box-shadow: 0 0 30px rgba(0, 255, 65, 0.6);
     }
-    50% { 
+
+    50% {
         border-color: #ff00ff;
         box-shadow: 0 0 50px rgba(255, 0, 255, 0.8);
     }
@@ -5237,8 +5694,15 @@ html, body {
 }
 
 @keyframes messageFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
 }
 
 .ttt-result-message.winner {
@@ -5311,6 +5775,7 @@ html, body {
         transform: translate(0, 0) scale(1);
         opacity: 1;
     }
+
     100% {
         transform: translate(var(--tx), var(--ty)) scale(0);
         opacity: 0;
@@ -5329,6 +5794,7 @@ html, body {
         transform: translateY(0) rotate(0deg);
         opacity: 1;
     }
+
     100% {
         transform: translateY(400px) rotate(720deg);
         opacity: 0;
@@ -5346,9 +5812,11 @@ html, body {
         transform: translate(0, 0) scale(0) rotate(0deg);
         opacity: 1;
     }
+
     50% {
         opacity: 1;
     }
+
     100% {
         transform: translate(var(--tx), var(--ty)) scale(2) rotate(720deg);
         opacity: 0;
@@ -5365,8 +5833,17 @@ html, body {
 }
 
 @keyframes lightPulse {
-    0%, 100% { opacity: 0; transform: scale(0); }
-    50% { opacity: 0.8; transform: scale(1.5); }
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.5);
+    }
 }
 
 .winner-banner {
@@ -5391,9 +5868,11 @@ html, body {
         opacity: 0;
         transform: translate(-50%, -50%) scale(0) rotate(-180deg);
     }
+
     60% {
         transform: translate(-50%, -50%) scale(1.2) rotate(10deg);
     }
+
     100% {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1) rotate(0deg);
@@ -5413,9 +5892,19 @@ html, body {
 }
 
 @keyframes popupBounce {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-    50% { transform: translate(-50%, -50%) scale(1.1); }
-    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 
 .replay-popup-content,
@@ -5439,8 +5928,15 @@ html, body {
 }
 
 @keyframes iconSpin {
-    0%, 100% { transform: rotate(0deg); }
-    50% { transform: rotate(180deg); }
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(180deg);
+    }
 }
 
 .replay-text,
@@ -5503,29 +5999,29 @@ html, body {
         gap: 8px;
         padding: 12px;
     }
-    
+
     .ttt-cell {
         font-size: 2.5rem;
     }
-    
+
     .ttt-player-info {
         gap: 15px;
         font-size: 0.9rem;
     }
-    
+
     .ttt-player-avatar {
         width: 35px;
         height: 35px;
     }
-    
+
     .ttt-result-message {
         font-size: 2rem;
     }
-    
+
     .winner-banner {
         font-size: 3rem;
     }
-    
+
     .challenge-popup-content,
     .replay-popup-content,
     .left-popup-content {
@@ -5541,19 +6037,19 @@ html, body {
         gap: 6px;
         padding: 10px;
     }
-    
+
     .ttt-cell {
         font-size: 2rem;
     }
-    
+
     .ttt-turn-indicator {
         font-size: 1.4rem;
     }
-    
+
     .ttt-result-message {
         font-size: 1.5rem;
     }
-    
+
     .winner-banner {
         font-size: 2rem;
     }
@@ -5618,9 +6114,11 @@ html, body {
         opacity: 0;
         transform: scale(0.5) rotate(-10deg);
     }
+
     50% {
         transform: scale(1.1) rotate(5deg);
     }
+
     100% {
         opacity: 1;
         transform: scale(1) rotate(0deg);
@@ -5629,22 +6127,22 @@ html, body {
 
 .stone-award-content {
     position: relative;
-    background: linear-gradient(135deg, 
-        rgba(255, 215, 0, 0.2) 0%, 
-        rgba(255, 105, 180, 0.2) 25%,
-        rgba(0, 206, 209, 0.2) 50%,
-        rgba(138, 43, 226, 0.2) 75%,
-        rgba(255, 215, 0, 0.2) 100%);
+    background: linear-gradient(135deg,
+            rgba(255, 215, 0, 0.2) 0%,
+            rgba(255, 105, 180, 0.2) 25%,
+            rgba(0, 206, 209, 0.2) 50%,
+            rgba(138, 43, 226, 0.2) 75%,
+            rgba(255, 215, 0, 0.2) 100%);
     background-size: 400% 400%;
     border-radius: 20px;
     padding: 40px 30px;
     text-align: center;
     overflow: hidden;
-    box-shadow: 
+    box-shadow:
         0 0 40px rgba(255, 215, 0, 0.6),
         0 0 80px rgba(255, 105, 180, 0.4),
         inset 0 0 60px rgba(255, 255, 255, 0.1);
-    animation: 
+    animation:
         rainbowGlow 3s ease-in-out infinite,
         borderGlow 2s linear infinite;
     border: 3px solid transparent;
@@ -5659,9 +6157,9 @@ html, body {
     left: -3px;
     right: -3px;
     bottom: -3px;
-    background: linear-gradient(45deg, 
-        #FFD700, #FF69B4, #00CED1, #FF1493, 
-        #7B68EE, #00FF7F, #FFD700);
+    background: linear-gradient(45deg,
+            #FFD700, #FF69B4, #00CED1, #FF1493,
+            #7B68EE, #00FF7F, #FFD700);
     background-size: 400% 400%;
     border-radius: 20px;
     z-index: -1;
@@ -5670,45 +6168,63 @@ html, body {
 }
 
 @keyframes borderRotate {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 @keyframes rainbowGlow {
-    0%, 100% { 
-        box-shadow: 
+
+    0%,
+    100% {
+        box-shadow:
             0 0 40px rgba(255, 215, 0, 0.8),
             0 0 80px rgba(255, 215, 0, 0.5);
     }
-    25% { 
-        box-shadow: 
+
+    25% {
+        box-shadow:
             0 0 40px rgba(255, 105, 180, 0.8),
             0 0 80px rgba(255, 105, 180, 0.5);
     }
-    50% { 
-        box-shadow: 
+
+    50% {
+        box-shadow:
             0 0 40px rgba(0, 206, 209, 0.8),
             0 0 80px rgba(0, 206, 209, 0.5);
     }
-    75% { 
-        box-shadow: 
+
+    75% {
+        box-shadow:
             0 0 40px rgba(138, 43, 226, 0.8),
             0 0 80px rgba(138, 43, 226, 0.5);
     }
 }
 
 @keyframes borderGlow {
-    0%, 100% { 
+
+    0%,
+    100% {
         border-color: rgba(255, 215, 0, 0.8);
     }
-    25% { 
+
+    25% {
         border-color: rgba(255, 105, 180, 0.8);
     }
-    50% { 
+
+    50% {
         border-color: rgba(0, 206, 209, 0.8);
     }
-    75% { 
+
+    75% {
         border-color: rgba(138, 43, 226, 0.8);
     }
 }
@@ -5750,10 +6266,12 @@ html, body {
         transform: scale(0) rotate(0deg);
         opacity: 1;
     }
+
     50% {
         transform: scale(1.5) rotate(180deg);
         opacity: 0.5;
     }
+
     100% {
         transform: scale(2) rotate(360deg);
         opacity: 0;
@@ -5768,18 +6286,21 @@ html, body {
     transform: translate(-50%, -50%);
     width: 200px;
     height: 200px;
-    background: radial-gradient(circle, 
-        rgba(255, 215, 0, 0.4) 0%, 
-        transparent 70%);
+    background: radial-gradient(circle,
+            rgba(255, 215, 0, 0.4) 0%,
+            transparent 70%);
     animation: glowPulse 2s ease-in-out infinite;
     pointer-events: none;
 }
 
 @keyframes glowPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translate(-50%, -50%) scale(1);
         opacity: 0.6;
     }
+
     50% {
         transform: translate(-50%, -50%) scale(1.5);
         opacity: 0.3;
@@ -5800,9 +6321,12 @@ html, body {
 }
 
 @keyframes emojiFloat {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0) rotate(-5deg);
     }
+
     50% {
         transform: translateY(-20px) rotate(5deg);
     }
@@ -5815,8 +6339,13 @@ html, body {
 }
 
 @keyframes sparkleRotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Text content */
@@ -5834,8 +6363,15 @@ html, body {
 }
 
 @keyframes textGradient {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
 }
 
 .stone-name {
@@ -5843,7 +6379,7 @@ html, body {
     font-size: 2.2rem;
     font-weight: 900;
     color: #FFD700;
-    text-shadow: 
+    text-shadow:
         0 0 20px rgba(255, 215, 0, 0.8),
         0 0 40px rgba(255, 215, 0, 0.5),
         2px 2px 4px rgba(0, 0, 0, 0.8);
@@ -5852,10 +6388,13 @@ html, body {
 }
 
 @keyframes stoneNamePulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
         filter: brightness(1);
     }
+
     50% {
         transform: scale(1.05);
         filter: brightness(1.2);
@@ -5878,15 +6417,22 @@ html, body {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: 
+    animation:
         screenshotBlink 1s ease-in-out infinite,
         textGradient 2s ease-in-out infinite;
     margin-top: 20px;
 }
 
 @keyframes screenshotBlink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* Confetti container */
@@ -5912,6 +6458,7 @@ html, body {
         transform: translateY(0) rotate(0deg);
         opacity: 1;
     }
+
     100% {
         transform: translateY(600px) rotate(720deg);
         opacity: 0;
@@ -5924,6 +6471,7 @@ html, body {
         opacity: 1;
         transform: scale(1);
     }
+
     100% {
         opacity: 0;
         transform: scale(0.8);
@@ -5936,23 +6484,23 @@ html, body {
         max-width: 90%;
         margin: 20px auto;
     }
-    
+
     .stone-award-content {
         padding: 30px 20px;
     }
-    
+
     .stone-emoji-large {
         font-size: 60px;
     }
-    
+
     .stone-award-text h2 {
         font-size: 1.4rem;
     }
-    
+
     .stone-name {
         font-size: 1.6rem;
     }
-    
+
     .stone-screenshot-prompt {
         font-size: 1rem;
     }
@@ -6033,16 +6581,47 @@ html, body {
 
 /* Bulb Flickering Animation */
 @keyframes bulbFlicker {
-    0%, 100% { opacity: 1; }
-    2% { opacity: 0.4; }
-    4% { opacity: 1; }
-    8% { opacity: 0.6; }
-    10% { opacity: 1; }
-    12% { opacity: 0.3; }
-    14% { opacity: 1; }
-    70% { opacity: 1; }
-    72% { opacity: 0.5; }
-    74% { opacity: 1; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    2% {
+        opacity: 0.4;
+    }
+
+    4% {
+        opacity: 1;
+    }
+
+    8% {
+        opacity: 0.6;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    12% {
+        opacity: 0.3;
+    }
+
+    14% {
+        opacity: 1;
+    }
+
+    70% {
+        opacity: 1;
+    }
+
+    72% {
+        opacity: 0.5;
+    }
+
+    74% {
+        opacity: 1;
+    }
 }
 
 .bulb-flickering .bulb-glass,
@@ -6119,22 +6698,27 @@ html, body {
         transform: scale(1) rotate(0deg);
         filter: blur(0px);
     }
+
     20% {
         transform: scale(0.5) rotate(-10deg);
         filter: blur(5px);
     }
+
     40% {
         transform: scale(1.5) rotate(10deg);
         filter: blur(3px);
     }
+
     60% {
         transform: scale(0.8) rotate(-5deg);
         filter: blur(8px);
     }
+
     80% {
         transform: scale(1.3) rotate(5deg);
         filter: blur(2px);
     }
+
     100% {
         transform: scale(1) rotate(0deg);
         filter: blur(0px);
@@ -6184,10 +6768,12 @@ html, body {
         transform: rotateX(0deg);
         opacity: 0;
     }
+
     50% {
         transform: rotateX(90deg);
         opacity: 0.5;
     }
+
     100% {
         transform: rotateX(180deg);
         opacity: 1;
@@ -6202,10 +6788,10 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(180deg, 
-        rgba(10, 5, 20, 0.95) 0%,
-        rgba(20, 10, 30, 0.9) 50%,
-        rgba(10, 5, 20, 0.95) 100%);
+    background: linear-gradient(180deg,
+            rgba(10, 5, 20, 0.95) 0%,
+            rgba(20, 10, 30, 0.9) 50%,
+            rgba(10, 5, 20, 0.95) 100%);
     z-index: 1;
 }
 
@@ -6232,12 +6818,15 @@ html, body {
         transform: translate(0, 0) scale(1);
         opacity: 0;
     }
+
     10% {
         opacity: 0.6;
     }
+
     90% {
         opacity: 0.6;
     }
+
     100% {
         transform: translate(var(--tx), var(--ty)) scale(0);
         opacity: 0;
@@ -6252,10 +6841,10 @@ html, body {
     transform: translateX(-50%);
     width: 300px;
     height: 300px;
-    background: radial-gradient(circle, 
-        rgba(255, 200, 0, 0.3) 0%,
-        rgba(255, 200, 0, 0.15) 30%,
-        transparent 70%);
+    background: radial-gradient(circle,
+            rgba(255, 200, 0, 0.3) 0%,
+            rgba(255, 200, 0, 0.15) 30%,
+            transparent 70%);
     border-radius: 50%;
     z-index: 3;
     animation: lightFlicker 3s infinite;
@@ -6263,24 +6852,68 @@ html, body {
 }
 
 @keyframes lightFlicker {
-    0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
-    5% { opacity: 0.3; }
-    10% { opacity: 0.9; }
-    15% { opacity: 0.4; }
-    20% { opacity: 1; }
-    25% { opacity: 0.5; }
-    30% { opacity: 0.9; transform: translateX(-50%) scale(1.1); }
-    70% { opacity: 0.8; }
-    75% { opacity: 0.4; }
-    80% { opacity: 1; }
-    85% { opacity: 0.6; }
-    90% { opacity: 0.9; }
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: translateX(-50%) scale(1);
+    }
+
+    5% {
+        opacity: 0.3;
+    }
+
+    10% {
+        opacity: 0.9;
+    }
+
+    15% {
+        opacity: 0.4;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    25% {
+        opacity: 0.5;
+    }
+
+    30% {
+        opacity: 0.9;
+        transform: translateX(-50%) scale(1.1);
+    }
+
+    70% {
+        opacity: 0.8;
+    }
+
+    75% {
+        opacity: 0.4;
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    85% {
+        opacity: 0.6;
+    }
+
+    90% {
+        opacity: 0.9;
+    }
 }
 
 /* Fade In Animation */
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes stLogoAppear {
@@ -6288,6 +6921,7 @@ html, body {
         transform: scale(0.5);
         opacity: 0;
     }
+
     100% {
         transform: scale(1);
         opacity: 1;
@@ -6300,12 +6934,12 @@ html, body {
         width: 25px;
         height: 35px;
     }
-    
+
     .st-logo {
         max-width: 90%;
         max-height: 50%;
     }
-    
+
     .flickering-light {
         width: 200px;
         height: 200px;
@@ -6317,7 +6951,7 @@ html, body {
         width: 20px;
         height: 30px;
     }
-    
+
     .bulb-glass {
         width: 16px;
         height: 20px;
@@ -6325,29 +6959,100 @@ html, body {
 }
 
 /* Hide floating orbs when upside down is active */
-.upside-down-overlay.active ~ .bg-effects .floating-orbs {
+.upside-down-overlay.active~.bg-effects .floating-orbs {
     display: none;
 }
+
 /* Cyberpunk theme overrides */
 [data-theme="cyberpunk"] .stone-award-content {
-    background: linear-gradient(135deg, 
-        rgba(255, 0, 255, 0.2) 0%, 
-        rgba(0, 255, 255, 0.2) 50%,
-        rgba(255, 0, 255, 0.2) 100%);
+    background: linear-gradient(135deg,
+            rgba(255, 0, 255, 0.2) 0%,
+            rgba(0, 255, 255, 0.2) 50%,
+            rgba(255, 0, 255, 0.2) 100%);
 }
 
 [data-theme="cyberpunk"] .stone-award-content::before {
-    background: linear-gradient(45deg, 
-        #ff00ff, #00ffff, #00ff41, #ff00ff);
+    background: linear-gradient(45deg,
+            #ff00ff, #00ffff, #00ff41, #ff00ff);
 }
+
 /* ================= ANIMATIONS ================= */
 @keyframes modalSlideIn {
     0% {
         opacity: 0;
         transform: scale(0.8) translateY(50px);
     }
+
     100% {
         opacity: 1;
         transform: scale(1) translateY(0);
+    }
+}
+/* ================= UI REFACTOR OVERRIDES ================= */
+
+/* Desktop Refinements (Overrides) */
+.message-input-area {
+    padding: 15px 25px !important;
+}
+
+#messageInput {
+    padding: 10px 20px !important;
+}
+
+/* Responsive UI Refactoring */
+@media (max-width: 768px) {
+    /* Compact Header */
+    .chat-header {
+        height: 60px !important;
+        padding: 0 10px !important;
+    }
+
+    .header-content {
+        padding: 0 10px !important;
+    }
+
+    .logo-text {
+        font-size: 1.2rem !important;
+    }
+
+    .online-counter {
+        padding: 8px 12px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .counter-text {
+        display: none !important; /* Hide Online text */
+    }
+
+    /* Compact Footer */
+    .message-input-area {
+        padding: 10px !important;
+    }
+
+    .input-wrapper {
+        gap: 8px !important;
+    }
+
+    .emoji-btn {
+        width: 35px !important;
+        height: 35px !important;
+        font-size: 1rem !important;
+    }
+
+    .send-btn {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    #messageInput {
+        min-height: 38px !important;
+        padding: 8px 15px !important;
+        font-size: 0.95rem !important;
+    }
+    
+    /* Adjust message bubble max-width for mobile */
+    .message-bubble {
+        max-width: 85% !important;
+        padding: 10px 15px !important;
     }
 }

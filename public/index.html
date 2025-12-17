@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DRIXS - Ultimate Chat Experience</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <!-- Animated Background Effects -->
     <div class="bg-effects">
@@ -34,23 +38,47 @@
                 </h1>
                 <div class="subtitle">Where Conversations Come Alive</div>
             </div>
-            
-            <div class="input-section">
-                <div class="input-container">
-                    <div class="input-glow"></div>
-                    <input type="text" id="usernameInput" placeholder="Enter your awesome name..." maxlength="20" autocomplete="off">
-                    <div class="input-border"></div>
+
+            <div class="input-section" id="authSection">
+                <!-- Google Login Button -->
+                <div id="googleLoginContainer">
+                    <button id="googleLoginBtn" class="start-btn ready">
+                        <div class="btn-bg"></div>
+                        <div class="btn-glow"></div>
+                        <span class="btn-text">
+                            <i class="fab fa-google"></i>
+                            CONTINUE WITH GOOGLE
+                        </span>
+                        <div class="btn-particles"></div>
+                    </button>
                 </div>
-                
-                <button id="startChatBtn" class="start-btn" disabled>
-                    <div class="btn-bg"></div>
-                    <div class="btn-glow"></div>
-                    <span class="btn-text">
-                        <i class="fas fa-rocket"></i>
-                        START CHAT
-                    </span>
-                    <div class="btn-particles"></div>
-                </button>
+
+                <!-- Profile Setup Form (Hidden initially) -->
+                <div id="profileSetupContainer" style="display: none;">
+                    <div class="input-container">
+                        <div class="input-glow"></div>
+                        <input type="text" id="newUsernameInput" placeholder="Create unique username..." maxlength="20"
+                            autocomplete="off">
+                        <div class="input-border"></div>
+                    </div>
+
+                    <div class="input-container">
+                        <div class="input-glow"></div>
+                        <input type="password" id="newPasswordInput" placeholder="Set a password..." maxlength="50"
+                            autocomplete="off">
+                        <div class="input-border"></div>
+                    </div>
+
+                    <button id="createAccountBtn" class="start-btn" disabled>
+                        <div class="btn-bg"></div>
+                        <div class="btn-glow"></div>
+                        <span class="btn-text">
+                            <i class="fas fa-user-plus"></i>
+                            CREATE ACCOUNT
+                        </span>
+                        <div class="btn-particles"></div>
+                    </button>
+                </div>
             </div>
 
             <div class="features-preview">
@@ -70,32 +98,34 @@
                     <i class="fas fa-pencil"></i>
                     <span>Posts</span>
                 </div>
-         <!-- Elite Mode Section -->
-            <div class="elite-mode-section">
-                <div class="elite-divider">
-                    <span class="elite-text">ENTER ELITE MODE</span>
-                </div>
-                
-                <div class="elite-login" id="eliteLogin">
-                    <div class="elite-input-container">
-                        <div class="elite-input-glow"></div>
-                        <input type="text" id="developerUsername" placeholder="Official's Username" maxlength="20" autocomplete="off">
+                <!-- Elite Mode Section -->
+                <div class="elite-mode-section">
+                    <div class="elite-divider">
+                        <span class="elite-text">ENTER ELITE MODE</span>
                     </div>
-                    
-                    <div class="elite-input-container">
-                        <div class="elite-input-glow"></div>
-                        <input type="password" id="developerPassword" placeholder="Password" maxlength="50" autocomplete="off">
+
+                    <div class="elite-login" id="eliteLogin">
+                        <div class="elite-input-container">
+                            <div class="elite-input-glow"></div>
+                            <input type="text" id="developerUsername" placeholder="Official's Username" maxlength="20"
+                                autocomplete="off">
+                        </div>
+
+                        <div class="elite-input-container">
+                            <div class="elite-input-glow"></div>
+                            <input type="password" id="developerPassword" placeholder="Password" maxlength="50"
+                                autocomplete="off">
+                        </div>
+
+                        <button id="eliteLoginBtn" class="elite-btn" disabled>
+                            <div class="elite-btn-bg"></div>
+                            <span class="elite-btn-text">
+                                <i class="fas fa-crown"></i>
+                                ACCESS GRANTED
+                            </span>
+                        </button>
                     </div>
-                    
-                    <button id="eliteLoginBtn" class="elite-btn" disabled>
-                        <div class="elite-btn-bg"></div>
-                        <span class="elite-btn-text">
-                            <i class="fas fa-crown"></i>
-                            ACCESS GRANTED
-                        </span>
-                    </button>
                 </div>
-            </div>
             </div>
         </div>
     </div>
@@ -105,66 +135,66 @@
         <!-- Chat Header -->
         <div class="chat-header">
             <div class="header-bg"></div>
-          <div class="header-content">
-    <div class="logo-mini">
-        <span class="logo-text">DRIXS</span>
-        <div class="logo-pulse"></div>
-    </div>
-    
- <!-- Add this right after the logo-mini div and before theme-toggle-container -->
-<div class="bulb-container" id="bulbContainer">
-    <button class="bulb-btn" id="bulbBtn">
-        <div class="bulb-icon">
-            <div class="bulb-glass"></div>
-            <div class="bulb-filament"></div>
-            <div class="bulb-base"></div>
-        </div>
-    </button>
-</div>
+            <div class="header-content">
+                <div class="logo-mini">
+                    <span class="logo-text">DRIXS</span>
+                    <div class="logo-pulse"></div>
+                </div>
 
-<!-- Stranger Things Modal (GLOBAL) -->
-<div class="st-modal" id="stModal">
-    <div class="st-overlay"></div>
-    <div class="st-content">
-        <div class="st-image-container" id="stImageContainer">
-            <img src="/stranger-things-logo.png" class="st-logo">
-        </div>
-        <div class="st-video-container" id="stVideoContainer">
-            <video id="stVideo" autoplay muted playsinline>
-                <source src="/st.mp4" type="video/mp4">
-            </video>
-        </div>
-    </div>
-</div>
+                <!-- Add this right after the logo-mini div and before theme-toggle-container -->
+                <div class="bulb-container" id="bulbContainer">
+                    <button class="bulb-btn" id="bulbBtn">
+                        <div class="bulb-icon">
+                            <div class="bulb-glass"></div>
+                            <div class="bulb-filament"></div>
+                            <div class="bulb-base"></div>
+                        </div>
+                    </button>
+                </div>
 
-    <!-- Regular User Hamburger Button -->
-    <div class="regular-user-controls" id="regularUserControls">
-        <button class="user-hamburger-btn" id="userHamburgerBtn">
-            <div class="hamburger-line"></div>
-            <div class="hamburger-line"></div>
-            <div class="hamburger-line"></div>
-        </button>
-    </div>
-    
-    <!-- Developer Hamburger Menu -->
-    <div class="developer-controls" id="developerControls" style="display: none;">
-        <button class="hamburger-btn" id="hamburgerBtn">
-            <div class="hamburger-line"></div>
-            <div class="hamburger-line"></div>
-            <div class="hamburger-line"></div>
-        </button>
-    </div>
-    
-   <div class="theme-toggle-container">
-    <button class="theme-toggle-btn" id="themeToggleBtn">
-        <div class="theme-btn-glow"></div>
-        <i class="fas fa-sun theme-icon" id="themeIcon"></i>
-        <div class="theme-particles"></div>
-    </button>
-</div>
-   
+                <!-- Stranger Things Modal (GLOBAL) -->
+                <div class="st-modal" id="stModal">
+                    <div class="st-overlay"></div>
+                    <div class="st-content">
+                        <div class="st-image-container" id="stImageContainer">
+                            <img src="/stranger-things-logo.png" class="st-logo">
+                        </div>
+                        <div class="st-video-container" id="stVideoContainer">
+                            <video id="stVideo" autoplay muted playsinline>
+                                <source src="/st.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                    </div>
+                </div>
 
-                
+                <!-- Regular User Hamburger Button -->
+                <div class="regular-user-controls" id="regularUserControls">
+                    <button class="user-hamburger-btn" id="userHamburgerBtn">
+                        <div class="hamburger-line"></div>
+                        <div class="hamburger-line"></div>
+                        <div class="hamburger-line"></div>
+                    </button>
+                </div>
+
+                <!-- Developer Hamburger Menu -->
+                <div class="developer-controls" id="developerControls" style="display: none;">
+                    <button class="hamburger-btn" id="hamburgerBtn">
+                        <div class="hamburger-line"></div>
+                        <div class="hamburger-line"></div>
+                        <div class="hamburger-line"></div>
+                    </button>
+                </div>
+
+                <div class="theme-toggle-container">
+                    <button class="theme-toggle-btn" id="themeToggleBtn">
+                        <div class="theme-btn-glow"></div>
+                        <i class="fas fa-sun theme-icon" id="themeIcon"></i>
+                        <div class="theme-particles"></div>
+                    </button>
+                </div>
+
+
+
                 <div class="online-counter">
                     <div class="counter-bg"></div>
                     <div class="online-indicator">
@@ -188,17 +218,18 @@
         <div class="message-input-area">
             <div class="input-bg"></div>
             <div class="message-reply-preview" id="replyPreview"></div>
-            
+
             <div class="input-wrapper">
                 <div class="emoji-btn" id="emojiBtn">
                     <i class="fas fa-smile"></i>
                 </div>
-                
+
                 <div class="message-input-container">
-                    <textarea id="messageInput" placeholder="Type your message... (Use /ai for AI chat)" rows="1" maxlength="500"></textarea>
+                    <textarea id="messageInput" placeholder="Type your message... (Use /ai for AI chat)" rows="1"
+                        maxlength="500"></textarea>
                     <div class="input-effects"></div>
                 </div>
-                
+
                 <button id="sendBtn" class="send-btn">
                     <div class="send-bg"></div>
                     <i class="fas fa-paper-plane"></i>
@@ -259,7 +290,7 @@
         </div>
     </div>
 
-<!-- Developer Panel -->
+    <!-- Developer Panel -->
     <div class="developer-panel" id="developerPanel">
         <div class="panel-content">
             <div class="panel-header">
@@ -273,339 +304,340 @@
             </div>
         </div>
     </div>
- 
-<!-- DM Windows Container -->
-<div class="dm-windows-container" id="dmWindowsContainer">
-    <!-- DM windows will be dynamically created here -->
-</div>
 
-<!-- REPLACE the existing Regular User Hamburger Menu section (around line 190-210) with this: -->
+    <!-- DM Windows Container -->
+    <div class="dm-windows-container" id="dmWindowsContainer">
+        <!-- DM windows will be dynamically created here -->
+    </div>
 
-<!-- Regular User Hamburger Menu - Updated Structure -->
-<div class="user-hamburger-menu" id="userHamburgerMenu">
-    <div class="hamburger-content">
-        <div class="hamburger-header">
-            <h3><i class="fas fa-bars"></i> DRIXS</h3>
-            <button class="hamburger-close" id="userHamburgerClose">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-       <!-- Gen-Z Style Container Grid - UPDATED WITH GAMES -->
-<div class="genz-container-grid">
-    <div class="genz-container" id="onlineUsersContainer">
-        <div class="genz-header">
-            <i class="fas fa-users"></i>
-            <span>ONLINE USERS</span>
-        </div>
-        <div class="users-list-container" id="usersListContainer">
-            <!-- Users will be populated here -->
-        </div>
-    </div>
-    
-    <div class="genz-container" id="gamesContainer">
-        <div class="genz-header">
-            <i class="fas fa-gamepad"></i>
-            <span>GAMES</span>
-        </div>
-        <div class="games-list">
-            <div class="game-item" id="ticTacToeGame">
-                <div class="game-icon">
-                    <i class="fas fa-times"></i>
-                    <i class="fas fa-circle"></i>
-                </div>
-                <div class="game-info">
-                    <div class="game-name">Tic-Tac-Toe</div>
-                    <div class="game-desc">Classic X-O Battle</div>
-                </div>
-                <div class="game-play-btn">
-                    <i class="fas fa-play"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="genz-container" id="postsContainer">
-        <div class="genz-header">
-            <i class="fas fa-newspaper"></i>
-            <span>POSTS</span>
-        </div>
-        <div class="posts-preview">
-            <p>Discover what's trending</p>
-        </div>
-    </div>
-</div>
+    <!-- REPLACE the existing Regular User Hamburger Menu section (around line 190-210) with this: -->
 
-<!-- Posts Window -->
-<div class="posts-window" id="postsWindow">
-    <div class="posts-header">
-        <button class="posts-back-btn" id="postsBackBtn">
-            <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2>POSTS</h2>
-        <div class="posts-controls">
-            <button class="posts-refresh-btn" id="postsRefreshBtn" title="Refresh">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-            <button class="posts-home-btn" id="postsHomeBtn" title="Home">
-                <i class="fas fa-home"></i>
-            </button>
-            <button class="posts-create-btn" id="postsCreateBtn" title="Create Post">
-                <i class="fas fa-pencil-alt"></i>
-            </button>
-        </div>
-    </div>
-    
-    <!-- Posts Navigation -->
-    <div class="posts-navigation">
-        <button class="posts-nav-btn active" id="featuredPostsBtn">FEATURED</button>
-        <button class="posts-nav-btn" id="myPostsBtn">MY POSTS</button>
-    </div>
-    
-    <!-- Posts Feed -->
-    <div class="posts-feed" id="postsFeed">
-        <!-- Posts will be loaded here -->
-    </div>
-</div>
-
-<!-- Create Post Window -->
-<div class="create-post-window" id="createPostWindow">
-    <div class="create-post-header">
-        <button class="create-back-btn" id="createBackBtn">
-            <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2>CREATE POST</h2>
-    </div>
-    
-    <div class="create-post-form">
-        <textarea id="postContent" placeholder="What's on your mind..." maxlength="500"></textarea>
-        
-        <div class="post-image-section">
-            <label for="postImageInput" class="image-upload-btn">
-                <i class="fas fa-image"></i>
-                <span>Attach Image</span>
-            </label>
-            <input type="file" id="postImageInput" accept="image/*" style="display: none;">
-            <div class="image-preview" id="imagePreview"></div>
-        </div>
-        
-        <div class="create-post-actions">
-            <button class="cancel-post-btn" id="cancelPostBtn">CANCEL</button>
-            <button class="publish-post-btn" id="publishPostBtn">PUBLISH</button>
-        </div>
-    </div>
-</div>
-
-<!-- Comments Window -->
-<div class="comments-window" id="commentsWindow">
-    <div class="comments-header">
-        <button class="comments-back-btn" id="commentsBackBtn">
-            <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2>COMMENTS</h2>
-    </div>
-    
-    <!-- Original Post Display -->
-    <div class="original-post" id="originalPost">
-        <!-- Original post will be displayed here -->
-    </div>
-    
-    <!-- Comments Section -->
-    <div class="comments-section" id="commentsSection">
-        <!-- Comments will be loaded here -->
-    </div>
-    
-    <!-- Add Comment -->
-    <div class="add-comment-section">
-        <div class="comment-input-wrapper">
-            <textarea id="commentInput" placeholder="Add a comment..." rows="2" maxlength="300"></textarea>
-            <button class="send-comment-btn" id="sendCommentBtn">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Edit Post Modal -->
-<div class="edit-post-modal" id="editPostModal">
-    <div class="edit-post-content">
-        <div class="edit-post-header">
-            <h3>Edit Post</h3>
-            <button class="edit-close-btn" id="editCloseBtn">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="edit-post-body">
-            <textarea id="editPostContent" maxlength="500"></textarea>
-            <div class="edit-post-actions">
-                <button class="edit-cancel-btn" id="editCancelBtn">Cancel</button>
-                <button class="edit-save-btn" id="editSaveBtn">Save Changes</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-    <!-- Warn Modal -->
-    <div class="warn-modal" id="warnModal">
-        <div class="warn-modal-content">
-            <div class="warn-header">
-                <h3><i class="fas fa-exclamation-triangle"></i> Warning</h3>
-                <button class="warn-close" id="warnCloseBtn">
+    <!-- Regular User Hamburger Menu - Updated Structure -->
+    <div class="user-hamburger-menu" id="userHamburgerMenu">
+        <div class="hamburger-content">
+            <div class="hamburger-header">
+                <h3><i class="fas fa-bars"></i> DRIXS</h3>
+                <button class="hamburger-close" id="userHamburgerClose">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="warn-body">
-                <p>Warning user: <span id="warnUserName"></span></p>
-                <textarea id="warnReason" placeholder="Enter warning reason..." maxlength="200"></textarea>
-                <div class="warn-actions">
-                    <button id="sendWarnBtn" class="warn-send-btn">Send Warning</button>
-                    <button id="cancelWarnBtn" class="warn-cancel-btn">Cancel</button>
+
+            <!-- Gen-Z Style Container Grid - UPDATED WITH GAMES -->
+            <div class="genz-container-grid">
+                <div class="genz-container" id="onlineUsersContainer">
+                    <div class="genz-header">
+                        <i class="fas fa-users"></i>
+                        <span>ONLINE USERS</span>
+                    </div>
+                    <div class="users-list-container" id="usersListContainer">
+                        <!-- Users will be populated here -->
+                    </div>
+                </div>
+
+                <div class="genz-container" id="gamesContainer">
+                    <div class="genz-header">
+                        <i class="fas fa-gamepad"></i>
+                        <span>GAMES</span>
+                    </div>
+                    <div class="games-list">
+                        <div class="game-item" id="ticTacToeGame">
+                            <div class="game-icon">
+                                <i class="fas fa-times"></i>
+                                <i class="fas fa-circle"></i>
+                            </div>
+                            <div class="game-info">
+                                <div class="game-name">Tic-Tac-Toe</div>
+                                <div class="game-desc">Classic X-O Battle</div>
+                            </div>
+                            <div class="game-play-btn">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="genz-container" id="postsContainer">
+                    <div class="genz-header">
+                        <i class="fas fa-newspaper"></i>
+                        <span>POSTS</span>
+                    </div>
+                    <div class="posts-preview">
+                        <p>Discover what's trending</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Socket.IO -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="script.js"></script>
-    <!-- Phonk audio fallback (optional, if needed for some browsers) -->
-<audio id="phonkAudio" src="phonk.mp3" preload="auto"></audio>
-<!-- TIC-TAC-TOE GAME WINDOWS -->
+            <!-- Posts Window -->
+            <div class="posts-window" id="postsWindow">
+                <div class="posts-header">
+                    <button class="posts-back-btn" id="postsBackBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2>POSTS</h2>
+                    <div class="posts-controls">
+                        <button class="posts-refresh-btn" id="postsRefreshBtn" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="posts-home-btn" id="postsHomeBtn" title="Home">
+                            <i class="fas fa-home"></i>
+                        </button>
+                        <button class="posts-create-btn" id="postsCreateBtn" title="Create Post">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                    </div>
+                </div>
 
-<!-- Opponent Selection Window -->
-<div class="ttt-opponent-window" id="tttOpponentWindow">
-    <div class="ttt-opponent-header">
-        <button class="ttt-back-btn" id="tttOpponentBackBtn">
-            <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2>Choose Your Opponent</h2>
-    </div>
-    <div class="ttt-opponent-list" id="tttOpponentList">
-        <!-- Opponents will be loaded here -->
-    </div>
-</div>
+                <!-- Posts Navigation -->
+                <div class="posts-navigation">
+                    <button class="posts-nav-btn active" id="featuredPostsBtn">FEATURED</button>
+                    <button class="posts-nav-btn" id="myPostsBtn">MY POSTS</button>
+                </div>
 
-<!-- Challenge Popup (appears for challenged user) -->
-<div class="ttt-challenge-popup" id="tttChallengePopup">
-    <div class="challenge-popup-content">
-        <div class="challenge-progress-bar">
-            <div class="challenge-progress-fill"></div>
-        </div>
-        <div class="challenge-icon">
-            <i class="fas fa-gamepad"></i>
-        </div>
-        <div class="challenge-text">
-            <strong id="challengerName">Player</strong> challenged you for X-O!
-        </div>
-        <div class="challenge-actions">
-            <button class="challenge-accept-btn" id="challengeAcceptBtn">
-                <i class="fas fa-check"></i> Accept
-            </button>
-            <button class="challenge-decline-btn" id="challengeDeclineBtn">
-                <i class="fas fa-times"></i> Decline
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Tic-Tac-Toe Game Window -->
-<div class="ttt-game-window" id="tttGameWindow">
-    <div class="ttt-game-header">
-        <div class="ttt-player-info">
-            <div class="ttt-player">
-                <div class="ttt-player-avatar" id="tttPlayer1Avatar"></div>
-                <div class="ttt-player-name" id="tttPlayer1Name">Player 1</div>
-                <div class="ttt-player-symbol" id="tttPlayer1Symbol">X</div>
+                <!-- Posts Feed -->
+                <div class="posts-feed" id="postsFeed">
+                    <!-- Posts will be loaded here -->
+                </div>
             </div>
-            <div class="ttt-vs">VS</div>
-            <div class="ttt-player">
-                <div class="ttt-player-avatar" id="tttPlayer2Avatar"></div>
-                <div class="ttt-player-name" id="tttPlayer2Name">Player 2</div>
-                <div class="ttt-player-symbol" id="tttPlayer2Symbol">O</div>
+
+            <!-- Create Post Window -->
+            <div class="create-post-window" id="createPostWindow">
+                <div class="create-post-header">
+                    <button class="create-back-btn" id="createBackBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2>CREATE POST</h2>
+                </div>
+
+                <div class="create-post-form">
+                    <textarea id="postContent" placeholder="What's on your mind..." maxlength="500"></textarea>
+
+                    <div class="post-image-section">
+                        <label for="postImageInput" class="image-upload-btn">
+                            <i class="fas fa-image"></i>
+                            <span>Attach Image</span>
+                        </label>
+                        <input type="file" id="postImageInput" accept="image/*" style="display: none;">
+                        <div class="image-preview" id="imagePreview"></div>
+                    </div>
+
+                    <div class="create-post-actions">
+                        <button class="cancel-post-btn" id="cancelPostBtn">CANCEL</button>
+                        <button class="publish-post-btn" id="publishPostBtn">PUBLISH</button>
+                    </div>
+                </div>
             </div>
-        </div>
-        <button class="ttt-exit-btn" id="tttExitBtn">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    
-    <div class="ttt-game-content">
-        <div class="ttt-turn-indicator" id="tttTurnIndicator">
-            Your Turn!
-        </div>
-        
-        <div class="ttt-board" id="tttBoard">
-            <div class="ttt-cell" data-index="0"></div>
-            <div class="ttt-cell" data-index="1"></div>
-            <div class="ttt-cell" data-index="2"></div>
-            <div class="ttt-cell" data-index="3"></div>
-            <div class="ttt-cell" data-index="4"></div>
-            <div class="ttt-cell" data-index="5"></div>
-            <div class="ttt-cell" data-index="6"></div>
-            <div class="ttt-cell" data-index="7"></div>
-            <div class="ttt-cell" data-index="8"></div>
-        </div>
-    </div>
-</div>
 
-<!-- Game Result Window -->
-<div class="ttt-result-window" id="tttResultWindow">
-    <div class="ttt-result-content">
-        <div class="ttt-result-animation" id="tttResultAnimation"></div>
-        <div class="ttt-result-message" id="tttResultMessage">You Won!</div>
-        <div class="ttt-result-actions">
-            <button class="ttt-replay-btn" id="tttReplayBtn">
-                <i class="fas fa-redo"></i> Play Again
-            </button>
-            <button class="ttt-home-btn" id="tttResultHomeBtn">
-                <i class="fas fa-home"></i> Home
-            </button>
-        </div>
-    </div>
-</div>
+            <!-- Comments Window -->
+            <div class="comments-window" id="commentsWindow">
+                <div class="comments-header">
+                    <button class="comments-back-btn" id="commentsBackBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2>COMMENTS</h2>
+                </div>
 
-<!-- Replay Request Popup -->
-<div class="ttt-replay-popup" id="tttReplayPopup">
-    <div class="replay-popup-content">
-        <div class="replay-icon">
-            <i class="fas fa-redo"></i>
-        </div>
-        <div class="replay-text">
-            <strong id="replayRequesterName">Player</strong> wants another round!
-        </div>
-        <div class="replay-actions">
-            <button class="replay-accept-btn" id="replayAcceptBtn">
-                <i class="fas fa-check"></i> Accept
-            </button>
-            <button class="replay-decline-btn" id="replayDeclineBtn">
-                <i class="fas fa-times"></i> Decline
-            </button>
-        </div>
-    </div>
-</div>
+                <!-- Original Post Display -->
+                <div class="original-post" id="originalPost">
+                    <!-- Original post will be displayed here -->
+                </div>
 
-<!-- Opponent Left Popup -->
-<div class="ttt-left-popup" id="tttLeftPopup">
-    <div class="left-popup-content">
-        <div class="left-icon">
-            <i class="fas fa-door-open"></i>
-        </div>
-        <div class="left-text">
-            <strong id="leftPlayerName">Player</strong> has left the game
-        </div>
-        <button class="left-ok-btn" id="leftOkBtn">
-            <i class="fas fa-check"></i> OK
-        </button>
-    </div>
-</div>
+                <!-- Comments Section -->
+                <div class="comments-section" id="commentsSection">
+                    <!-- Comments will be loaded here -->
+                </div>
+
+                <!-- Add Comment -->
+                <div class="add-comment-section">
+                    <div class="comment-input-wrapper">
+                        <textarea id="commentInput" placeholder="Add a comment..." rows="2" maxlength="300"></textarea>
+                        <button class="send-comment-btn" id="sendCommentBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Post Modal -->
+            <div class="edit-post-modal" id="editPostModal">
+                <div class="edit-post-content">
+                    <div class="edit-post-header">
+                        <h3>Edit Post</h3>
+                        <button class="edit-close-btn" id="editCloseBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="edit-post-body">
+                        <textarea id="editPostContent" maxlength="500"></textarea>
+                        <div class="edit-post-actions">
+                            <button class="edit-cancel-btn" id="editCancelBtn">Cancel</button>
+                            <button class="edit-save-btn" id="editSaveBtn">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warn Modal -->
+            <div class="warn-modal" id="warnModal">
+                <div class="warn-modal-content">
+                    <div class="warn-header">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Warning</h3>
+                        <button class="warn-close" id="warnCloseBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="warn-body">
+                        <p>Warning user: <span id="warnUserName"></span></p>
+                        <textarea id="warnReason" placeholder="Enter warning reason..." maxlength="200"></textarea>
+                        <div class="warn-actions">
+                            <button id="sendWarnBtn" class="warn-send-btn">Send Warning</button>
+                            <button id="cancelWarnBtn" class="warn-cancel-btn">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Socket.IO -->
+            <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+            <script type="module" src="script.js"></script>
+            <!-- Phonk audio fallback (optional, if needed for some browsers) -->
+            <audio id="phonkAudio" src="phonk.mp3" preload="auto"></audio>
+            <!-- TIC-TAC-TOE GAME WINDOWS -->
+
+            <!-- Opponent Selection Window -->
+            <div class="ttt-opponent-window" id="tttOpponentWindow">
+                <div class="ttt-opponent-header">
+                    <button class="ttt-back-btn" id="tttOpponentBackBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2>Choose Your Opponent</h2>
+                </div>
+                <div class="ttt-opponent-list" id="tttOpponentList">
+                    <!-- Opponents will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Challenge Popup (appears for challenged user) -->
+            <div class="ttt-challenge-popup" id="tttChallengePopup">
+                <div class="challenge-popup-content">
+                    <div class="challenge-progress-bar">
+                        <div class="challenge-progress-fill"></div>
+                    </div>
+                    <div class="challenge-icon">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <div class="challenge-text">
+                        <strong id="challengerName">Player</strong> challenged you for X-O!
+                    </div>
+                    <div class="challenge-actions">
+                        <button class="challenge-accept-btn" id="challengeAcceptBtn">
+                            <i class="fas fa-check"></i> Accept
+                        </button>
+                        <button class="challenge-decline-btn" id="challengeDeclineBtn">
+                            <i class="fas fa-times"></i> Decline
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tic-Tac-Toe Game Window -->
+            <div class="ttt-game-window" id="tttGameWindow">
+                <div class="ttt-game-header">
+                    <div class="ttt-player-info">
+                        <div class="ttt-player">
+                            <div class="ttt-player-avatar" id="tttPlayer1Avatar"></div>
+                            <div class="ttt-player-name" id="tttPlayer1Name">Player 1</div>
+                            <div class="ttt-player-symbol" id="tttPlayer1Symbol">X</div>
+                        </div>
+                        <div class="ttt-vs">VS</div>
+                        <div class="ttt-player">
+                            <div class="ttt-player-avatar" id="tttPlayer2Avatar"></div>
+                            <div class="ttt-player-name" id="tttPlayer2Name">Player 2</div>
+                            <div class="ttt-player-symbol" id="tttPlayer2Symbol">O</div>
+                        </div>
+                    </div>
+                    <button class="ttt-exit-btn" id="tttExitBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="ttt-game-content">
+                    <div class="ttt-turn-indicator" id="tttTurnIndicator">
+                        Your Turn!
+                    </div>
+
+                    <div class="ttt-board" id="tttBoard">
+                        <div class="ttt-cell" data-index="0"></div>
+                        <div class="ttt-cell" data-index="1"></div>
+                        <div class="ttt-cell" data-index="2"></div>
+                        <div class="ttt-cell" data-index="3"></div>
+                        <div class="ttt-cell" data-index="4"></div>
+                        <div class="ttt-cell" data-index="5"></div>
+                        <div class="ttt-cell" data-index="6"></div>
+                        <div class="ttt-cell" data-index="7"></div>
+                        <div class="ttt-cell" data-index="8"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Result Window -->
+            <div class="ttt-result-window" id="tttResultWindow">
+                <div class="ttt-result-content">
+                    <div class="ttt-result-animation" id="tttResultAnimation"></div>
+                    <div class="ttt-result-message" id="tttResultMessage">You Won!</div>
+                    <div class="ttt-result-actions">
+                        <button class="ttt-replay-btn" id="tttReplayBtn">
+                            <i class="fas fa-redo"></i> Play Again
+                        </button>
+                        <button class="ttt-home-btn" id="tttResultHomeBtn">
+                            <i class="fas fa-home"></i> Home
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Replay Request Popup -->
+            <div class="ttt-replay-popup" id="tttReplayPopup">
+                <div class="replay-popup-content">
+                    <div class="replay-icon">
+                        <i class="fas fa-redo"></i>
+                    </div>
+                    <div class="replay-text">
+                        <strong id="replayRequesterName">Player</strong> wants another round!
+                    </div>
+                    <div class="replay-actions">
+                        <button class="replay-accept-btn" id="replayAcceptBtn">
+                            <i class="fas fa-check"></i> Accept
+                        </button>
+                        <button class="replay-decline-btn" id="replayDeclineBtn">
+                            <i class="fas fa-times"></i> Decline
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Opponent Left Popup -->
+            <div class="ttt-left-popup" id="tttLeftPopup">
+                <div class="left-popup-content">
+                    <div class="left-icon">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <div class="left-text">
+                        <strong id="leftPlayerName">Player</strong> has left the game
+                    </div>
+                    <button class="left-ok-btn" id="leftOkBtn">
+                        <i class="fas fa-check"></i> OK
+                    </button>
+                </div>
+            </div>
 
 
-<!-- Upside Down Overlay -->
-<div class="upside-down-overlay" id="upsideDownOverlay">
-    <div class="dust-particles" id="dustParticles"></div>
-    <div class="flickering-light"></div>
-</div>
+            <!-- Upside Down Overlay -->
+            <div class="upside-down-overlay" id="upsideDownOverlay">
+                <div class="dust-particles" id="dustParticles"></div>
+                <div class="flickering-light"></div>
+            </div>
 
 
 </body>
+
 </html>
