@@ -40,16 +40,63 @@
             </div>
 
             <div class="input-section" id="authSection">
-                <!-- Google Login Button -->
-                <div id="googleLoginContainer">
-                    <button id="googleLoginBtn" class="start-btn ready">
+                <!-- Auth Options Container -->
+                <div id="authOptionsContainer">
+                    <!-- Standard Login Button -->
+                    <div id="standardLoginContainer">
+                        <button id="showLoginBtn" class="start-btn ready"
+                            style="background: transparent; margin-bottom: 20px;">
+                            <div class="btn-bg" style="background: linear-gradient(45deg, #00C9FF, #92FE9D);"></div>
+                            <div class="btn-glow" style="background: linear-gradient(45deg, #00C9FF, #92FE9D);"></div>
+                            <span class="btn-text">
+                                <i class="fas fa-sign-in-alt"></i>
+                                LOG IN
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- Google Login Button -->
+                    <div id="googleLoginContainer">
+                        <button id="googleLoginBtn" class="start-btn ready">
+                            <div class="btn-bg"></div>
+                            <div class="btn-glow"></div>
+                            <span class="btn-text">
+                                <i class="fab fa-google"></i>
+                                CONTINUE WITH GOOGLE
+                            </span>
+                            <div class="btn-particles"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Standard Login Form (Hidden initially) -->
+                <div id="loginFormContainer" style="display: none;">
+                    <div class="input-container">
+                        <div class="input-glow"></div>
+                        <input type="text" id="loginUsernameInput" placeholder="Username" maxlength="20"
+                            autocomplete="off">
+                        <div class="input-border"></div>
+                    </div>
+
+                    <div class="input-container">
+                        <div class="input-glow"></div>
+                        <input type="password" id="loginPasswordInput" placeholder="Password" maxlength="50"
+                            autocomplete="off">
+                        <div class="input-border"></div>
+                    </div>
+
+                    <button id="loginSubmitBtn" class="start-btn" disabled>
                         <div class="btn-bg"></div>
                         <div class="btn-glow"></div>
                         <span class="btn-text">
-                            <i class="fab fa-google"></i>
-                            CONTINUE WITH GOOGLE
+                            <i class="fas fa-arrow-right"></i>
+                            LOG IN
                         </span>
-                        <div class="btn-particles"></div>
+                    </button>
+
+                    <button id="backToOptionsBtn" class="text-btn"
+                        style="background: none; border: none; color: rgba(255,255,255,0.6); margin-top: 15px; cursor: pointer; font-family: 'Rajdhani', sans-serif;">
+                        <i class="fas fa-arrow-left"></i> Back
                     </button>
                 </div>
 
@@ -210,6 +257,11 @@
         <div class="chat-messages" id="chatMessages">
             <!-- Messages will be inserted here dynamically -->
         </div>
+
+        <!-- Scroll to Bottom Button -->
+        <button class="scroll-to-bottom-btn" id="scrollToBottomBtn" style="display: none;">
+            <i class="fas fa-chevron-down"></i>
+        </button>
 
         <!-- Typing Indicators -->
         <div class="typing-indicators" id="typingIndicators"></div>

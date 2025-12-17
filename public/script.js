@@ -1,8 +1,8 @@
-// Socket.IO Connection
+﻿// Socket.IO Connection
 const socket = io();
 
 // Firebase Imports
-import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, doc, getDoc, setDoc, collection, query, where, getDocs } from './firebase-config.js';
+import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, doc, getDoc, setDoc, collection, query, where, getDocs, onSnapshot } from './firebase-config.js';
 
 // DOM Elements
 const welcomeScreen = document.getElementById('welcomeScreen');
@@ -241,7 +241,53 @@ document.head.appendChild(style);
 function initializeEventListeners() {
     // Welcome Screen Events
     // Auth Events
+    // Auth Events
     if (googleLoginBtn) googleLoginBtn.addEventListener('click', handleGoogleLogin);
+
+    // Standard Login Events
+    const showLoginBtn = document.getElementById('showLoginBtn');
+    const authOptionsContainer = document.getElementById('authOptionsContainer');
+    const loginFormContainer = document.getElementById('loginFormContainer');
+    const backToOptionsBtn = document.getElementById('backToOptionsBtn');
+    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+    const loginUsernameInput = document.getElementById('loginUsernameInput');
+    const loginPasswordInput = document.getElementById('loginPasswordInput');
+
+    if (showLoginBtn) {
+        showLoginBtn.addEventListener('click', () => {
+            authOptionsContainer.style.display = 'none';
+            loginFormContainer.style.display = 'block';
+            loginUsernameInput.focus();
+        });
+    }
+
+    if (backToOptionsBtn) {
+        backToOptionsBtn.addEventListener('click', () => {
+            loginFormContainer.style.display = 'none';
+            authOptionsContainer.style.display = 'block';
+        });
+    }
+
+    if (loginUsernameInput && loginPasswordInput && loginSubmitBtn) {
+        const checkLoginInputs = () => {
+            const u = loginUsernameInput.value.trim();
+            const p = loginPasswordInput.value.trim();
+            loginSubmitBtn.disabled = !(u.length >= 3 && p.length >= 6);
+            if (!loginSubmitBtn.disabled) loginSubmitBtn.classList.add('ready');
+            else loginSubmitBtn.classList.remove('ready');
+        };
+
+        loginUsernameInput.addEventListener('input', checkLoginInputs);
+        loginPasswordInput.addEventListener('input', checkLoginInputs);
+
+        loginSubmitBtn.addEventListener('click', handleStandardLogin);
+
+        loginPasswordInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && !loginSubmitBtn.disabled) {
+                handleStandardLogin();
+            }
+        });
+    }
 
     if (newUsernameInput && newPasswordInput && createAccountBtn) {
         const checkInputs = () => {
@@ -1266,8 +1312,55 @@ countStyle.textContent = `
 `;
 document.head.appendChild(countStyle);
 
-function scrollToBottom() {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+// Smart Scroll System
+let userScrolledUp = false;
+const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+function isUserAtBottom() {
+    const threshold = 100; // pixels from bottom
+    return chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < threshold;
+}
+
+function scrollToBottom(force = false) {
+    if (force || !userScrolledUp) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        if (scrollToBottomBtn) {
+            scrollToBottomBtn.style.display = 'none';
+            scrollToBottomBtn.classList.remove('new-message');
+        }
+    } else {
+        // User is scrolled up, show button with animation
+        if (scrollToBottomBtn) {
+            scrollToBottomBtn.style.display = 'flex';
+            scrollToBottomBtn.classList.add('new-message');
+        }
+    }
+}
+
+// Monitor scroll position
+if (chatMessages) {
+    chatMessages.addEventListener('scroll', () => {
+        userScrolledUp = !isUserAtBottom();
+
+        if (userScrolledUp) {
+            if (scrollToBottomBtn) {
+                scrollToBottomBtn.style.display = 'flex';
+            }
+        } else {
+            if (scrollToBottomBtn) {
+                scrollToBottomBtn.style.display = 'none';
+                scrollToBottomBtn.classList.remove('new-message');
+            }
+        }
+    });
+}
+
+// Scroll to bottom button click handler
+if (scrollToBottomBtn) {
+    scrollToBottomBtn.addEventListener('click', () => {
+        scrollToBottom(true);
+        userScrolledUp = false;
+    });
 }
 
 function formatTime(timestamp) {
@@ -3827,9 +3920,17 @@ async function handleGoogleLogin() {
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
-            // User exists, login directly
+            // User exists, check ban status
             const userData = userDoc.data();
+
+            if (userData.status === 'banned') {
+                await signOut(auth);
+                alert('Your account has been banned. Please contact support.');
+                return;
+            }
+
             currentUser = userData.username;
+            setupBanListener(user.uid); // Monitor for ban changes
             startChat();
         } else {
             // New user, show profile setup
@@ -3868,14 +3969,155 @@ async function handleCreateAccount() {
             email: firebaseUser.email,
             password: password, // Storing password as requested (Not recommended for production)
             createdAt: new Date(),
-            uid: firebaseUser.uid
+            uid: firebaseUser.uid,
+            status: 'normie' // Default status
         });
 
         currentUser = username;
+        setupBanListener(firebaseUser.uid); // Monitor for ban changes
         startChat();
 
     } catch (error) {
         console.error("Account Creation Failed:", error);
         alert("Error creating account: " + error.message);
     }
+}
+
+async function handleStandardLogin() {
+    const username = document.getElementById('loginUsernameInput').value.trim();
+    const password = document.getElementById('loginPasswordInput').value.trim();
+    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
+    if (username.length < 3 || password.length < 6) return;
+
+    // Show loading state
+    loginSubmitBtn.innerHTML = '<div class="loading-spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>';
+    loginSubmitBtn.disabled = true;
+
+    try {
+        // Query users collection for matching username and password
+        // Note: Password query is only possible because we stored it plainly (per user request).
+        // Ideally, we should use Firebase Auth, but this matches the requested "bypass" flow.
+        const usersRef = collection(db, "users");
+        // We first query by username as it's more efficient
+        const q = query(usersRef, where("username", "==", username));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            alert("No account found with this username. Please 'Continue with Google' to create an account.");
+            resetLoginButton();
+            return;
+        }
+
+        let userFound = false;
+        let foundUserData = null;
+
+        querySnapshot.forEach((doc) => {
+            const userData = doc.data();
+            if (userData.password === password) {
+                userFound = true;
+                foundUserData = userData;
+                // Mock Firebase User object for compatibility
+                firebaseUser = {
+                    uid: userData.uid,
+                    email: userData.email,
+                    displayName: userData.username
+                };
+            }
+        });
+
+        if (userFound) {
+            // Check ban status
+            if (foundUserData.status === 'banned') {
+                alert('Your account has been banned. Please contact support.');
+                resetLoginButton();
+                return;
+            }
+
+            currentUser = foundUserData.username;
+            setupBanListener(foundUserData.uid); // Monitor for ban changes
+            startChat();
+        } else {
+            alert("Incorrect password. Please try again.");
+            resetLoginButton();
+        }
+
+    } catch (error) {
+        console.error("Login Error:", error);
+        alert("Login failed: " + error.message);
+        resetLoginButton();
+    }
+}
+
+function resetLoginButton() {
+    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+    if (loginSubmitBtn) {
+        loginSubmitBtn.innerHTML = `
+            <div class="btn-bg"></div>
+            <div class="btn-glow"></div>
+            <span class="btn-text">
+                <i class="fas fa-arrow-right"></i>
+                LOG IN
+            </span>
+        `;
+        loginSubmitBtn.disabled = false;
+        loginSubmitBtn.classList.add('ready');
+    }
+}
+
+function toggleDMEmojis(userId) {
+    const input = document.getElementById(`dmInput-${userId}`);
+    if (input) {
+        input.value += "😊";
+        input.focus();
+    }
+}
+
+// Global Exports for Inline HTML Event Handlers
+window.sendDMMessage = sendDMMessage;
+window.closeDMWindow = closeDMWindow;
+window.minimizeDMWindow = minimizeDMWindow;
+window.toggleDMEmojis = toggleDMEmojis;
+window.handleGIFUpload = handleGIFUpload;
+window.deleteDMMessage = deleteDMMessage;
+window.kickUser = kickUser;
+window.openWarnModal = openWarnModal;
+window.togglePostDropdown = togglePostDropdown;
+window.editPost = editPost;
+window.deletePost = deletePost;
+window.togglePostReaction = togglePostReaction;
+window.showCommentsWindow = showCommentsWindow;
+window.replyToComment = replyToComment;
+window.removeImagePreview = removeImagePreview;
+
+// Ban System - Real-time Listener
+let banListenerUnsubscribe = null;
+
+function setupBanListener(uid) {
+    // Clean up any existing listener
+    if (banListenerUnsubscribe) {
+        banListenerUnsubscribe();
+    }
+    
+    // Set up real-time listener for user's status
+    const userDocRef = doc(db, "users", uid);
+    banListenerUnsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+            const userData = doc.data();
+            
+            if (userData.status === 'banned') {
+                // User has been banned, force disconnect
+                alert('Your account has been banned. You will be disconnected.');
+                
+                // Sign out from Firebase
+                signOut(auth).then(() => {
+                    // Reload page to return to welcome screen
+                    window.location.reload();
+                }).catch((error) => {
+                    console.error('Sign out error:', error);
+                    window.location.reload();
+                });
+            }
+        }
+    });
 }
