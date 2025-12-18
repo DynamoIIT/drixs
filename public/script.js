@@ -2,7 +2,7 @@
 const socket = io();
 
 // Firebase Imports
-import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, doc, getDoc, setDoc, collection, query, where, getDocs, onSnapshot } from './firebase-config.js';
+import { auth, db, storage, googleProvider, signInWithPopup, signOut, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, onSnapshot, ref, uploadBytes, getDownloadURL } from './firebase-config.js';
 
 // DOM Elements
 const welcomeScreen = document.getElementById('welcomeScreen');
@@ -28,11 +28,56 @@ const aiMessages = document.getElementById('aiMessages');
 const aiCloseBtn = document.getElementById('aiCloseBtn');
 const loadingScreen = document.getElementById('loadingScreen');
 
+// Profile Setup Elements
+const profilePicInput = document.getElementById('profilePicInput');
+const setupProfilePicPreview = document.getElementById('setupProfilePicPreview');
+const skipPicBtn = document.getElementById('skipPicBtn');
+const newUserBioInput = document.getElementById('newUserBioInput');
+
+// User Profile View Modal Elements
+const userProfileModal = document.getElementById('userProfileModal');
+const profileModalClose = document.getElementById('profileModalClose');
+const viewProfilePic = document.getElementById('viewProfilePic');
+const viewProfileUsername = document.getElementById('viewProfileUsername');
+const viewProfileBio = document.getElementById('viewProfileBio');
+
+// Settings Elements
+const settingsModal = document.getElementById('settingsModal');
+const settingsModalClose = document.getElementById('settingsModalClose');
+const editProfilePicPreview = document.getElementById('editProfilePicPreview');
+const editProfilePicInput = document.getElementById('editProfilePicInput');
+const editUsernameInput = document.getElementById('editUsernameInput');
+const editBioInput = document.getElementById('editBioInput');
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+const editProfileBtn = document.getElementById('editProfileBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// New Modal Elements
+const onlineUsersModal = document.getElementById('onlineUsersModal');
+const openOnlineListBtn = document.getElementById('openOnlineListBtn');
+const closeOnlineModal = document.getElementById('closeOnlineModal');
+const onlineCountBadge = document.getElementById('onlineCountBadge');
+const userListSearch = document.getElementById('userListSearch');
+const usersListContainer = document.getElementById('usersListContainer');
+
 // Global Variables
 let currentUser = null;
-let firebaseUser = null; // Store Firebase User object
+let firebaseUser = null;
 let userColor = '#ffffff';
+const DEFAULT_AVATAR = 'assets/anonymous.jpg';
+let currentUserProfilePic = DEFAULT_AVATAR;
+let currentUserBio = 'Write something about uh.';
 let typingTimer = null;
+let cropper = null; // Cropper.js instance
+let currentUserCroppedBlob = null; // Store the cropped image blob
+
+// DOM Elements (Consolidated at top level for scoping)
+let warnModal, warnCloseBtn, sendWarnBtn, cancelWarnBtn;
+let confirmModal, confirmMessage, confirmYesBtn, confirmNoBtn;
+let userHamburgerBtn, userHamburgerMenu, userHamburgerClose;
+let developerPanel, panelCloseBtn, hamburgerBtn;
+let isDeveloper = false;
+let isModerator = false;
 // DM System Variables
 let openDMWindows = new Map(); // userId -> window element
 let dmMessages = new Map(); // userId -> messages array
@@ -186,8 +231,6 @@ document.addEventListener('DOMContentLoaded', function () {
 let isTyping = false;
 let selectedMessage = null;
 let replyingTo = null;
-let isDeveloper = false;
-let isModerator = false;
 let onlineUsers = new Map();
 let phonkAudio = new Audio();
 phonkAudio.loop = false;
@@ -358,41 +401,75 @@ function initializeEventListeners() {
         }
     });
 
+    // Initialize Global DOM references
+    warnModal = document.getElementById('warnModal');
+    warnCloseBtn = document.getElementById('warnCloseBtn');
+    sendWarnBtn = document.getElementById('sendWarnBtn');
+    cancelWarnBtn = document.getElementById('cancelWarnBtn');
+    confirmModal = document.getElementById('confirmModal');
+    confirmMessage = document.getElementById('confirmMessage');
+    confirmYesBtn = document.getElementById('confirmYesBtn');
+    confirmNoBtn = document.getElementById('confirmNoBtn');
+    developerPanel = document.getElementById('developerPanel');
+    panelCloseBtn = document.getElementById('panelCloseBtn');
+    hamburgerBtn = document.getElementById('hamburgerBtn');
+
     // Developer Panel Events
-    const hamburgerBtn = document.getElementById('hamburgerBtn');
-    const developerPanel = document.getElementById('developerPanel');
-    const panelCloseBtn = document.getElementById('panelCloseBtn');
-    const warnModal = document.getElementById('warnModal');
-    const warnCloseBtn = document.getElementById('warnCloseBtn');
-    const sendWarnBtn = document.getElementById('sendWarnBtn');
-    const cancelWarnBtn = document.getElementById('cancelWarnBtn');
+    if (hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', function () {
+            this.classList.toggle('active');
+            developerPanel.classList.toggle('open');
+            requestOnlineUsers();
+        });
+    }
 
-    hamburgerBtn.addEventListener('click', function () {
-        this.classList.toggle('active');
-        developerPanel.classList.toggle('open');
-        requestOnlineUsers();
-    });
-
-    panelCloseBtn.addEventListener('click', function () {
-        hamburgerBtn.classList.remove('active');
-        developerPanel.classList.remove('open');
-    });
+    if (panelCloseBtn) {
+        panelCloseBtn.addEventListener('click', () => {
+            developerPanel.classList.remove('open');
+            hamburgerBtn.classList.remove('active');
+        });
+    }
 
     // Warn Modal Events
-    warnCloseBtn.addEventListener('click', closeWarnModal);
-    cancelWarnBtn.addEventListener('click', closeWarnModal);
+    if (warnCloseBtn) warnCloseBtn.addEventListener('click', closeWarnModal);
+    if (cancelWarnBtn) cancelWarnBtn.addEventListener('click', closeWarnModal);
 
-    sendWarnBtn.addEventListener('click', function () {
-        const reason = document.getElementById('warnReason').value.trim();
-        const userName = document.getElementById('warnUserName').textContent;
+    if (sendWarnBtn) {
+        sendWarnBtn.addEventListener('click', () => {
+            const username = document.getElementById('warnUserName').textContent;
+            const reason = document.getElementById('warnReason').value.trim();
+            if (reason) {
+                socket.emit('warn-user', { username, reason });
+                closeWarnModal();
+            } else {
+                alert('Please enter a reason');
+            }
+        });
+    }
 
-        if (reason) {
-            socket.emit('warn-user', { username: userName, reason: reason });
-            closeWarnModal();
-        } else {
-            alert('Please enter a warning reason!');
-        }
-    });
+    // Custom Confirm Modal Logic
+    let confirmCallback = null;
+
+    window.showCustomConfirm = function (message, onConfirm) {
+        if (!confirmModal) return;
+        confirmMessage.textContent = message;
+        confirmCallback = onConfirm;
+        confirmModal.classList.add('active');
+    };
+
+    if (confirmYesBtn) {
+        confirmYesBtn.addEventListener('click', () => {
+            confirmModal.classList.remove('active');
+            if (confirmCallback) confirmCallback();
+        });
+    }
+
+    if (confirmNoBtn) {
+        confirmNoBtn.addEventListener('click', () => {
+            confirmModal.classList.remove('active');
+            confirmCallback = null;
+        });
+    }
 
 
 
@@ -506,6 +583,195 @@ function initializeEventListeners() {
             hideReactionPicker();
         }
     });
+
+    // --- PROFILE & SETTINGS NEW LISTENERS ---
+
+    // Profile Setup - Image Preview
+    if (profilePicInput) {
+        profilePicInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setupProfilePicPreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Skip Profile Pic
+    if (skipPicBtn) {
+        skipPicBtn.addEventListener('click', () => {
+            setupProfilePicPreview.src = `https://ui-avatars.com/api/?name=${newUsernameInput.value || 'User'}&background=random`;
+            // Clear input
+            profilePicInput.value = '';
+            showNotification('Default profile picture assigned', 'info');
+        });
+    }
+
+    // User Profile View Modal Close
+    if (profileModalClose) {
+        profileModalClose.addEventListener('click', () => {
+            userProfileModal.classList.remove('active');
+        });
+    }
+
+    // Settings Modal Open/Close
+    if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', () => {
+            // Populate settings
+            editUsernameInput.value = currentUser;
+            editBioInput.value = currentUserBio;
+            editProfilePicPreview.src = currentUserProfilePic;
+            settingsModal.classList.add('active');
+            userHamburgerMenu.classList.remove('open');
+            userHamburgerBtn.classList.remove('active');
+        });
+    }
+
+    if (settingsModalClose) {
+        settingsModalClose.addEventListener('click', () => {
+            settingsModal.classList.remove('active');
+        });
+    }
+
+    // Update Profile Pic in Settings (Preview)
+    if (editProfilePicInput) {
+        editProfilePicInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const cropImage = document.getElementById('cropImage');
+                    cropImage.src = event.target.result;
+                    document.getElementById('cropModal').classList.add('active');
+
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+
+                    cropper = new Cropper(cropImage, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        preview: '.crop-preview',
+                        dragMode: 'move',
+                        autoCropArea: 0.8,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Crop Modal Listeners
+    const cropModal = document.getElementById('cropModal');
+    const cropModalClose = document.getElementById('cropModalClose');
+    const cancelCropBtn = document.getElementById('cancelCropBtn');
+    const applyCropBtn = document.getElementById('applyCropBtn');
+
+    const closeCropModal = () => {
+        cropModal.classList.remove('active');
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    };
+
+    if (cropModalClose) cropModalClose.addEventListener('click', closeCropModal);
+    if (cancelCropBtn) cancelCropBtn.addEventListener('click', closeCropModal);
+
+    if (applyCropBtn) {
+        applyCropBtn.addEventListener('click', () => {
+            if (!cropper) return;
+
+            const canvas = cropper.getCroppedCanvas({
+                width: 300,
+                height: 300
+            });
+
+            editProfilePicPreview.src = canvas.toDataURL();
+
+            // Convert to blob for later upload
+            canvas.toBlob((blob) => {
+                currentUserCroppedBlob = blob;
+            }, 'image/jpeg', 0.9);
+
+            closeCropModal();
+            showNotification('Photo centered and cropped!', 'success');
+        });
+    }
+
+    // Save Profile button
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', handleUpdateProfile);
+    }
+
+    // Trigger file input when clicking the "Change Profile Photo" p tag
+    const changePhotoMsg = document.querySelector('.edit-profile-pic-section p');
+    if (changePhotoMsg) {
+        changePhotoMsg.addEventListener('click', () => {
+            editProfilePicInput.click();
+        });
+    }
+
+    // Logout button reinforcement
+    function bindLogout() {
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            console.log('Binding logout button');
+            logoutBtn.onclick = null; // Clear old
+            logoutBtn.addEventListener('click', (e) => {
+                console.warn('Logout button clicked - triggering handler');
+                e.preventDefault();
+                e.stopPropagation();
+                handleLogout();
+            });
+        } else {
+            console.error('Logout button not found in DOM');
+        }
+    }
+    bindLogout();
+
+    // Online Users Modal
+    if (openOnlineListBtn) {
+        openOnlineListBtn.addEventListener('click', () => {
+            onlineUsersModal.classList.add('active');
+            userHamburgerMenu.classList.remove('open');
+            userHamburgerBtn.classList.remove('active');
+        });
+    }
+
+    if (closeOnlineModal) {
+        closeOnlineModal.addEventListener('click', () => {
+            onlineUsersModal.classList.remove('active');
+        });
+    }
+
+    if (userListSearch) {
+        userListSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const items = usersListContainer.querySelectorAll('.detailed-user-item');
+            items.forEach(item => {
+                const name = item.querySelector('.user-item-name').textContent.toLowerCase();
+                item.style.display = name.includes(term) ? 'flex' : 'none';
+            });
+        });
+    }
+
+    // Click outside to close models
+    window.addEventListener('click', (e) => {
+        if (e.target === userProfileModal) userProfileModal.classList.remove('active');
+        if (e.target === settingsModal) settingsModal.classList.remove('active');
+        if (e.target === onlineUsersModal) onlineUsersModal.classList.remove('active');
+    });
 }
 
 // Start Chat Function
@@ -548,12 +814,20 @@ function startChat() {
             username: username,
             isDeveloper: isDeveloper,
             isModerator: isModerator,
-            uid: firebaseUser ? firebaseUser.uid : null
+            uid: firebaseUser ? firebaseUser.uid : null,
+            profilePic: currentUserProfilePic,
+            bio: currentUserBio
         });
 
-        // Show developer controls if developer
-        if (isDeveloper) {
-            document.getElementById('developerControls').style.display = 'block';
+        const devControls = document.getElementById('developerControls');
+        const regControls = document.getElementById('regularUserControls');
+
+        if (isDeveloper || isModerator) {
+            if (devControls) devControls.style.display = 'flex';
+            if (regControls) regControls.style.display = 'flex'; // Show BOTH
+        } else {
+            if (devControls) devControls.style.display = 'none';
+            if (regControls) regControls.style.display = 'flex';
         }
 
         // Transition to chat screen
@@ -939,15 +1213,22 @@ function addMessage(data) {
         `;
     }
 
+    messageDiv.classList.add('message');
     messageDiv.innerHTML = `
+        <img src="${data.profilePic || DEFAULT_AVATAR}" 
+             class="message-profile-pic" 
+             style="border-color: ${data.color}"
+             title="View Profile"
+             onclick="showUserProfile('${data.uid}')">
         <div class="message-bubble" style="border-left: 3px solid ${data.color}">
             ${replyHtml}
             <div class="message-header">
-                <span class="username" style="color: ${data.color}">
-    ${data.username}
-    ${data.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
-    ${data.isModerator ? '<i class="fas fa-check-circle moderator-badge" title="Verified Moderator"></i>' : ''}
-</span>                <span class="timestamp">${formatTime(data.timestamp)}</span>
+                <span class="username" style="color: ${data.color}" onclick="showUserProfile('${data.uid}')">
+                    ${data.username}
+                    ${data.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
+                    ${data.isModerator ? '<i class="fas fa-check-circle moderator-badge" title="Verified Moderator"></i>' : ''}
+                </span>
+                <span class="timestamp">${formatTime(data.timestamp)}</span>
             </div>
             <div class="message-content">${escapeHtml(data.message)}</div>
             <div class="message-reactions"></div>
@@ -1506,9 +1787,9 @@ function displayOnlineUsers(users) {
 }
 
 function kickUser(username) {
-    if (confirm(`Are you sure you want to kick ${username}?`)) {
+    showCustomConfirm(`Are you sure you want to kick ${username}?`, () => {
         socket.emit('kick-user', { username: username });
-    }
+    });
 }
 
 function openWarnModal(username) {
@@ -1556,30 +1837,44 @@ function requestUsersList() {
 
 function displayUsersForDM(users) {
     const container = document.getElementById('usersListContainer');
+    if (!container) return;
     container.innerHTML = '';
 
-    users.forEach(user => {
-        if (user.username !== currentUser) {
-            const userDiv = document.createElement('div');
-            userDiv.className = 'user-list-item';
-            userDiv.onclick = () => openDMWindow(user);
+    // Filter out current user so they can't message themselves
+    const otherUsers = users.filter(u => u.username !== currentUser);
 
-            const firstLetter = user.username.charAt(0).toUpperCase();
+    // Update global online count in header (should include yourself)
+    if (onlineCount) onlineCount.textContent = users.length;
+    // Update badge in the tray bar (should include yourself)
+    if (onlineCountBadge) onlineCountBadge.textContent = `${users.length} Online`;
 
-            userDiv.innerHTML = `
-                <div class="user-list-avatar" style="background: ${user.color}">
-                    ${firstLetter}
+    otherUsers.forEach(user => {
+        // Create the detailed item for the new modal
+        const userDiv = document.createElement('div');
+        userDiv.className = 'detailed-user-item';
+
+        // Open DM on click
+        userDiv.onclick = () => {
+            openDMWindow(user);
+            onlineUsersModal.classList.remove('active');
+        };
+
+        const profilePic = user.profilePic || DEFAULT_AVATAR;
+
+        userDiv.innerHTML = `
+            <img src="${profilePic}" class="user-item-pic" onclick="event.stopPropagation(); showUserProfile('${user.uid}')">
+            <div class="user-item-info">
+                <div class="user-item-name" style="color: ${user.color}">
+                    ${user.username}
+                    ${user.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
                 </div>
-                <div class="user-list-info">
-                    <div class="user-list-name" style="color: ${user.color}">
-                        ${user.username}
-                        ${user.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
-                    </div>
-                    <div class="user-list-status">Click to message</div>
-                </div>
-            `;
-            container.appendChild(userDiv);
-        }
+                <div class="user-item-status">Online</div>
+            </div>
+            <div class="user-item-action">
+                <i class="fas fa-comment-dots" style="color: #00C9FF; opacity: 0.7;"></i>
+            </div>
+        `;
+        container.appendChild(userDiv);
     });
 }
 
@@ -1826,8 +2121,11 @@ function minimizeDMWindow(userId) {
 }
 
 function deleteDMMessage(userId, messageId) {
-    if (confirm('Delete this message?')) {
-        socket.emit('delete-dm-message', { targetUserId: userId, messageId: messageId });
+    showCustomConfirm('Delete this message?', () => {
+        socket.emit('delete-dm-message', {
+            to: userId,
+            messageId: messageId
+        });
 
         // Remove from UI
         const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
@@ -1844,7 +2142,7 @@ function deleteDMMessage(userId, messageId) {
                 messages.splice(index, 1);
             }
         }
-    }
+    });
 }
 
 function showDMReactionPicker(event, messageElement, userId) {
@@ -1991,9 +2289,9 @@ function initializePostsSystem() {
 
             // 🗑️ Delete
             if (e.target.classList.contains("delete-btn")) {
-                if (confirm("Delete this post?")) {
-                    socket.emit("delete-post", { postId });
-                }
+                showCustomConfirm("Delete this post?", () => {
+                    deletePost(postId);
+                });
             }
 
             // ✏️ Edit
@@ -2119,9 +2417,9 @@ function initializePostsSystem() {
 
         // 🗑️ Delete
         if (e.target.classList.contains("delete-btn")) {
-            if (confirm("Delete this post?")) {
-                socket.emit("delete-post", { postId });
-            }
+            showCustomConfirm("Delete this post?", () => {
+                deletePost(postId);
+            });
         }
 
         // ✏️ Edit
@@ -2378,7 +2676,7 @@ function editPost(postId) {
 function deletePost(postId) {
     closeAllDropdowns();
 
-    if (confirm('Are you sure you want to delete this post?')) {
+    showCustomConfirm('Are you sure you want to delete this post?', () => {
         // Emit delete event to server
         socket.emit('delete-post', { postId: postId });
 
@@ -2389,7 +2687,7 @@ function deletePost(postId) {
         loadPosts();
 
         showNotification('Post deleted successfully', 'success');
-    }
+    });
 }
 
 function togglePostReaction(postId, emoji) {
@@ -2733,7 +3031,7 @@ socket.on('post-comment', function (commentData) {
             loadComments(commentData.postId);
         }
 
-        // Show notification if someone commented on your post
+        // Show notification if post.author is currentUser and commentData.author is not currentUser
         if (post.author === currentUser && commentData.author !== currentUser) {
             showNotification(`${commentData.author} commented on your post`, 'info');
         }
@@ -3567,14 +3865,14 @@ function startReplayGame(gameData) {
 
 // Exit game
 function exitGame() {
-    if (confirm('Are you sure you want to leave the game?')) {
+    showCustomConfirm('Are you sure you want to leave the game?', () => {
         socket.emit('ttt-player-left', {
             gameId: currentGameState.gameId,
             playerName: currentUser
         });
 
         returnToChat();
-    }
+    });
 }
 
 // Show left popup
@@ -3947,11 +4245,17 @@ async function handleGoogleLogin() {
 async function handleCreateAccount() {
     const username = newUsernameInput.value.trim();
     const password = newPasswordInput.value.trim();
+    const bio = newUserBioInput.value.trim() || "write something about uh.";
+    const profilePicFile = profilePicInput.files[0];
 
     if (username.length < 3 || password.length < 6) {
         alert("Username must be at least 3 chars and password 6 chars.");
         return;
     }
+
+    // Show loading state on button
+    createAccountBtn.disabled = true;
+    createAccountBtn.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
         // Check if username is taken
@@ -3960,27 +4264,56 @@ async function handleCreateAccount() {
 
         if (!querySnapshot.empty) {
             alert("Username already taken. Please choose another.");
+            resetCreateAccountBtn();
             return;
+        }
+
+        let profilePicUrl = DEFAULT_AVATAR;
+
+        // Upload profile pic if selected
+        if (profilePicFile) {
+            const storageRef = ref(storage, `profile_pics/${firebaseUser.uid}`);
+            await uploadBytes(storageRef, profilePicFile);
+            profilePicUrl = await getDownloadURL(storageRef);
         }
 
         // Save user to Firestore
         await setDoc(doc(db, "users", firebaseUser.uid), {
             username: username,
             email: firebaseUser.email,
-            password: password, // Storing password as requested (Not recommended for production)
+            password: password,
             createdAt: new Date(),
             uid: firebaseUser.uid,
-            status: 'normie' // Default status
+            status: 'normie',
+            profilePic: profilePicUrl,
+            bio: bio
         });
 
         currentUser = username;
-        setupBanListener(firebaseUser.uid); // Monitor for ban changes
+        currentUserProfilePic = profilePicUrl;
+        currentUserBio = bio;
+
+        setupBanListener(firebaseUser.uid);
         startChat();
 
     } catch (error) {
         console.error("Account Creation Failed:", error);
         alert("Error creating account: " + error.message);
+        resetCreateAccountBtn();
     }
+}
+
+function resetCreateAccountBtn() {
+    createAccountBtn.disabled = false;
+    createAccountBtn.innerHTML = `
+        <div class="btn-bg"></div>
+        <div class="btn-glow"></div>
+        <span class="btn-text">
+            <i class="fas fa-user-plus"></i>
+            CREATE ACCOUNT
+        </span>
+        <div class="btn-particles"></div>
+    `;
 }
 
 async function handleStandardLogin() {
@@ -4035,6 +4368,10 @@ async function handleStandardLogin() {
             }
 
             currentUser = foundUserData.username;
+            // Load profile data (handle defaults for existing users)
+            currentUserProfilePic = foundUserData.profilePic || DEFAULT_AVATAR;
+            currentUserBio = foundUserData.bio || "Write something about uh.";
+
             setupBanListener(foundUserData.uid); // Monitor for ban changes
             startChat();
         } else {
@@ -4098,17 +4435,17 @@ function setupBanListener(uid) {
     if (banListenerUnsubscribe) {
         banListenerUnsubscribe();
     }
-    
+
     // Set up real-time listener for user's status
     const userDocRef = doc(db, "users", uid);
     banListenerUnsubscribe = onSnapshot(userDocRef, (doc) => {
         if (doc.exists()) {
             const userData = doc.data();
-            
+
             if (userData.status === 'banned') {
                 // User has been banned, force disconnect
                 alert('Your account has been banned. You will be disconnected.');
-                
+
                 // Sign out from Firebase
                 signOut(auth).then(() => {
                     // Reload page to return to welcome screen
@@ -4121,3 +4458,117 @@ function setupBanListener(uid) {
         }
     });
 }
+
+// PROFILE AND SETTINGS FUNCTIONS
+
+async function handleUpdateProfile() {
+    const newUsername = editUsernameInput.value.trim();
+    const newBio = editBioInput.value.trim();
+    const newPicFile = editProfilePicInput.files[0];
+
+    if (newUsername.length < 3) {
+        alert("Username must be at least 3 characters.");
+        return;
+    }
+
+    saveProfileBtn.disabled = true;
+    saveProfileBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SAVING...';
+
+    try {
+        let newPicUrl = currentUserProfilePic;
+
+        // Priority 1: Cropped image blob
+        // Priority 2: Original file from input (if no crop done but file picked)
+        const fileToUpload = currentUserCroppedBlob || newPicFile;
+
+        if (fileToUpload) {
+            const storageRef = ref(storage, `profile_pics/${firebaseUser.uid}`);
+            await uploadBytes(storageRef, fileToUpload);
+            newPicUrl = await getDownloadURL(storageRef);
+            // Reset the cropped blob after successful upload
+            currentUserCroppedBlob = null;
+        }
+
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        await updateDoc(userDocRef, {
+            username: newUsername,
+            bio: newBio,
+            profilePic: newPicUrl
+        });
+
+        // Update local state
+        currentUser = newUsername;
+        currentUserBio = newBio;
+        currentUserProfilePic = newPicUrl;
+
+        // Also inform server if needed (server-side socket and online users update)
+        socket.emit('update-profile', {
+            username: newUsername,
+            profilePic: newPicUrl,
+            bio: newBio
+        });
+
+        showNotification('Profile updated successfully!', 'success');
+        settingsModal.classList.remove('active');
+
+    } catch (error) {
+        console.error("Update Profile Error:", error);
+        alert("Failed to update profile: " + error.message);
+    } finally {
+        saveProfileBtn.disabled = false;
+        saveProfileBtn.innerHTML = '<div class="btn-bg"></div><span>SAVE CHANGES</span>';
+    }
+}
+
+async function showUserProfile(uid) {
+    if (!uid) return;
+
+    try {
+        const userDoc = await getDoc(doc(db, "users", uid));
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            viewProfilePic.src = data.profilePic || DEFAULT_AVATAR;
+            viewProfileUsername.textContent = data.username;
+            viewProfileBio.textContent = data.bio || "Write something about uh.";
+            userProfileModal.classList.add('active');
+        } else {
+            showNotification('User profile not found', 'error');
+        }
+    } catch (error) {
+        console.error("Show Profile Error:", error);
+    }
+}
+
+function handleLogout() {
+    console.warn("handleLogout function entered - showing custom modal");
+    showCustomConfirm('Are you sure you want to logout?', () => {
+        console.log("Custom confirm accepted, calling signOut");
+        signOut(auth).then(() => {
+            console.log("Sign out successful, reloading...");
+            window.location.reload();
+        }).catch((error) => {
+            console.error('Logout error:', error);
+            window.location.reload();
+        });
+    });
+}
+
+// Global Exports
+window.showUserProfile = showUserProfile;
+window.sendDMMessage = sendDMMessage;
+window.closeDMWindow = closeDMWindow;
+window.minimizeDMWindow = minimizeDMWindow;
+window.toggleDMEmojis = toggleDMEmojis;
+window.handleGIFUpload = handleGIFUpload;
+window.deleteDMMessage = deleteDMMessage;
+window.kickUser = kickUser;
+window.openWarnModal = openWarnModal;
+window.togglePostDropdown = togglePostDropdown;
+window.editPost = editPost;
+window.deletePost = deletePost;
+window.togglePostReaction = togglePostReaction;
+window.showCommentsWindow = showCommentsWindow;
+window.replyToComment = replyToComment;
+window.removeImagePreview = removeImagePreview;
+window.handleLogout = handleLogout;
+window.showCustomConfirm = window.showCustomConfirm; // already attached but for visibility

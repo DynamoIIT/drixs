@@ -319,6 +319,8 @@ body {
 .logo-text {
     background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
     -webkit-background-clip: text;
+    background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -431,12 +433,17 @@ body {
 /* Welcome Screen Cyberpunk */
 [data-theme="cyberpunk"] .welcome-screen {
     background: rgba(16, 20, 31, 0.9);
-    overflow-y: auto;`r`n    align-items: flex-start;`r`n    padding: 40px 0;`r`n}
+    overflow-y: auto;
+    align-items: flex-start;
+    padding: 40px 0;
+}
 
 [data-theme="cyberpunk"] .title-line {
     background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue), var(--neon-green), var(--neon-orange));
     background-size: 400% 400%;
     -webkit-background-clip: text;
+    background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: cyberpunkGradient 3s ease-in-out infinite;
     text-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
@@ -632,6 +639,7 @@ body {
             #ff006e, #ffbe0b, #8338ec, #3a86ff, #06ffa5);
     background-size: 300% 300%;
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: gradientShift 3s ease-in-out infinite;
@@ -662,6 +670,7 @@ body {
     margin-top: 20px;
     background: linear-gradient(45deg, #ff9a9e, #fecfef, #fecfef);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: subtitleFloat 2s ease-in-out infinite;
@@ -858,6 +867,7 @@ body {
     font-size: 1.5rem;
     background: linear-gradient(45deg, #ff006e, #3a86ff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
@@ -928,6 +938,7 @@ body {
     font-size: 1.5rem;
     background: linear-gradient(45deg, #ff006e, #3a86ff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
@@ -1758,6 +1769,7 @@ body {
     font-weight: 600;
     background: linear-gradient(45deg, #ff006e, #3a86ff, #00ff88);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: loadingTextPulse 2s ease-in-out infinite;
@@ -1917,34 +1929,37 @@ body {
 
 /* Developer Controls */
 .developer-controls {
-    margin-left: 20px;
+    position: absolute;
+    left: 20px;
 }
 
 .hamburger-btn {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 5px;
     transition: all 0.3s ease;
 }
 
 .hamburger-btn:hover {
-    background: rgba(255, 215, 0, 0.2);
-    transform: scale(1.05);
+    transform: scale(1.1);
+}
+
+.hamburger-btn:hover .hamburger-line {
+    background: #FFD700;
 }
 
 .hamburger-line {
-    width: 20px;
-    height: 2px;
-    background: #FFD700;
-    border-radius: 1px;
+    width: 22px;
+    height: 2.5px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 2px;
     transition: all 0.3s ease;
 }
 
@@ -2579,40 +2594,43 @@ body {
 
 /* Regular User Hamburger Menu */
 .regular-user-controls {
-    margin-right: 20px;
+    position: absolute;
+    left: 20px;
 }
 
 .user-hamburger-btn {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 5px;
     transition: all 0.3s ease;
 }
 
 .user-hamburger-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.05);
+    transform: scale(1.1);
+}
+
+.user-hamburger-btn:hover .hamburger-line {
+    background: var(--accent-primary);
 }
 
 .user-hamburger-menu {
     position: fixed;
     top: 0;
-    left: -350px;
-    width: 350px;
+    left: -380px;
+    width: 380px;
     height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(20px);
-    border-right: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(10, 10, 15, 0.98);
+    backdrop-filter: blur(30px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
     z-index: 2000;
-    transition: left 0.4s ease;
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
 }
@@ -2628,90 +2646,48 @@ body {
 }
 
 .hamburger-header {
-    padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 25px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .hamburger-header h3 {
-    color: white;
-    font-family: 'Orbitron', monospace;
-    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.95);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
+.hamburger-header h3 i {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
 .hamburger-close {
     background: none;
     border: none;
-    color: white;
+    color: rgba(255, 255, 255, 0.6);
     font-size: 1.2rem;
     cursor: pointer;
-    padding: 5px;
-    border-radius: 50%;
-    transition: all 0.3s ease;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.25s ease;
 }
 
 .hamburger-close:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    transform: rotate(90deg);
 }
 
-.users-list-container {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-}
 
-.user-list-item {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.user-list-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateX(5px);
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.user-list-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, #ff006e, #3a86ff);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.user-list-info {
-    flex: 1;
-}
-
-.user-list-name {
-    font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 2px;
-}
-
-.user-list-status {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
-}
 
 /* GIF Support Styles */
 .gif-container {
@@ -2761,7 +2737,6 @@ body {
 }
 
 /* Mobile Responsive for DM */
-
 .user-hamburger-menu {
     width: 100%;
     left: -100%;
@@ -2770,12 +2745,9 @@ body {
 .regular-user-controls {
     margin-right: 10px;
 }
-}
-
 
 .dm-message-bubble {
     max-width: 85%;
-}
 }
 
 /* Responsive adjustments */
@@ -2913,11 +2885,13 @@ body {
         overflow-y: auto;
     }
 
-    /* 3. Fix welcome screen overlay issue */
     .welcome-screen {
         z-index: 500;
         /* lower than hamburger */
-        overflow-y: auto;`r`n    align-items: flex-start;`r`n    padding: 40px 0;`r`n}
+        overflow-y: auto;
+        align-items: flex-start;
+        padding: 40px 0;
+    }
 
     /* 4. If you want hamburger always on top */
     .user-hamburger-btn,
@@ -3008,55 +2982,171 @@ body {
 
 }
 
-
-
-}
-
-/* ADD this CSS to the end of your style.css file */
-
 /* ================= GEN-Z CONTAINER GRID ================= */
 .genz-container-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    gap: 12px;
     padding: 20px;
     height: calc(100vh - 120px);
+    overflow-y: auto;
 }
 
 .genz-container {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
     overflow: hidden;
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
+    margin-bottom: 20px;
 }
 
 .genz-container:hover {
-    transform: translateY(-5px);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 15px 40px rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .genz-header {
-    padding: 20px;
-    background: linear-gradient(45deg, rgba(255, 0, 110, 0.1), rgba(58, 134, 255, 0.1));
+    padding: 12px 0;
+    background: transparent;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 1px;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent-primary);
+    font-family: 'Orbitron', sans-serif;
+}
+
+.genz-header i {
+    font-size: 0.85rem;
+    opacity: 0.6;
+}
+
+/* Users List Container */
+.users-list-container {
+    padding: 12px;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.user-list-item {
+    background: transparent;
+    padding: 8px 0;
+    margin-bottom: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-list-item:hover .user-list-name {
+    color: var(--accent-primary);
+}
+
+.user-list-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.user-list-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.user-list-status {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Games Container */
+.games-list {
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.game-item {
+    background: transparent;
+    padding: 10px 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.game-icon {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.game-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+}
+
+.game-desc {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.game-play-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.game-play-btn i {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.game-item:hover .game-play-btn {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.05);
 }
 
 .posts-preview {
-    padding: 20px;
+    padding: 18px;
     text-align: center;
-    color: rgba(255, 255, 255, 0.7);
-    font-style: italic;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: normal;
+    font-size: 0.85rem;
+    font-weight: 400;
 }
 
 /* ================= POSTS WINDOW ================= */
@@ -3124,6 +3214,7 @@ body {
     font-size: 1.8rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff, #00ff41);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
     letter-spacing: 2px;
@@ -4220,6 +4311,7 @@ body {
     font-size: 1.6rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
 }
@@ -4511,6 +4603,7 @@ body {
     font-size: 1.5rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -4548,6 +4641,7 @@ body {
     font-size: 1.8rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff, #00ff41);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 40px;
     animation: indicatorPulse 2s ease-in-out infinite;
@@ -4711,18 +4805,21 @@ body {
 .ttt-result-message.winner {
     background: linear-gradient(45deg, #ffd700, #ff00ff, #00ffff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .ttt-result-message.loser {
     background: linear-gradient(45deg, #ff4757, #ff6b6b);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .ttt-result-message.draw {
     background: linear-gradient(45deg, #00ffff, #ff00ff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -4860,6 +4957,7 @@ body {
     background: linear-gradient(45deg, #ffd700, #ff00ff, #00ffff, #00ff41);
     background-size: 300% 300%;
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: bannerAppear 1s ease-out, gradientShift 2s ease-in-out infinite;
     text-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
@@ -5219,6 +5317,7 @@ body {
     font-size: 1.6rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
 }
@@ -5510,6 +5609,7 @@ body {
     font-size: 1.5rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -5547,6 +5647,7 @@ body {
     font-size: 1.8rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff, #00ff41);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 40px;
     animation: indicatorPulse 2s ease-in-out infinite;
@@ -5710,18 +5811,21 @@ body {
 .ttt-result-message.winner {
     background: linear-gradient(45deg, #ffd700, #ff00ff, #00ffff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .ttt-result-message.loser {
     background: linear-gradient(45deg, #ff4757, #ff6b6b);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .ttt-result-message.draw {
     background: linear-gradient(45deg, #00ffff, #ff00ff);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -5859,6 +5963,7 @@ body {
     background: linear-gradient(45deg, #ffd700, #ff00ff, #00ffff, #00ff41);
     background-size: 300% 300%;
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: bannerAppear 1s ease-out, gradientShift 2s ease-in-out infinite;
     text-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
@@ -6094,6 +6199,7 @@ body {
 .moderator-name {
     background: linear-gradient(45deg, #1DA1F2, #00D9FF);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -6357,6 +6463,7 @@ body {
     background: linear-gradient(45deg, #FFD700, #FF69B4, #00CED1, #FFD700);
     background-size: 200% 200%;
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: textGradient 3s ease-in-out infinite;
@@ -6417,6 +6524,7 @@ body {
     background: linear-gradient(45deg, #FF1493, #00CED1, #FF1493);
     background-size: 200% 200%;
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation:
@@ -6990,6 +7098,7 @@ body {
         transform: scale(1) translateY(0);
     }
 }
+
 /* ================= UI REFACTOR OVERRIDES ================= */
 
 /* Desktop Refinements (Overrides) */
@@ -7003,6 +7112,7 @@ body {
 
 /* Responsive UI Refactoring */
 @media (max-width: 768px) {
+
     /* Compact Header */
     .chat-header {
         height: 60px !important;
@@ -7023,7 +7133,8 @@ body {
     }
 
     .counter-text {
-        display: none !important; /* Hide Online text */
+        display: none !important;
+        /* Hide Online text */
     }
 
     /* Compact Footer */
@@ -7051,7 +7162,7 @@ body {
         padding: 8px 15px !important;
         font-size: 0.95rem !important;
     }
-    
+
     /* Adjust message bubble max-width for mobile */
     .message-bubble {
         max-width: 85% !important;
@@ -7128,12 +7239,25 @@ body {
 }
 
 @keyframes pulseGlow {
-    0%, 100% {
+
+    0%,
+    100% {
         border-color: #ff006e;
         box-shadow: 0 0 20px rgba(255, 0, 110, 0.6), 0 4px 15px rgba(0, 0, 0, 0.3);
     }
+
     50% {
         border-color: #3a86ff;
         box-shadow: 0 0 30px rgba(58, 134, 255, 0.8), 0 4px 15px rgba(0, 0, 0, 0.3);
     }
+}
+
+/* Hamburger Menu Scrollable */
+.user-hamburger-menu {
+    overflow-y: auto !important;
+    max-height: 100vh;
+}
+
+.genz-container-grid {
+    padding-bottom: 20px;
 }

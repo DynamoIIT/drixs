@@ -230,7 +230,10 @@ io.on('connection', (socket) => {
             } else {
                 username = userData.username ? userData.username.trim() : '';
                 isDeveloper = userData.isDeveloper || false;
-                isModerator = userData.isModerator || false; uid = userData.uid || null;
+                isModerator = userData.isModerator || false;
+                uid = userData.uid || null;
+                profilePic = userData.profilePic || null;
+                bio = userData.bio || null;
             }
             if (!username || username.length === 0) {
                 socket.emit('error-message', { message: 'Invalid username provided' });
@@ -341,7 +344,10 @@ io.on('connection', (socket) => {
                 ip: clientIP,
                 // 🎯 NEW: Stone system tracking
                 totalWords: 0,
-                hasReceivedStone: false, uid: uid
+                hasReceivedStone: false,
+                uid: uid,
+                profilePic: profilePic,
+                bio: bio
             });
             // Update counts & list
             io.emit('update-online-count', onlineUsers.size);
@@ -360,7 +366,9 @@ io.on('connection', (socket) => {
                     id: [...onlineUsers.entries()].find(([id, u]) => u.username === user.username)?.[0],
                     username: user.username,
                     color: user.color,
-                    isDeveloper: user.isDeveloper
+                    isDeveloper: user.isDeveloper,
+                    uid: user.uid,
+                    profilePic: user.profilePic
                 }));
                 socket.emit('users-for-dm', users);
             });
@@ -694,15 +702,18 @@ io.on('connection', (socket) => {
             } else {
                 // Normal chat
                 const messageData = {
-                    message,
                     username: user.username,
+                    message: message,
                     color: user.color,
                     timestamp: new Date(),
                     messageId: Date.now() + Math.random(),
                     replyTo: data.replyTo || null,
                     isDeveloper: user.isDeveloper,
-                    isModerator: user.isModerator
-                }; io.emit('chat-message', messageData);
+                    isModerator: user.isModerator,
+                    uid: user.uid,
+                    profilePic: user.profilePic
+                };
+                io.emit('chat-message', messageData);
             }
         } catch (error) {
             console.error('Error in chat-message:', error);
@@ -736,6 +747,22 @@ io.on('connection', (socket) => {
                 io.emit('message-reaction', { messageId: data.messageId, emoji: data.emoji, username: user.username, color: user.color, timestamp: new Date() });
             }
         } catch (error) { console.error('Error in message-reaction:', error); }
+    });
+
+    // ===== Update Profile =====
+    socket.on('update-profile', (data) => {
+        try {
+            const user = onlineUsers.get(socket.id);
+            if (user) {
+                user.username = data.username || user.username;
+                user.profilePic = data.profilePic || user.profilePic;
+                user.bio = data.bio || user.bio;
+                // Broadcast updated user list
+                io.emit('online-users-list', Array.from(onlineUsers.values()));
+            }
+        } catch (error) {
+            console.error('Error in update-profile:', error);
+        }
     });
 
     // ===== Online users =====

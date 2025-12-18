@@ -1,0 +1,29 @@
+# Firebase Storage Rules (Fail-Safe Test)
+
+If the previous rules still gave a 403 error, it's possible that the "path matching" is being too strict. Let's try this **Fail-Safe** version which allows **any logged-in user** to write to the `profile_pics` folder.
+
+**Paste this EXACTLY into the Rules tab:**
+
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // This match covers everything inside profile_pics and subfolders
+    match /profile_pics/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+### Steps to Fix:
+1. Paste the code above (delete everything else).
+2. Click **Publish**.
+3. **WAIT 60 SECONDS**.
+4. **Refresh your browser tab** (the one running your chat app).
+5. Try uploading the photo again.
+
+**If it still fails after this:**
+1. Check if you have multiple Buckets in the Storage tab (some projects have a Default and a `.appspot.com` bucket).
+2. Ensure you are looking at the rules for `bro-chatz-d2e5a.firebasestorage.app`.
