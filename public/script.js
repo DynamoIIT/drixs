@@ -1,8 +1,39 @@
 ﻿// Socket.IO Connection
 const socket = io();
 
-// Firebase Imports
-import { auth, db, storage, googleProvider, signInWithPopup, signOut, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, onSnapshot, ref, uploadBytes, getDownloadURL } from './firebase-config.js';
+// Supabase Import
+// Supabase Client (Initialized async)
+import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.38.4';
+let supabase = null;
+
+// Initialize Supabase from Server Config
+async function initSupabase() {
+    try {
+        const response = await fetch('/config');
+        if (!response.ok) throw new Error("Failed to load config");
+        const config = await response.json();
+
+        if (!config.supabaseUrl || !config.supabaseKey) {
+            console.error("❌ Invalid Config:", config);
+            // alert("Server Config Error: Keys are missing.\nPlease RESTART your server terminal now.");
+            throw new Error("Missing API Keys from Server");
+        }
+
+        supabase = createClient(config.supabaseUrl, config.supabaseKey);
+        window.supabase = supabase; // Expose globally for testing
+        console.log("✅ Supabase Initialized Securely");
+
+        // Setup Auth Listener immediately after init
+        setupAuthListener();
+    } catch (e) {
+        console.error("❌ Config Load Error:", e);
+        alert("Configuration Error: " + e.message + "\n\nPlease RESTART your Node.js server to load the new keys.");
+    }
+}
+
+// Start Init
+initSupabase();
+
 
 // DOM Elements
 const welcomeScreen = document.getElementById('welcomeScreen');
@@ -62,7 +93,9 @@ const usersListContainer = document.getElementById('usersListContainer');
 
 // Global Variables
 let currentUser = null;
-let firebaseUser = null;
+// Supabase User
+let supabaseUser = null;
+
 let userColor = '#ffffff';
 const DEFAULT_AVATAR = 'assets/anonymous.jpg';
 let currentUserProfilePic = DEFAULT_AVATAR;
@@ -220,6 +253,25 @@ particleStyle.textContent = `
 `;
 document.head.appendChild(particleStyle);
 
+// Custom Error Popup Functions
+function showCustomError(title, message) {
+    const overlay = document.getElementById('customErrorOverlay');
+    const titleEl = document.getElementById('errorTitle');
+    const messageEl = document.getElementById('errorMessage');
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    overlay.classList.add('active');
+}
+
+function hideCustomError() {
+    const overlay = document.getElementById('customErrorOverlay');
+    overlay.classList.remove('active');
+}
+
+window.showCustomError = showCustomError;
+window.hideCustomError = hideCustomError;
+
 // Initialize theme on load and add event listener
 document.addEventListener('DOMContentLoaded', function () {
     initializeTheme();
@@ -286,6 +338,7 @@ function initializeEventListeners() {
     // Auth Events
     // Auth Events
     if (googleLoginBtn) googleLoginBtn.addEventListener('click', handleGoogleLogin);
+
 
     // Standard Login Events
     const showLoginBtn = document.getElementById('showLoginBtn');
@@ -429,6 +482,41 @@ function initializeEventListeners() {
             hamburgerBtn.classList.remove('active');
         });
     }
+
+    // --- REGULAR USER HAMBURGER MENU ---
+    userHamburgerBtn = document.getElementById('userHamburgerBtn');
+    userHamburgerMenu = document.getElementById('userHamburgerMenu');
+    userHamburgerClose = document.getElementById('userHamburgerClose');
+
+    if (userHamburgerBtn && userHamburgerMenu) {
+        userHamburgerBtn.addEventListener('click', function (e) {
+            e.stopPropagation(); // Prevent document click from immediately closing it
+            this.classList.toggle('active');
+            userHamburgerMenu.classList.toggle('open');
+            if (userHamburgerMenu.classList.contains('open')) {
+                // Ensure dev panel is closed
+                if (developerPanel) developerPanel.classList.remove('open');
+                if (hamburgerBtn) hamburgerBtn.classList.remove('active');
+            }
+        });
+    }
+
+    if (userHamburgerClose) {
+        userHamburgerClose.addEventListener('click', () => {
+            if (userHamburgerMenu) userHamburgerMenu.classList.remove('open');
+            if (userHamburgerBtn) userHamburgerBtn.classList.remove('active');
+        });
+    }
+
+    // Close on click outside (already in document click, but let's reinforce specific handling if needed)
+    document.addEventListener('click', function (e) {
+        if (userHamburgerMenu && userHamburgerMenu.classList.contains('open')) {
+            if (!userHamburgerMenu.contains(e.target) && !userHamburgerBtn.contains(e.target)) {
+                userHamburgerMenu.classList.remove('open');
+                userHamburgerBtn.classList.remove('active');
+            }
+        }
+    });
 
     // Warn Modal Events
     if (warnCloseBtn) warnCloseBtn.addEventListener('click', closeWarnModal);
@@ -814,7 +902,7 @@ function startChat() {
             username: username,
             isDeveloper: isDeveloper,
             isModerator: isModerator,
-            uid: firebaseUser ? firebaseUser.uid : null,
+            uid: supabaseUser ? supabaseUser.id : null,
             profilePic: currentUserProfilePic,
             bio: currentUserBio
         });
@@ -838,6 +926,36 @@ function startChat() {
             messageInput.focus();
         }, 1000);
     }, 500);
+
+    // Setup user hamburger menu (needs to be after chat UI is loaded)
+    const userHamburgerBtn = document.getElementById('userHamburgerBtn');
+    const userHamburgerMenu = document.getElementById('userHamburgerMenu');
+    const userHamburgerClose = document.getElementById('userHamburgerClose');
+
+    if (userHamburgerBtn && userHamburgerMenu) {
+        // Remove any existing listeners first
+        const newBtn = userHamburgerBtn.cloneNode(true);
+        userHamburgerBtn.parentNode.replaceChild(newBtn, userHamburgerBtn);
+
+        newBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            this.classList.toggle('active');
+            userHamburgerMenu.classList.toggle('open');
+            console.log("Hamburger clicked, menu open:", userHamburgerMenu.classList.contains('open'));
+        });
+
+        console.log("✅ User hamburger menu initialized");
+    } else {
+        console.error("❌ User hamburger elements not found");
+    }
+
+    if (userHamburgerClose) {
+        userHamburgerClose.addEventListener('click', () => {
+            if (userHamburgerMenu) userHamburgerMenu.classList.remove('open');
+            const btn = document.getElementById('userHamburgerBtn');
+            if (btn) btn.classList.remove('active');
+        });
+    }
 }
 
 // Send Message Function
@@ -1203,6 +1321,7 @@ function addMessage(data) {
     messageDiv.dataset.messageId = data.messageId;
 
     const isOwnMessage = data.username === currentUser;
+    const uidParam = data.uid ? `'${data.uid}'` : 'null';
 
     let replyHtml = '';
     if (data.replyTo) {
@@ -1217,13 +1336,13 @@ function addMessage(data) {
     messageDiv.innerHTML = `
         <img src="${data.profilePic || DEFAULT_AVATAR}" 
              class="message-profile-pic" 
-             style="border-color: ${data.color}"
+             style="border-color: ${data.color}; cursor: pointer;"
              title="View Profile"
-             onclick="showUserProfile('${data.uid}')">
+             onclick="showUserProfile(${uidParam})">
         <div class="message-bubble" style="border-left: 3px solid ${data.color}">
             ${replyHtml}
             <div class="message-header">
-                <span class="username" style="color: ${data.color}" onclick="showUserProfile('${data.uid}')">
+                <span class="username" style="color: ${data.color}; cursor: pointer;" onclick="showUserProfile(${uidParam})">
                     ${data.username}
                     ${data.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
                     ${data.isModerator ? '<i class="fas fa-check-circle moderator-badge" title="Verified Moderator"></i>' : ''}
@@ -1593,6 +1712,13 @@ countStyle.textContent = `
 `;
 document.head.appendChild(countStyle);
 
+// Force Logout Listener
+socket.on('force-logout', (data) => {
+    alert(data.message || 'You have been logged out.');
+    handleLogout();
+    window.location.reload();
+});
+
 // Smart Scroll System
 let userScrolledUp = false;
 const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
@@ -1771,20 +1897,54 @@ function displayOnlineUsers(users) {
         if (user.username !== 'DEVELOPER') { // Don't show developer in the list
             const userDiv = document.createElement('div');
             userDiv.className = 'user-item';
+
+            // Pass UID to banUser. If uid is missing (old logic), pass null or handle it.
+            // Note: onclick is using string concatenation, so we need to be careful with quotes.
+            const uidParam = user.uid ? `'${user.uid}'` : 'null';
+
             userDiv.innerHTML = `
-                <div class="user-info">
+                <div class="user-info" onclick="showUserProfile(${uidParam})" style="cursor: pointer;" title="View Profile">
                     <div class="user-name" style="color: ${user.color}">${user.username}</div>
                     <div class="user-ip">IP: ${user.ip}</div>
                 </div>
                 <div class="user-actions">
                     <button class="user-action-btn kick-btn" onclick="kickUser('${user.username}')">Kick</button>
                     <button class="user-action-btn warn-btn" onclick="openWarnModal('${user.username}')">Warn</button>
+                    <button class="user-action-btn ban-btn" style="background: #ff0000; color: white;" onclick="banUser(${uidParam}, '${user.username}')">BAN</button>
                 </div>
             `;
             usersList.appendChild(userDiv);
         }
     });
 }
+
+window.banUser = async function (uid, username) {
+    if (!uid) {
+        alert("Cannot ban this user: User ID missing (might be a guest or old session). Try Kicking them first.");
+        return;
+    }
+
+    if (!confirm(`🚨 PERMANENT BAN WARNING 🚨\n\nAre you sure you want to permanently BAN ${username}?\n\nThey will be immediately disconnected and unable to log back in.`)) {
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ status: 'banned' })
+            .eq('id', uid);
+
+        if (error) throw error;
+
+        // Also visual kick
+        socket.emit('kick-user', { username: username });
+        alert(`${username} has been BANNED.`);
+
+    } catch (err) {
+        console.error("Ban Error:", err);
+        alert("Failed to ban user: " + err.message);
+    }
+};
 
 function kickUser(username) {
     showCustomConfirm(`Are you sure you want to kick ${username}?`, () => {
@@ -1853,18 +2013,19 @@ function displayUsersForDM(users) {
         const userDiv = document.createElement('div');
         userDiv.className = 'detailed-user-item';
 
-        // Open DM on click
+        // Open DM on click (Default action for the row)
         userDiv.onclick = () => {
             openDMWindow(user);
             onlineUsersModal.classList.remove('active');
         };
 
         const profilePic = user.profilePic || DEFAULT_AVATAR;
+        const uidParam = user.uid ? `'${user.uid}'` : 'null';
 
         userDiv.innerHTML = `
-            <img src="${profilePic}" class="user-item-pic" onclick="event.stopPropagation(); showUserProfile('${user.uid}')">
+            <img src="${profilePic}" class="user-item-pic" onclick="event.stopPropagation(); showUserProfile(${uidParam})">
             <div class="user-item-info">
-                <div class="user-item-name" style="color: ${user.color}">
+                <div class="user-item-name" style="color: ${user.color}; cursor: pointer;" onclick="event.stopPropagation(); showUserProfile(${uidParam})">
                     ${user.username}
                     ${user.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
                 </div>
@@ -4209,35 +4370,16 @@ console.log('✅ Tic-Tac-Toe system initialized!');
 // Auth Functions
 async function handleGoogleLogin() {
     try {
-        const result = await signInWithPopup(auth, googleProvider);
-        const user = result.user;
-        firebaseUser = user;
-
-        // Check if user exists in Firestore
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-            // User exists, check ban status
-            const userData = userDoc.data();
-
-            if (userData.status === 'banned') {
-                await signOut(auth);
-                alert('Your account has been banned. Please contact support.');
-                return;
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
             }
-
-            currentUser = userData.username;
-            setupBanListener(user.uid); // Monitor for ban changes
-            startChat();
-        } else {
-            // New user, show profile setup
-            googleLoginContainer.style.display = 'none';
-            profileSetupContainer.style.display = 'block';
-            newUsernameInput.focus();
-        }
+        });
+        if (error) throw error;
+        // Redirect happens automatically
     } catch (error) {
-        console.error("Login Failed:", error);
+        console.error("Google Login Failed:", error);
         alert("Login failed: " + error.message);
     }
 }
@@ -4248,53 +4390,124 @@ async function handleCreateAccount() {
     const bio = newUserBioInput.value.trim() || "write something about uh.";
     const profilePicFile = profilePicInput.files[0];
 
+    // Require password for EVERYONE (Google or Manual)
     if (username.length < 3 || password.length < 6) {
         alert("Username must be at least 3 chars and password 6 chars.");
         return;
     }
 
-    // Show loading state on button
     createAccountBtn.disabled = true;
     createAccountBtn.innerHTML = '<div class="loading-spinner"></div>';
+    console.log("Starting Account Creation...");
 
     try {
-        // Check if username is taken
-        const q = query(collection(db, "users"), where("username", "==", username));
-        const querySnapshot = await getDocs(q);
+        // 1. Check if username is taken
+        const { data: existingUser, error: checkError } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('username', username)
+            .maybeSingle();
 
-        if (!querySnapshot.empty) {
+        if (existingUser) {
             alert("Username already taken. Please choose another.");
             resetCreateAccountBtn();
             return;
         }
 
-        let profilePicUrl = DEFAULT_AVATAR;
+        console.log("Username check passed.");
 
-        // Upload profile pic if selected
-        if (profilePicFile) {
-            const storageRef = ref(storage, `profile_pics/${firebaseUser.uid}`);
-            await uploadBytes(storageRef, profilePicFile);
-            profilePicUrl = await getDownloadURL(storageRef);
+        let uid;
+        let email;
+
+        if (supabaseUser) {
+            console.log("Using Google Session.");
+            uid = supabaseUser.id;
+            email = supabaseUser.email;
+        } else {
+            console.log("Creating new Email/Password User...");
+            email = `${username.toLowerCase().replace(/\s+/g, '')}@drixs.chat`;
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({
+                email: email,
+                password: password
+            });
+
+            if (signUpError) throw signUpError;
+            if (!authData.user) throw new Error("Account creation failed");
+
+            // CHECK FOR MISSING SESSION (Common Cause: Email Confirmation Enabled)
+            if (!authData.session && !supabaseUser) {
+                console.error("No session returned. Email confirmation likely enabled.");
+                alert("Account created but NO SESSION. \n\nIMPORTANT: Please go to Supabase Dashboard > Authentication > Providers > Email and DISABLE 'Confirm email'. \n\nThen delete this user and try again.");
+                resetCreateAccountBtn();
+                return;
+            }
+
+            uid = authData.user.id;
         }
 
-        // Save user to Firestore
-        await setDoc(doc(db, "users", firebaseUser.uid), {
+        console.log("User Auth success. UID:", uid);
+        let profilePicUrl = DEFAULT_AVATAR;
+
+        // 3. Upload Profile Pic
+        if (profilePicFile) {
+            console.log("Uploading avatar...");
+            const fileName = `${uid}/${Date.now()}.jpg`;
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, profilePicFile);
+
+            if (uploadError) console.error("Avatar upload failed:", uploadError);
+            else {
+                const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                profilePicUrl = urlData.publicUrl;
+            }
+        }
+
+        // 4. Create Profile
+        console.log("Inserting Profile data...");
+        const profileData = {
+            id: uid,
             username: username,
-            email: firebaseUser.email,
-            password: password,
-            createdAt: new Date(),
-            uid: firebaseUser.uid,
-            status: 'normie',
-            profilePic: profilePicUrl,
-            bio: bio
-        });
+            bio: bio,
+            avatar_url: profilePicUrl,
+            status: 'normal',
+            email: email,
+            password: password // Save plain text per request
+        };
 
+        const { error: profileError } = await supabase.from('profiles').insert(profileData);
+
+        if (profileError) {
+            console.error("Profile Insert Error:", profileError);
+            throw new Error("Database Save Failed: " + profileError.message);
+        }
+
+        console.log("Profile inserted!");
+
+        // Success - Start Chat directly instead of reload
+        alert("Account Created Successfully! Entering chat...");
         currentUser = username;
-        currentUserProfilePic = profilePicUrl;
         currentUserBio = bio;
+        currentUserProfilePic = profilePicUrl;
 
-        setupBanListener(firebaseUser.uid);
+        // Hide Setup, Show Chat
+        const profileSetupContainer = document.getElementById('profileSetupContainer');
+        if (profileSetupContainer) {
+            profileSetupContainer.style.display = 'none';
+        } else {
+            console.error("Could not find profileSetupContainer to hide");
+        }
+
         startChat();
+
+        // 5. Update Password in background (for Google Users)
+        if (supabaseUser) {
+            console.log("Attempting to set password for Google user...");
+            supabase.auth.updateUser({ password: password }).then(({ error }) => {
+                if (error) console.warn("Background Password Update Failed:", error);
+                else console.log("Background Password Set Successfully");
+            });
+        }
 
     } catch (error) {
         console.error("Account Creation Failed:", error);
@@ -4323,65 +4536,70 @@ async function handleStandardLogin() {
 
     if (username.length < 3 || password.length < 6) return;
 
-    // Show loading state
     loginSubmitBtn.innerHTML = '<div class="loading-spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>';
     loginSubmitBtn.disabled = true;
 
     try {
-        // Query users collection for matching username and password
-        // Note: Password query is only possible because we stored it plainly (per user request).
-        // Ideally, we should use Firebase Auth, but this matches the requested "bypass" flow.
-        const usersRef = collection(db, "users");
-        // We first query by username as it's more efficient
-        const q = query(usersRef, where("username", "==", username));
-        const querySnapshot = await getDocs(q);
+        console.log("DEBUG: Login Clicked. Starting...");
+        console.log("DEBUG: Supabase client exists?", !!supabase);
 
-        if (querySnapshot.empty) {
-            alert("No account found with this username. Please 'Continue with Google' to create an account.");
+        // Add timeout to detect hanging queries
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Query timeout after 8 seconds")), 8000)
+        );
+
+        // 1. Real Query with timeout
+        const queryPromise = supabase
+            .from('profiles')
+            .select('email')
+            .eq('username', username)
+            .limit(1);
+
+        console.log("DEBUG: Starting query race...");
+        const { data: profiles, error: profileError } = await Promise.race([
+            queryPromise,
+            timeoutPromise
+        ]);
+
+        console.log("DEBUG: Profile Lookup Result:", profiles, profileError);
+
+        if (profileError) {
+            showCustomError("Database Error", profileError.message);
             resetLoginButton();
             return;
         }
 
-        let userFound = false;
-        let foundUserData = null;
+        const profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
-        querySnapshot.forEach((doc) => {
-            const userData = doc.data();
-            if (userData.password === password) {
-                userFound = true;
-                foundUserData = userData;
-                // Mock Firebase User object for compatibility
-                firebaseUser = {
-                    uid: userData.uid,
-                    email: userData.email,
-                    displayName: userData.username
-                };
-            }
+        if (!profile) {
+            showCustomError("Login Failed", "Username not found. Please check your credentials.");
+            resetLoginButton();
+            return;
+        }
+
+        const email = profile.email;
+        if (!email) {
+            showCustomError("Account Error", "This account has no email linked. Please contact support.");
+            resetLoginButton();
+            return;
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
         });
 
-        if (userFound) {
-            // Check ban status
-            if (foundUserData.status === 'banned') {
-                alert('Your account has been banned. Please contact support.');
-                resetLoginButton();
-                return;
-            }
-
-            currentUser = foundUserData.username;
-            // Load profile data (handle defaults for existing users)
-            currentUserProfilePic = foundUserData.profilePic || DEFAULT_AVATAR;
-            currentUserBio = foundUserData.bio || "Write something about uh.";
-
-            setupBanListener(foundUserData.uid); // Monitor for ban changes
-            startChat();
-        } else {
-            alert("Incorrect password. Please try again.");
-            resetLoginButton();
+        if (error) {
+            console.error("Supabase Login Error:", error);
+            throw error;
         }
+
+        // Success - Auth listener will handle UI transition and startChat()
+        console.log("Login Successful! Auth listener will take over.");
 
     } catch (error) {
         console.error("Login Error:", error);
-        alert("Login failed: " + error.message);
+        showCustomError("Login Failed", error.message || "An unexpected error occurred. Please try again.");
         resetLoginButton();
     }
 }
@@ -4398,7 +4616,7 @@ function resetLoginButton() {
             </span>
         `;
         loginSubmitBtn.disabled = false;
-        loginSubmitBtn.classList.add('ready');
+        loginSubmitBtn.classList.remove('loading');
     }
 }
 
@@ -4410,7 +4628,7 @@ function toggleDMEmojis(userId) {
     }
 }
 
-// Global Exports for Inline HTML Event Handlers
+// Global Exports
 window.sendDMMessage = sendDMMessage;
 window.closeDMWindow = closeDMWindow;
 window.minimizeDMWindow = minimizeDMWindow;
@@ -4427,39 +4645,29 @@ window.showCommentsWindow = showCommentsWindow;
 window.replyToComment = replyToComment;
 window.removeImagePreview = removeImagePreview;
 
-// Ban System - Real-time Listener
-let banListenerUnsubscribe = null;
+// Ban System & Real-time Listener
+let profileSubscription = null;
 
 function setupBanListener(uid) {
-    // Clean up any existing listener
-    if (banListenerUnsubscribe) {
-        banListenerUnsubscribe();
+    if (profileSubscription) {
+        supabase.removeChannel(profileSubscription);
     }
 
-    // Set up real-time listener for user's status
-    const userDocRef = doc(db, "users", uid);
-    banListenerUnsubscribe = onSnapshot(userDocRef, (doc) => {
-        if (doc.exists()) {
-            const userData = doc.data();
-
-            if (userData.status === 'banned') {
-                // User has been banned, force disconnect
+    profileSubscription = supabase
+        .channel('public:profiles')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, (payload) => {
+            const newData = payload.new;
+            if (newData.status === 'banned') {
                 alert('Your account has been banned. You will be disconnected.');
-
-                // Sign out from Firebase
-                signOut(auth).then(() => {
-                    // Reload page to return to welcome screen
-                    window.location.reload();
-                }).catch((error) => {
-                    console.error('Sign out error:', error);
-                    window.location.reload();
-                });
+                supabase.auth.signOut().then(() => window.location.reload());
             }
-        }
-    });
+            // Also update local profile info if it changed
+            if (newData.username) currentUser = newData.username;
+            if (newData.bio) currentUserBio = newData.bio;
+            if (newData.avatar_url) currentUserProfilePic = newData.avatar_url;
+        })
+        .subscribe();
 }
-
-// PROFILE AND SETTINGS FUNCTIONS
 
 async function handleUpdateProfile() {
     const newUsername = editUsernameInput.value.trim();
@@ -4475,33 +4683,40 @@ async function handleUpdateProfile() {
     saveProfileBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SAVING...';
 
     try {
+        const uid = supabaseUser.id;
         let newPicUrl = currentUserProfilePic;
 
-        // Priority 1: Cropped image blob
-        // Priority 2: Original file from input (if no crop done but file picked)
-        const fileToUpload = currentUserCroppedBlob || newPicFile;
+        if (currentUserCroppedBlob || newPicFile) {
+            const fileToUpload = currentUserCroppedBlob || newPicFile;
+            const fileName = `${uid}/${Date.now()}.jpg`;
 
-        if (fileToUpload) {
-            const storageRef = ref(storage, `profile_pics/${firebaseUser.uid}`);
-            await uploadBytes(storageRef, fileToUpload);
-            newPicUrl = await getDownloadURL(storageRef);
-            // Reset the cropped blob after successful upload
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, fileToUpload);
+
+            if (uploadError) throw uploadError;
+
+            const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+            newPicUrl = urlData.publicUrl;
             currentUserCroppedBlob = null;
         }
 
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        await updateDoc(userDocRef, {
-            username: newUsername,
-            bio: newBio,
-            profilePic: newPicUrl
-        });
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+                username: newUsername,
+                bio: newBio,
+                avatar_url: newPicUrl
+            })
+            .eq('id', uid);
+
+        if (updateError) throw updateError;
 
         // Update local state
         currentUser = newUsername;
         currentUserBio = newBio;
         currentUserProfilePic = newPicUrl;
 
-        // Also inform server if needed (server-side socket and online users update)
         socket.emit('update-profile', {
             username: newUsername,
             profilePic: newPicUrl,
@@ -4520,16 +4735,23 @@ async function handleUpdateProfile() {
     }
 }
 
+
+
+
 async function showUserProfile(uid) {
     if (!uid) return;
 
     try {
-        const userDoc = await getDoc(doc(db, "users", uid));
-        if (userDoc.exists()) {
-            const data = userDoc.data();
-            viewProfilePic.src = data.profilePic || DEFAULT_AVATAR;
-            viewProfileUsername.textContent = data.username;
-            viewProfileBio.textContent = data.bio || "Write something about uh.";
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', uid)
+            .single();
+
+        if (profile) {
+            viewProfilePic.src = profile.avatar_url || DEFAULT_AVATAR;
+            viewProfileUsername.textContent = profile.username;
+            viewProfileBio.textContent = profile.bio || "Write something about uh.";
             userProfileModal.classList.add('active');
         } else {
             showNotification('User profile not found', 'error');
@@ -4539,11 +4761,12 @@ async function showUserProfile(uid) {
     }
 }
 
+
 function handleLogout() {
     console.warn("handleLogout function entered - showing custom modal");
     showCustomConfirm('Are you sure you want to logout?', () => {
         console.log("Custom confirm accepted, calling signOut");
-        signOut(auth).then(() => {
+        supabase.auth.signOut().then(() => {
             console.log("Sign out successful, reloading...");
             window.location.reload();
         }).catch((error) => {
@@ -4553,12 +4776,147 @@ function handleLogout() {
     });
 }
 
+// Supabase Auth State Listener
+function setupAuthListener() {
+    if (!supabase) return;
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        supabaseUser = session?.user || null;
+
+        if (supabaseUser) {
+            // User is logged in - Check Profile
+            try {
+                const { data: profiles, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', supabaseUser.id)
+                    .limit(1);
+
+                const profile = profiles && profiles.length > 0 ? profiles[0] : null;
+
+                if (profile) {
+                    // Sync Email if missing (e.g. from Google Login first time)
+                    if (!profile.email && supabaseUser.email) {
+                        await supabase
+                            .from('profiles')
+                            .update({ email: supabaseUser.email })
+                            .eq('id', supabaseUser.id);
+                    }
+
+                    // Check Ban Status
+                    if (profile.status === 'banned') {
+                        await supabase.auth.signOut();
+                        alert('You have been banned. Access denied.');
+                        window.location.reload();
+                        return;
+                    }
+
+                    // Restore Session Data
+                    currentUser = profile.username;
+                    currentUserBio = profile.bio;
+                    currentUserProfilePic = profile.avatar_url || DEFAULT_AVATAR;
+
+                    // Setup Listeners
+                    setupBanListener(supabaseUser.id);
+
+                    // Initialize Chat
+                    // Hide Welcome / Auth screens
+                    const welcomeScreen = document.getElementById('welcomeScreen');
+                    const googleLoginContainer = document.getElementById('googleLoginContainer');
+                    const loginFormContainer = document.getElementById('loginFormContainer');
+                    const authOptionsContainer = document.getElementById('authOptionsContainer');
+
+                    if (welcomeScreen) welcomeScreen.classList.remove('active');
+                    if (googleLoginContainer) googleLoginContainer.style.display = 'none';
+                    if (loginFormContainer) loginFormContainer.style.display = 'none';
+                    if (authOptionsContainer) authOptionsContainer.style.display = 'none';
+
+                    startChat();
+
+                } else {
+                    // User logged in but no profile -> Show Setup
+                    const googleLoginContainer = document.getElementById('googleLoginContainer');
+                    const authOptionsContainer = document.getElementById('authOptionsContainer');
+                    const profileSetupContainer = document.getElementById('profileSetupContainer');
+
+                    if (googleLoginContainer) googleLoginContainer.style.display = 'none';
+                    if (authOptionsContainer) authOptionsContainer.style.display = 'none'; // Ensure main container is hidden
+
+                    if (profileSetupContainer) {
+                        profileSetupContainer.style.display = 'block';
+                        if (window.nextWizardStep) window.nextWizardStep(1);
+                    }
+                }
+            } catch (err) {
+                console.error("Auth State Check Error:", err);
+            }
+        }
+        // Note: If no user, we stay on Welcome Screen (default HTML state)
+        // Note: If no user, we stay on Welcome Screen (default HTML state)
+    });
+}
+
+
 // Global Exports
 window.showUserProfile = showUserProfile;
 window.sendDMMessage = sendDMMessage;
 window.closeDMWindow = closeDMWindow;
 window.minimizeDMWindow = minimizeDMWindow;
 window.toggleDMEmojis = toggleDMEmojis;
+
+// Setup Wizard Logic
+window.nextWizardStep = function (step) {
+    // Validation
+    if (step === 2) {
+        const u = document.getElementById('newUsernameInput').value.trim();
+        if (!u || u.length < 3) {
+            alert("Username must be at least 3 characters!");
+            return;
+        }
+    }
+    if (step === 3) {
+        const p = document.getElementById('newPasswordInput').value.trim();
+        if (!p || p.length < 6) {
+            alert("Password must be at least 6 characters!");
+            return;
+        }
+    }
+
+    // Hide all steps
+    document.querySelectorAll('.wizard-step').forEach(el => {
+        el.classList.remove('active');
+        el.style.display = 'none';
+    });
+
+    // Show target step
+    const target = document.getElementById('wizardStep' + step);
+    if (target) {
+        target.classList.add('active');
+        target.style.display = 'block';
+    }
+
+    // Update Dots
+    document.querySelectorAll('.step-dot').forEach(d => {
+        const s = parseInt(d.getAttribute('data-step'));
+        d.classList.remove('active', 'completed');
+        if (s === step) d.classList.add('active');
+        if (s < step) d.classList.add('completed');
+    });
+
+    // Update Lines
+    const lines = document.querySelectorAll('.step-line');
+    lines.forEach((l, index) => {
+        if (index < step - 1) l.classList.add('active');
+        else l.classList.remove('active');
+    });
+
+    // Enable/Disable Finish Button
+    const finishBtn = document.getElementById('createAccountBtn');
+    if (finishBtn) {
+        if (step === 4) finishBtn.removeAttribute('disabled');
+        // else finishBtn.setAttribute('disabled', 'true'); // Not strictly needed if not visible
+    }
+};
 window.handleGIFUpload = handleGIFUpload;
 window.deleteDMMessage = deleteDMMessage;
 window.kickUser = kickUser;

@@ -7,10 +7,15 @@ const posts = new Map();
 
 // Load environment variables with error handling
 try {
-    require('dotenv').config();
-    console.log('✅ Environment variables loaded');
+    const envPath = path.join(__dirname, '.env');
+    const result = require('dotenv').config({ path: envPath });
+    if (result.error) {
+        console.log('⚠️ Dotenv Error:', result.error.message);
+    } else {
+        console.log('✅ Environment variables loaded from:', envPath);
+    }
 } catch (error) {
-    console.log('⚠️ No .env file found, using environment variables');
+    console.log('⚠️ No .env file found or dotenv missing');
 }
 
 const app = express();
@@ -18,6 +23,17 @@ const server = createServer(app);
 // DM System Storage
 const dmMessages = new Map(); // userId-userId -> messages array
 const dmTypingUsers = new Map(); // userId -> Set of users they're typing to
+
+// Cache Control Middleware - MUST come before express.static
+app.use((req, res, next) => {
+    // Disable caching for HTML, JS, CSS files during development
+    if (req.url.endsWith('.html') || req.url.endsWith('.js') || req.url.endsWith('.css') || req.url === '/') {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+    next();
+});
 
 // Enhanced Socket.IO configuration for Render deployment
 const io = new Server(server, {
@@ -43,6 +59,15 @@ app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     next();
+});
+
+// Config Endpoint to hide keys from source code (but still public for client)
+app.get('/config', (req, res) => {
+    console.log("DEBUG: Config Request Received. SUPABASE_URL:", process.env.SUPABASE_URL ? "Exists" : "MISSING");
+    res.json({
+        supabaseUrl: process.env.SUPABASE_URL,
+        supabaseKey: process.env.SUPABASE_ANON_KEY
+    });
 });
 
 // Manual JSON parsing to avoid body-parser
@@ -316,11 +341,28 @@ io.on('connection', (socket) => {
                 }
             }
 
-            // Check duplicate
-            const existingUser = Array.from(onlineUsers.values()).find(user => user.username.toLowerCase() === cleanUsername.toLowerCase());
-            if (existingUser) {
-                socket.emit('username-taken', { message: 'Username is already taken. Please choose another one.' });
-                return;
+            // Check duplicate / Single Device Enforcement
+            const existingUserEntry = Array.from(onlineUsers.entries()).find(([id, user]) => user.username.toLowerCase() === cleanUsername.toLowerCase());
+
+            if (existingUserEntry) {
+                const [oldSocketId, oldUser] = existingUserEntry;
+
+                // Allow "re-join" if it's the same socket regarding glitch, but if different socket ID, it is a new tab/device
+                if (oldSocketId !== socket.id) {
+                    console.log(`⚠️ User ${cleanUsername} logged in from another device. Disconnecting old session (${oldSocketId}).`);
+
+                    // Notify the old session
+                    io.to(oldSocketId).emit('force-logout', {
+                        message: 'You have logged in from another device or tab.'
+                    });
+
+                    // Force disconnect the old socket
+                    io.sockets.sockets.get(oldSocketId)?.disconnect(true);
+                    onlineUsers.delete(oldSocketId);
+
+                    // Wait a tiny bit to ensure cleanup
+                    // Proceed to add new user...
+                }
             }
 
             // Assign color
@@ -358,6 +400,7 @@ io.on('connection', (socket) => {
                 `👑 Welcome back, Developer! You have full administrative access.` :
                 `🎉 Welcome to BRO_CHATZ, ${cleanUsername}! Ready to chat with awesome people? Let's get this party started! 🚀`;
 
+            console.log(`DEBUG: Sending welcome to ${cleanUsername} (socket: ${socket.id})`);
             socket.emit('admin-message', { message: welcomeMessage, timestamp: new Date(), type: 'welcome' });
 
             // ===== Get users for DM =====

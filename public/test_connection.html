@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Supabase Connection Test</title>
+    <style>
+        body {
+            background: #111;
+            color: #0f0;
+            font-family: monospace;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Supabase Connection Test</h1>
+    <div id="log">Initializing...</div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        const supabaseUrl = 'https://jtxnjcwnxoluzfrdazcz.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0eG5qY3dueG9sdXpmcmRhemN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNDg2MDQsImV4cCI6MjA4MTcyNDYwNH0.DXyvXnn1hdkoOr3XYLQP99g4CPHyKkNFFze0-4tdxwo'
+
+        const log = (msg) => {
+            const el = document.getElementById('log');
+            el.innerHTML += '<br>' + msg;
+            console.log(msg);
+        }
+
+        try {
+            log("Creating Client...");
+            const supabase = createClient(supabaseUrl, supabaseKey);
+            log("Client Created.");
+
+            log("Attempting to fetch profiles...");
+
+            // Timeout promise
+            const timeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Timeout after 5s")), 5000)
+            );
+
+            // Fetch promise
+            const fetch = supabase.from('profiles').select('count', { count: 'exact', head: true });
+
+            Promise.race([fetch, timeout])
+                .then(({ count, error }) => {
+                    if (error) log("ERROR: " + error.message);
+                    else log("SUCCESS! Connection Working. Profile Count: " + count);
+                })
+                .catch(err => {
+                    log("CRITICAL ERROR: " + err.message);
+                });
+
+        } catch (e) {
+            log("SETUP ERROR: " + e.message);
+        }
+    </script>
+</body>
+
+</html>

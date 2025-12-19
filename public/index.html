@@ -4,9 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>DRIXS - Ultimate Chat Experience</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style_profiles.css">
+    <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="stylesheet" href="style_profiles.css?v=2.0">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;200;300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -105,58 +108,107 @@
                 </div>
 
                 <!-- Profile Setup Form (Hidden initially) -->
+                <!-- Profile Setup Form (Wizard) -->
                 <div id="profileSetupContainer" style="display: none;">
-                    <div class="profile-setup-header">
-                        <h2>Personalize Your Profile</h2>
-                        <p>Tell the world who you are</p>
+
+                    <!-- Wizard Progress -->
+                    <div class="wizard-progress">
+                        <div class="step-dot active" data-step="1">1</div>
+                        <div class="step-line"></div>
+                        <div class="step-dot" data-step="2">2</div>
+                        <div class="step-line"></div>
+                        <div class="step-dot" data-step="3">3</div>
+                        <div class="step-line"></div>
+                        <div class="step-dot" data-step="4">4</div>
                     </div>
 
-                    <!-- Profile Picture Upload -->
-                    <div class="profile-pic-upload-section">
-                        <label for="profilePicInput" class="profile-pic-label" id="profilePicLabel">
-                            <div class="profile-pic-preview-container">
-                                <img id="setupProfilePicPreview"
-                                    src="https://ui-avatars.com/api/?name=User&background=random" alt="Profile Preview">
-                                <div class="upload-overlay">
-                                    <i class="fas fa-camera"></i>
+                    <!-- Step 1: Username -->
+                    <div class="wizard-step active" id="wizardStep1" style="display: block;">
+                        <h2>Choose Your Alias</h2>
+                        <p>This is how others will see you.</p>
+
+                        <div class="input-container">
+                            <div class="input-glow"></div>
+                            <input type="text" id="newUsernameInput" placeholder="Enter username..." maxlength="20"
+                                autocomplete="off">
+                            <div class="input-border"></div>
+                        </div>
+
+                        <div class="wizard-nav">
+                            <button class="next-btn" onclick="nextWizardStep(2)">Next <i
+                                    class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Password -->
+                    <div class="wizard-step" id="wizardStep2" style="display: none;">
+                        <h2>Secure Your Comms</h2>
+                        <p>Set a password for manual login.</p>
+
+                        <div class="input-container">
+                            <div class="input-glow"></div>
+                            <input type="password" id="newPasswordInput" placeholder="Enter password..." maxlength="50"
+                                autocomplete="off">
+                            <div class="input-border"></div>
+                        </div>
+
+                        <div class="wizard-nav">
+                            <button class="back-btn" onclick="nextWizardStep(1)">Back</button>
+                            <button class="next-btn" onclick="nextWizardStep(3)">Next <i
+                                    class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Bio -->
+                    <div class="wizard-step" id="wizardStep3" style="display: none;">
+                        <h2>Your Story</h2>
+                        <p>Briefly describe your persona.</p>
+
+                        <div class="input-container textarea-container">
+                            <div class="input-glow"></div>
+                            <textarea id="newUserBioInput" placeholder="Write something..." maxlength="150"
+                                rows="3"></textarea>
+                            <div class="input-border"></div>
+                        </div>
+
+                        <div class="wizard-nav">
+                            <button class="back-btn" onclick="nextWizardStep(2)">Back</button>
+                            <button class="next-btn" onclick="nextWizardStep(4)">Next <i
+                                    class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Avatar -->
+                    <div class="wizard-step" id="wizardStep4" style="display: none;">
+                        <h2>Upload Avatar</h2>
+                        <p>Show your face (or not).</p>
+
+                        <div class="profile-pic-upload-section">
+                            <label for="profilePicInput" class="profile-pic-label" id="profilePicLabel">
+                                <div class="profile-pic-preview-container">
+                                    <img id="setupProfilePicPreview"
+                                        src="https://ui-avatars.com/api/?name=User&background=random"
+                                        alt="Profile Preview">
+                                    <div class="upload-overlay">
+                                        <i class="fas fa-camera"></i>
+                                    </div>
                                 </div>
-                            </div>
-                            <span>Click to upload photo</span>
-                        </label>
-                        <input type="file" id="profilePicInput" accept="image/*" style="display: none;">
-                        <button id="skipPicBtn" class="skip-btn">Skip for now</button>
-                    </div>
+                                <span>Click to upload photo</span>
+                            </label>
+                            <input type="file" id="profilePicInput" accept="image/*" style="display: none;">
+                            <button id="skipPicBtn" class="skip-btn" style="margin-top: 10px;">Skip for now</button>
+                        </div>
 
-                    <div class="input-container">
-                        <div class="input-glow"></div>
-                        <input type="text" id="newUsernameInput" placeholder="Create unique username..." maxlength="20"
-                            autocomplete="off">
-                        <div class="input-border"></div>
+                        <div class="wizard-nav" style="flex-direction: column; align-items: center;">
+                            <button id="createAccountBtn" class="start-btn">
+                                <div class="btn-bg"></div>
+                                <div class="btn-glow"></div>
+                                <span class="btn-text">FINISH & CREATE</span>
+                            </button>
+                            <button class="back-btn" onclick="nextWizardStep(3)"
+                                style="background: none; border: none; font-size: 0.9em; margin-top: 10px;">Back</button>
+                        </div>
                     </div>
-
-                    <div class="input-container">
-                        <div class="input-glow"></div>
-                        <input type="password" id="newPasswordInput" placeholder="Set a password..." maxlength="50"
-                            autocomplete="off">
-                        <div class="input-border"></div>
-                    </div>
-
-                    <div class="input-container textarea-container">
-                        <div class="input-glow"></div>
-                        <textarea id="newUserBioInput" placeholder="Write something about yourself..." maxlength="150"
-                            rows="3"></textarea>
-                        <div class="input-border"></div>
-                    </div>
-
-                    <button id="createAccountBtn" class="start-btn" disabled>
-                        <div class="btn-bg"></div>
-                        <div class="btn-glow"></div>
-                        <span class="btn-text">
-                            <i class="fas fa-user-plus"></i>
-                            CREATE ACCOUNT
-                        </span>
-                        <div class="btn-particles"></div>
-                    </button>
                 </div>
             </div>
 
@@ -859,9 +911,26 @@
         </div>
     </div>
 
+
+
+    <!-- Custom Error Popup -->
+    <div class="custom-error-overlay" id="customErrorOverlay">
+        <div class="custom-error-popup">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="error-title" id="errorTitle">Error</div>
+            <div class="error-message" id="errorMessage"></div>
+            <button class="error-ok-btn" onclick="hideCustomError()">
+                <div class="btn-bg"></div>
+                <span>OK</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=2.0"></script>
 </body>
 
 </html>

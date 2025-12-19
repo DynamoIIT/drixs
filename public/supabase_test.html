@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Supabase Direct Test</title>
+</head>
+
+<body>
+    <h1>Supabase Connection Test</h1>
+    <div id="result">Testing...</div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        async function test() {
+            const result = document.getElementById('result');
+
+            try {
+                // Fetch config from server
+                const response = await fetch('/config');
+                const config = await response.json();
+
+                result.innerHTML += '<br>Config loaded: ' + JSON.stringify(config).substring(0, 50);
+
+                const supabase = createClient(config.supabaseUrl, config.supabaseKey);
+                result.innerHTML += '<br>Client created';
+
+                // Try simple count
+                const { count, error } = await supabase
+                    .from('profiles')
+                    .select('*', { count: 'exact', head: true });
+
+                if (error) {
+                    result.innerHTML += '<br><span style="color:red">ERROR: ' + error.message + '</span>';
+                } else {
+                    result.innerHTML += '<br><span style="color:green">SUCCESS! Count: ' + count + '</span>';
+                }
+
+                // Try select
+                const { data, error: selectError } = await supabase
+                    .from('profiles')
+                    .select('username, email')
+                    .limit(5);
+
+                if (selectError) {
+                    result.innerHTML += '<br><span style="color:red">SELECT ERROR: ' + selectError.message + '</span>';
+                } else {
+                    result.innerHTML += '<br><span style="color:green">SELECT SUCCESS! Rows: ' + data.length + '</span>';
+                    result.innerHTML += '<br>Data: ' + JSON.stringify(data);
+                }
+
+            } catch (e) {
+                result.innerHTML += '<br><span style="color:red">EXCEPTION: ' + e.message + '</span>';
+            }
+        }
+
+        test();
+    </script>
+</body>
+
+</html>
