@@ -120,7 +120,7 @@ app.get('/', (req, res) => {
 });
 
 // Store connected users
-onlineUsers = new Map();
+const onlineUsers = new Map();
 // ===== TIC-TAC-TOE GAME STORAGE =====
 const activeGames = new Map(); // gameId -> game object
 const userGameStatus = new Map(); // userId -> gameId
@@ -267,61 +267,7 @@ io.on('connection', (socket) => {
 
             const cleanUsername = username.substring(0, 50);
 
-            // ===== POSTS SYSTEM =====
-            socket.on('create-post', (data) => {
-                const postId = Date.now().toString();
-                const post = {
-                    id: postId,
-                    author: data.author,
-                    content: data.content,
-                    reactions: {},
-                    comments: [],
-                    impressions: 0,
-                    timestamp: new Date()
-                };
-                posts.set(postId, post);
-                io.emit('post-created', post);
-            });
-
-            socket.on('post-react', ({ postId, emoji, user }) => {
-                const post = posts.get(postId);
-                if (!post) return;
-                if (!post.reactions[emoji]) post.reactions[emoji] = [];
-                if (!post.reactions[emoji].includes(user)) {
-                    post.reactions[emoji].push(user);
-                }
-                io.emit('post-updated', post);
-            });
-
-            socket.on('post-comment', ({ postId, user, comment }) => {
-                const post = posts.get(postId);
-                if (!post) return;
-                post.comments.push({ user, text: comment, time: new Date() });
-                io.emit('post-updated', post);
-            });
-
-            socket.on('post-edit', ({ postId, newContent }) => {
-                const post = posts.get(postId);
-                if (!post) return;
-                post.content = newContent;
-                io.emit('post-updated', post);
-            });
-
-            socket.on('post-delete', ({ postId }) => {
-                if (posts.has(postId)) {
-                    posts.delete(postId);
-                    io.emit('post-deleted', { postId });
-                }
-            });
-
-            socket.on('post-impression', ({ postId }) => {
-                const post = posts.get(postId);
-                if (!post) return;
-                post.impressions++;
-                io.emit('post-updated', post);
-            });
-
-
+            // Removed nested POSTS SYSTEM listeners (redundant/buggy)
             // Developer validation
             // Developer validation
             if (isDeveloper) {
@@ -403,188 +349,7 @@ io.on('connection', (socket) => {
             console.log(`DEBUG: Sending welcome to ${cleanUsername} (socket: ${socket.id})`);
             socket.emit('admin-message', { message: welcomeMessage, timestamp: new Date(), type: 'welcome' });
 
-            // ===== Get users for DM =====
-            socket.on('get-users-for-dm', () => {
-                const users = Array.from(onlineUsers.values()).map(user => ({
-                    id: [...onlineUsers.entries()].find(([id, u]) => u.username === user.username)?.[0],
-                    username: user.username,
-                    color: user.color,
-                    isDeveloper: user.isDeveloper,
-                    uid: user.uid,
-                    profilePic: user.profilePic
-                }));
-                socket.emit('users-for-dm', users);
-            });
-
-            // ===== DM Message =====
-            socket.on('dm-message', (data) => {
-                try {
-                    const sender = onlineUsers.get(socket.id);
-                    if (!sender) return;
-
-                    const { targetUserId, message, messageId, isGIF } = data;
-
-                    // Find target user
-                    const targetUser = onlineUsers.get(targetUserId);
-                    if (!targetUser) return;
-
-                    // Create message object
-                    const messageData = {
-                        senderId: socket.id,
-                        targetUserId: targetUserId,
-                        senderName: sender.username,
-                        senderColor: sender.color,
-                        message: message,
-                        messageId: messageId,
-                        timestamp: new Date(),
-                        isGIF: isGIF || false,
-                        status: 'delivered'
-                    };
-
-                    // Store message
-                    const conversationId = [socket.id, targetUserId].sort().join('-');
-                    if (!dmMessages.has(conversationId)) {
-                        dmMessages.set(conversationId, []);
-                    }
-                    dmMessages.get(conversationId).push(messageData);
-
-                    // Send to target user
-                    io.to(targetUserId).emit('dm-message', messageData);
-
-                    // Echo back to sender too (so their UI adds it)
-                    socket.emit('dm-message', { ...messageData, isOwn: true });
-
-                    // Confirm delivery status
-                    socket.emit('dm-message-status', {
-                        messageId: messageId,
-                        status: 'delivered'
-                    });
-
-
-                } catch (error) {
-                    console.error('Error in dm-message:', error);
-                }
-            });
-
-            // ===== DM Typing =====
-            socket.on('dm-typing-start', (data) => {
-                try {
-                    const user = onlineUsers.get(socket.id);
-                    if (!user) return;
-
-                    const { targetUserId } = data;
-                    io.to(targetUserId).emit('dm-typing-start', {
-                        senderId: socket.id,
-                        username: user.username,
-                        color: user.color
-                    });
-                } catch (error) {
-                    console.error('Error in dm-typing-start:', error);
-                }
-            });
-
-            socket.on('dm-typing-stop', (data) => {
-                try {
-                    const user = onlineUsers.get(socket.id);
-                    if (!user) return;
-
-                    const { targetUserId } = data;
-                    io.to(targetUserId).emit('dm-typing-stop', {
-                        senderId: socket.id,
-                        username: user.username
-                    });
-                } catch (error) {
-                    console.error('Error in dm-typing-stop:', error);
-                }
-            });
-
-            // ===== DM Message Read =====
-            socket.on('dm-message-read', (data) => {
-                try {
-                    const { senderId, messageId } = data;
-
-                    // Update message status
-                    io.to(senderId).emit('dm-message-status', {
-                        messageId: messageId,
-                        status: 'read'
-                    });
-
-                    // Update stored message status
-                    const conversationId = [socket.id, senderId].sort().join('-');
-                    const messages = dmMessages.get(conversationId);
-                    if (messages) {
-                        const message = messages.find(msg => msg.messageId === messageId);
-                        if (message) {
-                            message.status = 'read';
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error in dm-message-read:', error);
-                }
-            });
-
-            // ===== Delete DM Message =====
-            socket.on('delete-dm-message', (data) => {
-                try {
-                    const { targetUserId, messageId } = data;
-
-                    // Remove from storage
-                    const conversationId = [socket.id, targetUserId].sort().join('-');
-                    const messages = dmMessages.get(conversationId);
-                    if (messages) {
-                        const index = messages.findIndex(msg => msg.messageId === messageId);
-                        if (index > -1) {
-                            messages.splice(index, 1);
-                        }
-                    }
-
-                    // Notify target user
-                    io.to(targetUserId).emit('dm-message-deleted', {
-                        messageId: messageId,
-                        senderId: socket.id
-                    });
-
-                } catch (error) {
-                    console.error('Error in delete-dm-message:', error);
-                }
-            });
-
-            // ===== DM Reactions =====
-            socket.on('dm-reaction', (data) => {
-                try {
-                    const user = onlineUsers.get(socket.id);
-                    if (!user) return;
-
-                    const { targetUserId, messageId, emoji } = data;
-
-                    io.to(targetUserId).emit('dm-reaction', {
-                        senderId: socket.id,
-                        senderName: user.username,
-                        senderColor: user.color,
-                        messageId: messageId,
-                        emoji: emoji,
-                        timestamp: new Date()
-                    });
-                } catch (error) {
-                    console.error('Error in dm-reaction:', error);
-                }
-            });
-
-            // ===== Developer Phonk broadcasting =====
-            if (cleanUsername === "DEVELOPER") {
-                // When developer joins, everyone hears current track
-                io.emit("playPhonk", { track: currentPhonk });
-            }
-
-            // Allow developer to change Phonk
-            socket.on("changePhonk", (trackPath) => {
-                const user = onlineUsers.get(socket.id);
-                if (user && user.isDeveloper) {
-                    currentPhonk = trackPath; // save server-side
-                    io.emit("playPhonk", { track: currentPhonk }); // broadcast to all
-                    console.log(`🎵 Phonk changed to: ${trackPath}`);
-                }
-            });
+            // Removed nested DM and Phonk listeners
 
 
             // Notify all users (except dev) of join
@@ -848,7 +613,114 @@ io.on('connection', (socket) => {
         } catch (err) { console.error('Error in kick-user:', err); }
     });
 
-    // ADD this code to your server.js file, insert it just before the disconnect event handler
+    // ===== Get users for DM =====
+    socket.on('get-users-for-dm', () => {
+        const users = Array.from(onlineUsers.values()).map(user => ({
+            id: [...onlineUsers.entries()].find(([id, u]) => u.username === user.username)?.[0],
+            username: user.username,
+            color: user.color,
+            isDeveloper: user.isDeveloper,
+            uid: user.uid,
+            profilePic: user.profilePic
+        }));
+        socket.emit('users-for-dm', users);
+    });
+
+    // ===== DM Message =====
+    socket.on('dm-message', (data) => {
+        try {
+            const sender = onlineUsers.get(socket.id);
+            if (!sender) return;
+
+            const { targetUserId, message, messageId, isGIF } = data;
+            const targetUser = onlineUsers.get(targetUserId);
+            if (!targetUser) return;
+
+            const messageData = {
+                senderId: socket.id,
+                targetUserId: targetUserId,
+                senderName: sender.username,
+                senderColor: sender.color,
+                message: message,
+                messageId: messageId,
+                timestamp: new Date(),
+                isGIF: isGIF || false,
+                status: 'delivered'
+            };
+
+            const conversationId = [socket.id, targetUserId].sort().join('-');
+            if (!dmMessages.has(conversationId)) dmMessages.set(conversationId, []);
+            dmMessages.get(conversationId).push(messageData);
+
+            io.to(targetUserId).emit('dm-message', messageData);
+            socket.emit('dm-message', { ...messageData, isOwn: true });
+            socket.emit('dm-message-status', { messageId: messageId, status: 'delivered' });
+        } catch (error) { console.error('Error in dm-message:', error); }
+    });
+
+    // ===== DM Typing =====
+    socket.on('dm-typing-start', (data) => {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+        const { targetUserId } = data;
+        io.to(targetUserId).emit('dm-typing-start', { senderId: socket.id, username: user.username, color: user.color });
+    });
+
+    socket.on('dm-typing-stop', (data) => {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+        const { targetUserId } = data;
+        io.to(targetUserId).emit('dm-typing-stop', { senderId: socket.id, username: user.username });
+    });
+
+    // ===== DM Message Read =====
+    socket.on('dm-message-read', (data) => {
+        const { senderId, messageId } = data;
+        io.to(senderId).emit('dm-message-status', { messageId: messageId, status: 'read' });
+        const conversationId = [socket.id, senderId].sort().join('-');
+        const messages = dmMessages.get(conversationId);
+        if (messages) {
+            const message = messages.find(msg => msg.messageId === messageId);
+            if (message) message.status = 'read';
+        }
+    });
+
+    // ===== Delete DM Message =====
+    socket.on('delete-dm-message', (data) => {
+        const { targetUserId, messageId } = data;
+        const conversationId = [socket.id, targetUserId].sort().join('-');
+        const messages = dmMessages.get(conversationId);
+        if (messages) {
+            const index = messages.findIndex(msg => msg.messageId === messageId);
+            if (index > -1) messages.splice(index, 1);
+        }
+        io.to(targetUserId).emit('dm-message-deleted', { messageId: messageId, senderId: socket.id });
+    });
+
+    // ===== DM Reactions =====
+    socket.on('dm-reaction', (data) => {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+        const { targetUserId, messageId, emoji } = data;
+        io.to(targetUserId).emit('dm-reaction', {
+            senderId: socket.id,
+            senderName: user.username,
+            senderColor: user.color,
+            messageId: messageId,
+            emoji: emoji,
+            timestamp: new Date()
+        });
+    });
+
+    // ===== Phonk broadcasting (DEV) =====
+    socket.on("changePhonk", (trackPath) => {
+        const user = onlineUsers.get(socket.id);
+        if (user && user.isDeveloper) {
+            currentPhonk = trackPath;
+            io.emit("playPhonk", { track: currentPhonk });
+            console.log(`🎵 Phonk changed to: ${trackPath}`);
+        }
+    });
 
     // ================= POSTS SYSTEM SERVER HANDLERS =================
 

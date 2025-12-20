@@ -1,4 +1,5 @@
-﻿/* Reset and Base Styles */
+﻿/* BRO_CHATZ Styles (Optimized) */
+
 * {
     margin: 0;
     padding: 0;
@@ -1981,6 +1982,7 @@ body {
     top: 0;
     left: -350px;
     width: 350px;
+    max-width: 90%;
     height: 100%;
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(20px);
@@ -2625,6 +2627,7 @@ body {
     top: 0;
     left: -380px;
     width: 380px;
+    max-width: 90%;
     height: 100%;
     background: rgba(10, 10, 15, 0.98);
     backdrop-filter: blur(30px);
@@ -2737,9 +2740,11 @@ body {
 }
 
 /* Mobile Responsive for DM */
-.user-hamburger-menu {
-    width: 100%;
-    left: -100%;
+@media (max-width: 768px) {
+    .user-hamburger-menu {
+        width: 100%;
+        left: -100%;
+    }
 }
 
 .regular-user-controls {
@@ -7343,6 +7348,7 @@ body {
     margin-bottom: 10px;
     background: linear-gradient(45deg, #fff, #aaa);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -7506,4 +7512,94 @@ body {
 }
 
 /* Custom Error Popup */
-.custom-error-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 99999; animation: fadeIn 0.3s; } .custom-error-overlay.active { display: flex; } .custom-error-popup { background: linear-gradient(135deg, rgba(255, 50, 80, 0.1), rgba(255, 100, 100, 0.05)); border: 2px solid rgba(255, 100, 100, 0.3); border-radius: 20px; padding: 40px; max-width: 400px; text-align: center; animation: slideIn 0.3s; box-shadow: 0 20px 60px rgba(255, 50, 80, 0.3); } .error-icon { font-size: 60px; color: #ff5252; margin-bottom: 20px; animation: pulse 1.5s infinite; } .error-title { font-size: 24px; font-weight: bold; color: #ff5252; margin-bottom: 15px; font-family: 'Orbitron', sans-serif; } .error-message { font-size: 16px; color: rgba(255, 255, 255, 0.9); margin-bottom: 30px; line-height: 1.5; } .error-ok-btn { position: relative; padding: 12px 40px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; overflow: hidden; background: transparent; color: white; } .error-ok-btn .btn-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(45deg, #ff5252, #ff1744); z-index: -1; transition: transform 0.3s; } .error-ok-btn:hover .btn-bg { transform: scale(1.05); } @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.custom-error-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    animation: fadeIn 0.3s;
+}
+
+.custom-error-overlay.active {
+    display: flex;
+}
+
+.custom-error-popup {
+    background: linear-gradient(135deg, rgba(255, 50, 80, 0.1), rgba(255, 100, 100, 0.05));
+    border: 2px solid rgba(255, 100, 100, 0.3);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 400px;
+    text-align: center;
+    animation: slideIn 0.3s;
+    box-shadow: 0 20px 60px rgba(255, 50, 80, 0.3);
+}
+
+.error-icon {
+    font-size: 60px;
+    color: #ff5252;
+    margin-bottom: 20px;
+    animation: pulse 1.5s infinite;
+}
+
+.error-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ff5252;
+    margin-bottom: 15px;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.error-message {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.error-ok-btn {
+    position: relative;
+    padding: 12px 40px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    background: transparent;
+    color: white;
+}
+
+.error-ok-btn .btn-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #ff5252, #ff1744);
+    z-index: -1;
+    transition: transform 0.3s;
+}
+
+.error-ok-btn:hover .btn-bg {
+    transform: scale(1.05);
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}

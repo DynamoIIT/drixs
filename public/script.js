@@ -3,13 +3,14 @@ const socket = io();
 
 // Supabase Import
 // Supabase Client (Initialized async)
-import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.38.4';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm';
 let supabase = null;
 
 // Initialize Supabase from Server Config
 async function initSupabase() {
     try {
-        const response = await fetch('/config');
+        // Added timestamp for cache-busting
+        const response = await fetch(`/config?t=${Date.now()}`);
         if (!response.ok) throw new Error("Failed to load config");
         const config = await response.json();
 
@@ -112,6 +113,7 @@ let developerPanel, panelCloseBtn, hamburgerBtn;
 let isDeveloper = false;
 let isModerator = false;
 // DM System Variables
+let isChatStarted = false;
 let openDMWindows = new Map(); // userId -> window element
 let dmMessages = new Map(); // userId -> messages array
 let dmTypingUsers = new Map(); // userId -> typing status
@@ -864,6 +866,11 @@ function initializeEventListeners() {
 
 // Start Chat Function
 function startChat() {
+    if (isChatStarted) {
+        console.log("Chat already started, skipping redundant call.");
+        return;
+    }
+    isChatStarted = true;
     let username;
 
     if (isDeveloper) {
@@ -4510,7 +4517,8 @@ async function handleCreateAccount() {
             console.error("Could not find profileSetupContainer to hide");
         }
 
-        startChat();
+        // Removed redundant startChat() - handled by auth listener
+        // startChat();
 
         // 5. Update Password in background (for Google Users)
         if (supabaseUser) {
@@ -4555,25 +4563,32 @@ async function handleStandardLogin() {
         console.log("DEBUG: Login Clicked. Starting...");
         console.log("DEBUG: Supabase client exists?", !!supabase);
 
+        // 1. Create a temporary, CLEAN client just for lookup to bypass ANY session hangs
+        const configResp = await fetch(`/config?t=${Date.now()}`);
+        const config = await configResp.json();
+        const tempClient = createClient(config.supabaseUrl, config.supabaseKey, {
+            auth: { persistSession: false }
+        });
+
         // Add timeout to detect hanging queries
         const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error("Query timeout after 8 seconds")), 8000)
         );
 
-        // 1. Real Query with timeout
-        const queryPromise = supabase
+        // 2. Real Query with timeout using the TEMP client
+        const queryPromise = tempClient
             .from('profiles')
             .select('email')
             .eq('username', username)
             .limit(1);
 
-        console.log("DEBUG: Starting query race...");
+        console.log("DEBUG: Starting query race (using temp client)...");
         const { data: profiles, error: profileError } = await Promise.race([
             queryPromise,
             timeoutPromise
         ]);
 
-        console.log("DEBUG: Profile Lookup Result:", profiles, profileError);
+        console.log("DEBUG: Profile Lookup Result (from temp):", profiles, profileError);
 
         if (profileError) {
             showCustomError("Database Error", profileError.message);
@@ -4798,11 +4813,19 @@ function setupAuthListener() {
         if (supabaseUser) {
             // User is logged in - Check Profile
             try {
-                const { data: profiles, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', supabaseUser.id)
-                    .limit(1);
+                // Add timeout to prevent hanging on profile fetch
+                const profileTimeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("Profile fetch timeout")), 5000)
+                );
+
+                const { data: profiles, error } = await Promise.race([
+                    supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', supabaseUser.id)
+                        .limit(1),
+                    profileTimeout
+                ]);
 
                 const profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
