@@ -134,9 +134,9 @@ function initializeTheme() {
 
     currentTheme = savedTheme;
 
-    if (savedTheme === 'cyberpunk') {
-        body.setAttribute('data-theme', 'cyberpunk');
-        themeIcon.className = 'fas fa-moon theme-icon';
+    if (savedTheme === 'onyx') {
+        body.setAttribute('data-theme', 'onyx');
+        themeIcon.className = 'fas fa-gem theme-icon'; // Gem icon for luxury
     } else {
         body.removeAttribute('data-theme');
         themeIcon.className = 'fas fa-sun theme-icon';
@@ -148,13 +148,13 @@ function toggleTheme() {
     const body = document.body;
 
     if (currentTheme === 'default') {
-        // Activate Cyberpunk Mode
-        currentTheme = 'cyberpunk';
-        body.setAttribute('data-theme', 'cyberpunk');
-        themeIcon.className = 'fas fa-moon theme-icon';
-        localStorage.setItem('brochatz-theme', 'cyberpunk');
+        // Activate Onyx Mode
+        currentTheme = 'onyx';
+        body.setAttribute('data-theme', 'onyx');
+        themeIcon.className = 'fas fa-gem theme-icon';
+        localStorage.setItem('brochatz-theme', 'onyx');
 
-        showThemeActivation('CYBERPUNK MODE ACTIVATED', 'cyberpunk');
+        showThemeActivation('ONYX LUXURY MODE', 'onyx');
 
     } else {
         // Activate Default Mode  
@@ -486,39 +486,8 @@ function initializeEventListeners() {
     }
 
     // --- REGULAR USER HAMBURGER MENU ---
-    userHamburgerBtn = document.getElementById('userHamburgerBtn');
-    userHamburgerMenu = document.getElementById('userHamburgerMenu');
-    userHamburgerClose = document.getElementById('userHamburgerClose');
+    // Moved to initializeDMSystem to avoid redundant listeners and conflicts
 
-    if (userHamburgerBtn && userHamburgerMenu) {
-        userHamburgerBtn.addEventListener('click', function (e) {
-            e.stopPropagation(); // Prevent document click from immediately closing it
-            this.classList.toggle('active');
-            userHamburgerMenu.classList.toggle('open');
-            if (userHamburgerMenu.classList.contains('open')) {
-                // Ensure dev panel is closed
-                if (developerPanel) developerPanel.classList.remove('open');
-                if (hamburgerBtn) hamburgerBtn.classList.remove('active');
-            }
-        });
-    }
-
-    if (userHamburgerClose) {
-        userHamburgerClose.addEventListener('click', () => {
-            if (userHamburgerMenu) userHamburgerMenu.classList.remove('open');
-            if (userHamburgerBtn) userHamburgerBtn.classList.remove('active');
-        });
-    }
-
-    // Close on click outside (already in document click, but let's reinforce specific handling if needed)
-    document.addEventListener('click', function (e) {
-        if (userHamburgerMenu && userHamburgerMenu.classList.contains('open')) {
-            if (!userHamburgerMenu.contains(e.target) && !userHamburgerBtn.contains(e.target)) {
-                userHamburgerMenu.classList.remove('open');
-                userHamburgerBtn.classList.remove('active');
-            }
-        }
-    });
 
     // Warn Modal Events
     if (warnCloseBtn) warnCloseBtn.addEventListener('click', closeWarnModal);
@@ -834,8 +803,9 @@ function initializeEventListeners() {
     if (openOnlineListBtn) {
         openOnlineListBtn.addEventListener('click', () => {
             onlineUsersModal.classList.add('active');
-            userHamburgerMenu.classList.remove('open');
-            userHamburgerBtn.classList.remove('active');
+            if (userHamburgerMenu) userHamburgerMenu.classList.remove('open');
+            if (userHamburgerBtn) userHamburgerBtn.classList.remove('active');
+            requestUsersList();
         });
     }
 
@@ -934,35 +904,9 @@ function startChat() {
         }, 1000);
     }, 500);
 
-    // Setup user hamburger menu (needs to be after chat UI is loaded)
-    const userHamburgerBtn = document.getElementById('userHamburgerBtn');
-    const userHamburgerMenu = document.getElementById('userHamburgerMenu');
-    const userHamburgerClose = document.getElementById('userHamburgerClose');
-
-    if (userHamburgerBtn && userHamburgerMenu) {
-        // Remove any existing listeners first
-        const newBtn = userHamburgerBtn.cloneNode(true);
-        userHamburgerBtn.parentNode.replaceChild(newBtn, userHamburgerBtn);
-
-        newBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            this.classList.toggle('active');
-            userHamburgerMenu.classList.toggle('open');
-            console.log("Hamburger clicked, menu open:", userHamburgerMenu.classList.contains('open'));
-        });
-
-        console.log("✅ User hamburger menu initialized");
-    } else {
-        console.error("❌ User hamburger elements not found");
-    }
-
-    if (userHamburgerClose) {
-        userHamburgerClose.addEventListener('click', () => {
-            if (userHamburgerMenu) userHamburgerMenu.classList.remove('open');
-            const btn = document.getElementById('userHamburgerBtn');
-            if (btn) btn.classList.remove('active');
-        });
-    }
+    // Setup user hamburger menu (already initialized in initializeDMSystem, but ensuring visibility logic here)
+    const regControls = document.getElementById('regularUserControls');
+    if (regControls) regControls.style.display = 'flex';
 }
 
 // Send Message Function
@@ -1258,17 +1202,22 @@ socket.on('dm-message', function (data) {
         status: 'delivered'
     };
 
-    // ✅ Always store in memory, even if window is closed
-    if (!dmMessages.has(data.senderId)) {
-        dmMessages.set(data.senderId, []);
-    }
-    dmMessages.get(data.senderId).push(messageData);
-
-    // ✅ If window is open → render immediately
+    // ✅ Always store in memory via addDMMessageToWindow if window is open, 
+    // OR store here if window is closed. 
     if (openDMWindows.has(data.senderId)) {
         addDMMessageToWindow(data.senderId, messageData);
     } else {
-        // Otherwise just notify
+        // Window closed - must store manually
+        if (!dmMessages.has(data.senderId)) {
+            dmMessages.set(data.senderId, []);
+        }
+
+        // Final sanity check to avoid duplication in memory
+        const history = dmMessages.get(data.senderId);
+        if (!history.find(m => m.messageId === messageData.messageId)) {
+            history.push(messageData);
+        }
+
         showDMNotificationPopup(data.senderName, data.message);
     }
 
@@ -1667,13 +1616,16 @@ function showDMNotificationPopup(from, message) {
 
 // Utility Functions
 function updateOnlineCount(count) {
-    onlineCount.textContent = count;
+    if (onlineCount) onlineCount.textContent = count;
+    if (onlineCountBadge) onlineCountBadge.textContent = `${count} Online`;
 
     // Add pulse animation
-    onlineCount.style.animation = 'none';
-    setTimeout(() => {
-        onlineCount.style.animation = 'countPulse 0.5s ease-out';
-    }, 10);
+    if (onlineCount) {
+        onlineCount.style.animation = 'none';
+        setTimeout(() => {
+            onlineCount.style.animation = 'countPulse 0.5s ease-out';
+        }, 10);
+    }
 }
 
 // Add count pulse animation
@@ -1890,23 +1842,131 @@ trailStyle.textContent = `
 document.head.appendChild(trailStyle);
 
 // Developer Functions
-function requestOnlineUsers() {
-    if (isDeveloper) {
-        socket.emit('get-online-users');
+// ================= USER LIST & TABS SYSTEM =================
+
+let currentUserListTab = 'online'; // 'online' or 'global'
+let globalProfilesCache = [];
+let lastGlobalFetchTime = 0;
+let currentOnlineUsersList = []; // Store for cross-referencing
+
+// Initialize Tabs
+document.addEventListener('DOMContentLoaded', () => {
+    const tabOnlineBtn = document.getElementById('tabOnlineBtn');
+    const tabGlobalBtn = document.getElementById('tabGlobalBtn');
+    const publicUserSearch = document.getElementById('publicUserSearch');
+
+    if (tabOnlineBtn && tabGlobalBtn) {
+        tabOnlineBtn.addEventListener('click', () => switchPublicUserListTab('online'));
+        tabGlobalBtn.addEventListener('click', () => switchPublicUserListTab('global'));
+    }
+
+    if (publicUserSearch) {
+        publicUserSearch.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filterPublicUserList(searchTerm);
+        });
+    }
+
+    // Wire up the Hamburger "USERS" button to open the modal
+    const openListBtn = document.getElementById('openOnlineListBtn');
+    const onlineModal = document.getElementById('onlineUsersModal');
+    const closeOnlineModal = document.getElementById('closeOnlineModal');
+
+    if (openListBtn && onlineModal) {
+        openListBtn.addEventListener('click', () => {
+            onlineModal.style.display = 'flex';
+            switchPublicUserListTab('online');
+        });
+    }
+
+    if (closeOnlineModal && onlineModal) {
+        closeOnlineModal.addEventListener('click', () => {
+            onlineModal.style.display = 'none';
+        });
+    }
+});
+
+function switchPublicUserListTab(tab) {
+    currentUserListTab = tab;
+
+    // Update UI
+    const tabOnlineBtn = document.getElementById('tabOnlineBtn');
+    const tabGlobalBtn = document.getElementById('tabGlobalBtn');
+    if (tabOnlineBtn) tabOnlineBtn.classList.toggle('active', tab === 'online');
+    if (tabGlobalBtn) tabGlobalBtn.classList.toggle('active', tab === 'global');
+
+    // Refresh List
+    if (tab === 'online') {
+        renderPublicUserList(currentOnlineUsersList, 'online');
+    } else {
+        fetchGlobalUsers();
     }
 }
 
-function displayOnlineUsers(users) {
-    const usersList = document.getElementById('onlineUsersList');
-    usersList.innerHTML = '';
+async function fetchGlobalUsers() {
+    const usersList = document.getElementById('usersListContainer');
+    usersList.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div>';
 
+    // Cache for 60 seconds
+    if (Date.now() - lastGlobalFetchTime < 60000 && globalProfilesCache.length > 0) {
+        renderPublicUserList(globalProfilesCache, 'global');
+        return;
+    }
+
+    try {
+        const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('username');
+
+        if (error) throw error;
+
+        globalProfilesCache = profiles.map(p => ({
+            username: p.username,
+            avatar_url: p.avatar_url,
+            bio: p.bio,
+            isGlobal: true // Marker
+        }));
+
+        lastGlobalFetchTime = Date.now();
+        renderPublicUserList(globalProfilesCache, 'global');
+
+    } catch (err) {
+        console.error("Error fetching global users:", err);
+        usersList.innerHTML = '<div style="text-align:center; padding: 20px;">Failed to load users.</div>';
+    }
+}
+
+function requestOnlineUsers() {
+    // Request online users for everyone (or mostly developer if restricted on server)
+    socket.emit('get-online-users');
+}
+
+function displayOnlineUsers(users) {
+    currentOnlineUsersList = users;
+
+    // Update count
+    if (typeof updateOnlineCount === 'function') updateOnlineCount(users.length);
+
+    // 1. Update Developer Panel List
+    renderDevUserList(users);
+
+    // 2. Update Public User List (if active)
+    if (currentUserListTab === 'online') {
+        renderPublicUserList(users, 'online');
+    }
+}
+
+// Render Developer Panel List (Simple, with Admin Actions)
+function renderDevUserList(users) {
+    const devList = document.getElementById('devOnlineUsersList');
+    if (!devList) return;
+
+    devList.innerHTML = '';
     users.forEach(user => {
-        if (user.username !== 'DEVELOPER') { // Don't show developer in the list
+        if (user.username !== currentUser) {
             const userDiv = document.createElement('div');
             userDiv.className = 'user-item';
-
-            // Pass UID to banUser. If uid is missing (old logic), pass null or handle it.
-            // Note: onclick is using string concatenation, so we need to be careful with quotes.
             const uidParam = user.uid ? `'${user.uid}'` : 'null';
 
             userDiv.innerHTML = `
@@ -1920,10 +1980,103 @@ function displayOnlineUsers(users) {
                     <button class="user-action-btn ban-btn" style="background: #ff0000; color: white;" onclick="banUser(${uidParam}, '${user.username}')">BAN</button>
                 </div>
             `;
-            usersList.appendChild(userDiv);
+            devList.appendChild(userDiv);
         }
     });
 }
+
+// Render Public User List (Tabs, Status Dots, DMs)
+function renderPublicUserList(users, mode) {
+    const usersList = document.getElementById('usersListContainer');
+    if (!usersList) return;
+
+    usersList.innerHTML = '';
+
+    // Create Map for quick online status lookup
+    const onlineMap = new Map();
+    if (currentOnlineUsersList && currentOnlineUsersList.length > 0) {
+        currentOnlineUsersList.forEach(u => onlineMap.set(u.username, u));
+    }
+
+    users.forEach(user => {
+        if (user.username === currentUser) return;
+
+        const username = user.username;
+        const onlineUserData = onlineMap.get(username);
+        const isOnline = !!onlineUserData;
+
+        // Filter: If mode is online, MUST be online
+        if (mode === 'online' && !isOnline) return;
+
+        const statusClass = isOnline ? 'online' : 'offline';
+        const userColor = onlineUserData ? onlineUserData.color : '#ffffff';
+        const avatarUrl = user.avatar_url || (onlineUserData ? (onlineUserData.profilePic || DEFAULT_AVATAR) : DEFAULT_AVATAR);
+        const uidParam = (onlineUserData && onlineUserData.uid) ? `'${onlineUserData.uid}'` : (user.id ? `'${user.id}'` : 'null');
+
+        const userDiv = document.createElement('div');
+        userDiv.className = 'user-item';
+
+        const dmAction = isOnline ?
+            `onclick="openDMByUsername('${username}')"` :
+            `onclick="alert('User is offline. You can only message online users.')" style="opacity: 0.6; cursor: not-allowed;"`;
+
+        userDiv.innerHTML = `
+            <div class="user-avatar-small" style="border-color: ${userColor}; position: relative; width: 40px; height: 40px; border-radius: 50%; border: 2px solid ${userColor}; overflow: visible; margin-right: 15px;">
+                <img src="${avatarUrl}" onerror="this.src='${DEFAULT_AVATAR}'" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                <div class="status-dot ${statusClass}" style="position: absolute; bottom: -2px; right: -2px; border: 2px solid #000;"></div>
+            </div>
+            <div class="user-info" style="flex: 1;">
+                <div class="user-name" style="color: ${isOnline ? userColor : '#ccc'}; font-weight: bold; font-family: 'Rajdhani', sans-serif; font-size: 1.1rem;">
+                    ${username}
+                </div>
+                <div class="user-status-text" style="font-size: 0.8rem; color: #888;">
+                    ${isOnline ? 'Online now' : 'Offline'}
+                </div>
+            </div>
+            <div class="user-actions">
+                <button class="user-action-btn message-btn" ${dmAction} title="Message">
+                    <i class="fas fa-comment-alt"></i>
+                </button>
+            </div>
+        `;
+        usersList.appendChild(userDiv);
+    });
+
+    // Re-apply search filter
+    const searchTerm = document.getElementById('publicUserSearch') ? document.getElementById('publicUserSearch').value.toLowerCase() : '';
+    if (searchTerm) filterPublicUserList(searchTerm);
+}
+
+function filterPublicUserList(term) {
+    const items = document.querySelectorAll('#usersListContainer .user-item');
+    items.forEach(item => {
+        const nameElement = item.querySelector('.user-name');
+        if (nameElement) {
+            const name = nameElement.textContent.toLowerCase();
+            item.style.display = name.includes(term) ? 'flex' : 'none';
+        }
+    });
+}
+
+function openDMByUsername(username) {
+    const user = currentOnlineUsersList.find(u => u.username === username);
+    if (user) {
+        openDMWindow(user);
+        // Close modal and hamburger if open
+        const modal = document.getElementById('onlineUsersModal');
+        const hamburger = document.getElementById('userHamburgerMenu');
+        if (modal) {
+            modal.style.display = 'none'; // Legacy check
+            modal.classList.remove('active'); // Current method
+        }
+        if (hamburger) hamburger.classList.remove('open');
+        const hBtn = document.getElementById('userHamburgerBtn');
+        if (hBtn) hBtn.classList.remove('active');
+    } else {
+        alert(`User ${username} is not currently available for DM.`);
+    }
+}
+
 
 window.banUser = async function (uid, username) {
     if (!uid) {
@@ -1976,24 +2129,41 @@ function initializeDMSystem() {
     const userHamburgerClose = document.getElementById('userHamburgerClose');
 
     // Show regular user hamburger for everyone
-    document.getElementById('regularUserControls').style.display = 'block';
+    if (document.getElementById('regularUserControls')) {
+        document.getElementById('regularUserControls').style.display = 'block';
+    }
 
-    userHamburgerBtn.addEventListener('click', function () {
-        this.classList.toggle('active');
-        userHamburgerMenu.classList.toggle('open');
-        requestUsersList();
-    });
+    if (userHamburgerBtn && userHamburgerMenu) {
+        userHamburgerBtn.addEventListener('click', function (e) {
+            e.stopPropagation(); // Prevent document click from immediately closing it
+            this.classList.toggle('active');
+            userHamburgerMenu.classList.toggle('open');
 
-    userHamburgerClose.addEventListener('click', function () {
-        userHamburgerBtn.classList.remove('active');
-        userHamburgerMenu.classList.remove('open');
-    });
+            if (userHamburgerMenu.classList.contains('open')) {
+                requestUsersList();
+                // Ensure dev panel is closed if it exists
+                if (typeof developerPanel !== 'undefined' && developerPanel) developerPanel.classList.remove('open');
+                const hBtn = document.getElementById('hamburgerBtn');
+                if (hBtn) hBtn.classList.remove('active');
+            }
+        });
+    }
+
+    if (userHamburgerClose) {
+        userHamburgerClose.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (userHamburgerMenu) userHamburgerMenu.classList.remove('open');
+            if (userHamburgerBtn) userHamburgerBtn.classList.remove('active');
+        });
+    }
 
     // Click outside to close
     document.addEventListener('click', function (e) {
-        if (!userHamburgerMenu.contains(e.target) && !userHamburgerBtn.contains(e.target)) {
-            userHamburgerBtn.classList.remove('active');
-            userHamburgerMenu.classList.remove('open');
+        if (userHamburgerMenu && userHamburgerMenu.classList.contains('open')) {
+            if (!userHamburgerMenu.contains(e.target) && !userHamburgerBtn.contains(e.target)) {
+                userHamburgerBtn.classList.remove('active');
+                userHamburgerMenu.classList.remove('open');
+            }
         }
     });
 }
@@ -2008,7 +2178,8 @@ function displayUsersForDM(users) {
     container.innerHTML = '';
 
     // Filter out current user so they can't message themselves
-    const otherUsers = users.filter(u => u.username !== currentUser);
+    // Use case-insensitive comparison for robustness
+    const otherUsers = users.filter(u => u.username.toLowerCase() !== currentUser.toLowerCase());
 
     // Update global online count in header (should include yourself)
     if (onlineCount) onlineCount.textContent = users.length;
@@ -2208,9 +2379,26 @@ function sendDMMessage(userId) {
     input.style.height = 'auto';
 }
 
-function addDMMessageToWindow(userId, messageData) {
+function addDMMessageToWindow(userId, messageData, skipStore = false) {
     const messagesContainer = document.getElementById(`dmMessages-${userId}`);
     if (!messagesContainer) return;
+
+    // Check if message already exists in UI to prevent visual doubling
+    if (messagesContainer.querySelector(`[data-message-id="${messageData.messageId}"]`)) {
+        return;
+    }
+
+    // Store in memory if not skipped
+    if (!skipStore) {
+        if (!dmMessages.has(userId)) {
+            dmMessages.set(userId, []);
+        }
+        const history = dmMessages.get(userId);
+        // Deduplication check for memory
+        if (!history.find(m => m.messageId === messageData.messageId)) {
+            history.push(messageData);
+        }
+    }
 
     const messageDiv = document.createElement('div');
     messageDiv.className = `dm-message ${messageData.isOwn ? 'own' : ''}`;
@@ -2243,20 +2431,8 @@ function addDMMessageToWindow(userId, messageData) {
         </div>
     `;
 
-    // Context menu for reactions and reply
-    messageDiv.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-        showDMReactionPicker(e, messageDiv, userId);
-    });
-
     messagesContainer.appendChild(messageDiv);
     scrollDMToBottom(userId);
-
-    // Store message
-    if (!dmMessages.has(userId)) {
-        dmMessages.set(userId, []);
-    }
-    dmMessages.get(userId).push(messageData);
 }
 
 function scrollDMToBottom(userId) {
@@ -2269,7 +2445,7 @@ function scrollDMToBottom(userId) {
 
 function loadDMMessages(userId) {
     const messages = dmMessages.get(userId) || [];
-    messages.forEach(msg => addDMMessageToWindow(userId, msg));
+    messages.forEach(msg => addDMMessageToWindow(userId, msg, true));
 }
 
 function closeDMWindow(userId) {
@@ -4964,4 +5140,5 @@ window.showCommentsWindow = showCommentsWindow;
 window.replyToComment = replyToComment;
 window.removeImagePreview = removeImagePreview;
 window.handleLogout = handleLogout;
-window.showCustomConfirm = window.showCustomConfirm; // already attached but for visibility
+window.openDMByUsername = openDMByUsername;
+

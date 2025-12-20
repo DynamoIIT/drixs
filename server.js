@@ -335,7 +335,8 @@ io.on('connection', (socket) => {
                 hasReceivedStone: false,
                 uid: uid,
                 profilePic: profilePic,
-                bio: bio
+                bio: bio,
+                id: socket.id // 🎯 CRITICAL: Socket ID for DMs
             });
             // Update counts & list
             io.emit('update-online-count', onlineUsers.size);

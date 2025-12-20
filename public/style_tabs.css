@@ -1,0 +1,93 @@
+/* User List Tabs */
+.user-list-tabs {
+    display: flex;
+    gap: 10px;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    background: var(--accent-primary);
+    color: #fff;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px var(--accent-primary);
+}
+
+/* User Search */
+.user-search-container {
+    padding: 10px 15px;
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#userListSearch {
+    width: 100%;
+    padding: 8px 35px 8px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    color: var(--text-primary);
+    outline: none;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.search-icon {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+/* Status Dots */
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.status-dot.online {
+    background-color: #00ff41;
+    /* Neon Green */
+    box-shadow: 0 0 5px #00ff41;
+}
+
+.status-dot.offline {
+    background-color: #ff0000;
+    /* Red */
+    box-shadow: 0 0 5px #ff0000;
+}
+
+/* Cyberpunk Overrides */
+[data-theme="cyberpunk"] .tab-btn.active {
+    background: var(--neon-pink);
+    color: var(--neon-blue);
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 15px var(--neon-pink);
+}
+
+[data-theme="cyberpunk"] .status-dot.online {
+    background-color: var(--neon-green);
+    box-shadow: 0 0 8px var(--neon-green);
+}
+
+[data-theme="cyberpunk"] .status-dot.offline {
+    background-color: #ff0055;
+    box-shadow: 0 0 8px #ff0055;
+}

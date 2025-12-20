@@ -10,6 +10,7 @@
     <title>DRIXS - Ultimate Chat Experience</title>
     <link rel="stylesheet" href="style.css?v=2.0">
     <link rel="stylesheet" href="style_profiles.css?v=2.0">
+    <link rel="stylesheet" href="style_tabs.css?v=2.0">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;200;300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -418,12 +419,13 @@
     <div class="developer-panel" id="developerPanel">
         <div class="panel-content">
             <div class="panel-header">
-                <h3><i class="fas fa-shield-alt"></i> Developer Panel</h3>
+                <h3><i class="fas fa-users"></i> Online Users</h3>
                 <button class="panel-close" id="panelCloseBtn">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="online-users-list" id="onlineUsersList">
+
+            <div class="online-users-list" id="devOnlineUsersList">
                 <!-- Users will be populated here -->
             </div>
         </div>
@@ -451,7 +453,7 @@
             <div class="online-users-bar" id="openOnlineListBtn">
                 <div class="bar-icon"><i class="fas fa-users"></i></div>
                 <div class="bar-info">
-                    <span class="bar-title">ONLINE USERS</span>
+                    <span class="bar-title">USERS</span>
                     <span class="bar-count" id="onlineCountBadge">0 Online</span>
                 </div>
                 <div class="bar-arrow"><i class="fas fa-chevron-right"></i></div>
@@ -849,16 +851,21 @@
     <div class="online-list-modal" id="onlineUsersModal">
         <div class="online-modal-content">
             <div class="online-header">
-                <h3><i class="fas fa-users"></i> ONLINE NOW</h3>
+                <h3><i class="fas fa-users"></i> USERS</h3>
                 <button id="closeOnlineModal"><i class="fas fa-times"></i></button>
             </div>
             <div class="online-body">
+                <!-- User List Tabs -->
+                <div class="user-list-tabs">
+                    <button class="tab-btn active" id="tabOnlineBtn">Online</button>
+                    <button class="tab-btn" id="tabGlobalBtn">Global</button>
+                </div>
+
                 <div class="online-search-bar">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="userListSearch" placeholder="Search friends...">
+                    <input type="text" id="publicUserSearch" placeholder="Search friends...">
                 </div>
                 <div class="detailed-users-list" id="usersListContainer">
-                    <!-- Reusing the same ID for simplicity in script.js logic update -->
                     <!-- Users will be populated here -->
                 </div>
             </div>
