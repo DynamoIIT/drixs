@@ -4369,18 +4369,30 @@ console.log('✅ Tic-Tac-Toe system initialized!');
 
 // Auth Functions
 async function handleGoogleLogin() {
+    console.log("DEBUG: Google Login Clicked");
+    if (!supabase) {
+        console.error("DEBUG: Supabase client not initialized yet");
+        alert("System still initializing... please wait a moment.");
+        return;
+    }
+
     try {
+        console.log("DEBUG: Starting signInWithOAuth...");
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: window.location.origin
             }
         });
-        if (error) throw error;
+        if (error) {
+            console.error("DEBUG: signInWithOAuth Error:", error);
+            throw error;
+        }
+        console.log("DEBUG: Redirect initiated success:", data);
         // Redirect happens automatically
     } catch (error) {
-        console.error("Google Login Failed:", error);
-        alert("Login failed: " + error.message);
+        console.error("Critical Google Login Failed:", error);
+        alert("Login failed: " + (error.message || "Unknown error"));
     }
 }
 

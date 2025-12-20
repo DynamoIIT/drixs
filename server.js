@@ -57,7 +57,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Security Headers for Google Auth
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless'); // more compatible than require-corp
     next();
 });
 
