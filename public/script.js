@@ -60,6 +60,20 @@ const aiMessages = document.getElementById('aiMessages');
 const aiCloseBtn = document.getElementById('aiCloseBtn');
 const loadingScreen = document.getElementById('loadingScreen');
 
+// Chat Image Elements
+const chatGalleryBtn = document.getElementById('chatGalleryBtn');
+const chatImageInput = document.getElementById('chatImageInput');
+const chatImagePreview = document.getElementById('chatImagePreview');
+
+// Image Viewer Elements
+const imageViewerModal = document.getElementById('imageViewerModal');
+const viewerImage = document.getElementById('viewerImage');
+const viewerCloseBtn = document.getElementById('viewerCloseBtn');
+const zoomInBtn = document.getElementById('zoomInBtn');
+const zoomOutBtn = document.getElementById('zoomOutBtn');
+const zoomResetBtn = document.getElementById('zoomResetBtn');
+const viewerZoomLevel = document.getElementById('viewerZoomLevel');
+
 // Profile Setup Elements
 const profilePicInput = document.getElementById('profilePicInput');
 const setupProfilePicPreview = document.getElementById('setupProfilePicPreview');
@@ -92,6 +106,19 @@ const onlineCountBadge = document.getElementById('onlineCountBadge');
 const userListSearch = document.getElementById('userListSearch');
 const usersListContainer = document.getElementById('usersListContainer');
 
+// Follow System & Profile Elements
+const followUserBtn = document.getElementById('followUserBtn');
+const viewFollowersCount = document.getElementById('viewFollowersCount');
+const viewFollowingCount = document.getElementById('viewFollowingCount');
+const followListModal = document.getElementById('followListModal');
+const followListItems = document.getElementById('followListItems');
+const followListTitle = document.getElementById('followListTitle');
+const followListBack = document.getElementById('followListBack');
+const followListClose = document.getElementById('followListClose');
+const myFollowersCountDisplay = document.getElementById('myFollowersCount');
+const myFollowingCountDisplay = document.getElementById('myFollowingCount');
+const profileLoaderOverlay = document.getElementById('profileLoaderOverlay');
+
 // Global Variables
 let currentUser = null;
 // Supabase User
@@ -102,6 +129,9 @@ const DEFAULT_AVATAR = 'assets/anonymous.jpg';
 let currentUserProfilePic = DEFAULT_AVATAR;
 let currentUserBio = 'Write something about uh.';
 let typingTimer = null;
+let selectedChatImage = null; // Store base64 of selected image
+let selectedDMImages = new Map(); // userId -> base64
+let viewerZoom = 1;
 let cropper = null; // Cropper.js instance
 let currentUserCroppedBlob = null; // Store the cropped image blob
 
@@ -123,6 +153,11 @@ function getCurrentDMUserId() {
     const activeWindow = document.querySelector('.dm-window.active');
     return activeWindow ? activeWindow.dataset.userid : null;
 }
+// Follow System State
+let currentUserFollowing = new Set(); // Set of user UIDs current user follows
+let currentUserFollowers = new Set(); // Set of user UIDs following current user
+let followListStack = []; // For cyclic navigation (stack of {type, userId, title})
+
 // ================= CYBERPUNK THEME SYSTEM =================
 
 let currentTheme = 'default';
@@ -274,13 +309,7 @@ function hideCustomError() {
 window.showCustomError = showCustomError;
 window.hideCustomError = hideCustomError;
 
-// Initialize theme on load and add event listener
-document.addEventListener('DOMContentLoaded', function () {
-    initializeTheme();
-
-    // Theme toggle event
-    document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-});
+// DOMContentLoaded handlers moved to initializeEventListeners or consolidated
 
 let isTyping = false;
 let selectedMessage = null;
@@ -559,6 +588,9 @@ function initializeEventListeners() {
 
     sendBtn.addEventListener('click', sendMessage);
 
+    // Paste handler for global chat
+    messageInput.addEventListener('paste', handlePaste);
+
 
     // AI Modal Events
     aiCloseBtn.addEventListener('click', closeAIModal);
@@ -818,13 +850,62 @@ function initializeEventListeners() {
     if (userListSearch) {
         userListSearch.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
-            const items = usersListContainer.querySelectorAll('.detailed-user-item');
-            items.forEach(item => {
-                const name = item.querySelector('.user-item-name').textContent.toLowerCase();
-                item.style.display = name.includes(term) ? 'flex' : 'none';
-            });
+            filterPublicUserList(term);
         });
     }
+
+    // Chat Media Event Listeners
+    if (chatGalleryBtn) {
+        chatGalleryBtn.addEventListener('click', () => {
+            chatImageInput.click();
+        });
+    }
+
+    if (chatImageInput) {
+        chatImageInput.addEventListener('change', handleChatImageSelection);
+    }
+
+    // Image Viewer Listeners
+    if (viewerCloseBtn) {
+        viewerCloseBtn.addEventListener('click', closeImageViewer);
+    }
+
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => updateZoom(0.2));
+    }
+
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', () => updateZoom(-0.2));
+    }
+
+    if (zoomResetBtn) {
+        zoomResetBtn.addEventListener('click', () => {
+            viewerZoom = 1;
+            applyZoom();
+        });
+    }
+
+    // Close on background click
+    if (imageViewerModal) {
+        imageViewerModal.addEventListener('click', (e) => {
+            if (e.target === imageViewerModal) closeImageViewer();
+        });
+    }
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+        if (!imageViewerModal.classList.contains('active')) return;
+
+        if (e.key === 'Escape') closeImageViewer();
+        if (e.key === '+' || e.key === '=') updateZoom(0.2);
+        if (e.key === '-' || e.key === '_') updateZoom(-0.2);
+        if (e.key === '0') {
+            viewerZoom = 1;
+            applyZoom();
+        }
+    });
+
+    // Keyboard controls moved to consolidated block above
 
     // Click outside to close models
     window.addEventListener('click', (e) => {
@@ -912,7 +993,7 @@ function startChat() {
 // Send Message Function
 function sendMessage() {
     const message = messageInput.value.trim();
-    if (!message) return;
+    if (!message && !selectedChatImage) return;
 
     // Check if it's an AI command
     if (message.startsWith('/ai ')) {
@@ -925,6 +1006,7 @@ function sendMessage() {
     // Send message data
     const messageData = {
         message: message,
+        image: selectedChatImage, // Include image if selected
         replyTo: replyingTo
     };
 
@@ -936,9 +1018,10 @@ function sendMessage() {
         sendBtn.classList.remove('sending');
     }, 600);
 
-    // Clear input and reply
+    // Clear input, preview and reply
     messageInput.value = '';
     messageInput.style.height = 'auto';
+    removeChatImagePreview();
     clearReply();
 
     // Stop typing indicator
@@ -1289,6 +1372,25 @@ function addMessage(data) {
     }
 
     messageDiv.classList.add('message');
+
+    let imageHtml = '';
+    const imageToRender = data.image || (data.isGIF ? data.message : null);
+
+    if (imageToRender) {
+        imageHtml = `
+            <div class="image-thumbnail-wrapper media-aesthetic-frame" onclick="openImageViewer('${imageToRender}')">
+                <div class="image-loading-overlay">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>LOADING...</span>
+                </div>
+                <img src="${imageToRender}" 
+                     class="chat-rendered-image" 
+                     onload="this.previousElementSibling.style.opacity='0'; setTimeout(() => this.previousElementSibling.remove(), 500)">
+                <div class="media-badge">MEDIA</div>
+            </div>
+        `;
+    }
+
     messageDiv.innerHTML = `
         <img src="${data.profilePic || DEFAULT_AVATAR}" 
              class="message-profile-pic" 
@@ -1305,7 +1407,8 @@ function addMessage(data) {
                 </span>
                 <span class="timestamp">${formatTime(data.timestamp)}</span>
             </div>
-            <div class="message-content">${escapeHtml(data.message)}</div>
+            <div class="message-content">${parseMessage(data.message)}</div>
+            ${imageHtml}
             <div class="message-reactions"></div>
         </div>
     `;
@@ -1735,10 +1838,211 @@ function formatTime(timestamp) {
 }
 
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Advanced Message Parsing (Links & Media)
+function parseMessage(text) {
+    if (!text) return '';
+
+    // 1. Escape HTML for safety
+    let escaped = escapeHtml(text).trim();
+
+    // 2. Identify URLs
+    const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+
+    return escaped.replace(urlPattern, function (url) {
+        // Detect media (direct files OR service links)
+        const isDirectMedia = /\.(jpeg|jpg|gif|png|webp|svg|mp4)($|\?)/i.test(url);
+        const isTenor = /tenor\.com\/view/i.test(url);
+        const isGiphy = /giphy\.com\/gifs/i.test(url);
+
+        if (isDirectMedia || isTenor || isGiphy) {
+            return `
+                <div class="message-link-preview">
+                    <a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>
+                    <div class="image-thumbnail-wrapper media-aesthetic-frame" onclick="openImageViewer('${url}')">
+                        <img src="${url}" class="chat-rendered-image" onerror="this.parentElement.style.display='none'" loading="lazy">
+                        <div class="media-badge">MEDIA</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
+}
+
+// 🖼️ Unified Image/GIF Processor
+function processMediaFile(file, isDM = false, userId = null) {
+    if (!file) return;
+
+    // Check if it's an image OR gif
+    const isImage = file.type.startsWith('image/');
+
+    if (!isImage) {
+        showCustomError('Invalid File', 'Please select a valid image or GIF file.');
+        return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // Increased to 10MB
+        showCustomError('File Too Large', 'Please select a file smaller than 10MB.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const result = e.target.result;
+
+        if (isDM) {
+            selectedDMImages.set(userId, result);
+            const preview = document.getElementById(`dmImagePreview-${userId}`);
+            if (preview) {
+                preview.innerHTML = `
+                    <div class="preview-thumb-container">
+                        <img src="${result}" alt="DM Preview">
+                        <button class="remove-preview-btn" onclick="removeDMImagePreview('${userId}')"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+                preview.style.display = 'flex';
+            }
+            document.getElementById(`dmInput-${userId}`).focus();
+        } else {
+            selectedChatImage = result;
+            chatImagePreview.innerHTML = `
+                <div class="preview-thumb-container">
+                    <img src="${result}" alt="Chat Preview">
+                    <button class="remove-preview-btn" onclick="removeChatImagePreview()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="preview-info">
+                    <span style="display: block; font-size: 0.8rem; color: #fff; font-weight: 600;">MEDIA READY</span>
+                    <span style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                </div>
+            `;
+            chatImagePreview.style.display = 'flex';
+            messageInput.focus();
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// ⌨️ Keyboard Paste Handler (Images & GIFs)
+function handlePaste(e, isDM = false, userId = null) {
+    const clipboardData = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+    if (!clipboardData) return;
+
+    const items = clipboardData.items;
+    let handled = false;
+
+    // 1. Try to catch actual files (files, blobs)
+    for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+            const file = item.getAsFile();
+            processMediaFile(file, isDM, userId);
+            e.preventDefault();
+            handled = true;
+            break;
+        }
+    }
+
+    // 2. If not a file, check if it's a URL that looks like a GIF/Image
+    if (!handled) {
+        const text = clipboardData.getData('text');
+        const isMediaUrl = /\.(jpeg|jpg|gif|png|webp|svg|mp4)($|\?)/i.test(text) ||
+            text.includes('tenor.com/view') ||
+            text.includes('giphy.com/gifs');
+
+        if (isMediaUrl) {
+            e.preventDefault();
+            // Treat the link as a selected image
+            if (isDM) {
+                selectedDMImages.set(userId, text);
+                const preview = document.getElementById(`dmImagePreview-${userId}`);
+                if (preview) {
+                    preview.innerHTML = `
+                        <div class="preview-thumb-container">
+                            <img src="${text}" alt="DM Preview">
+                            <button class="remove-preview-btn" onclick="removeDMImagePreview('${userId}')"><i class="fas fa-times"></i></button>
+                        </div>
+                    `;
+                    preview.style.display = 'flex';
+                }
+            } else {
+                selectedChatImage = text;
+                chatImagePreview.innerHTML = `
+                    <div class="preview-thumb-container">
+                        <img src="${text}" alt="Chat Preview">
+                        <button class="remove-preview-btn" onclick="removeChatImagePreview()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="preview-info">
+                        <span style="display: block; font-size: 0.8rem; color: #fff; font-weight: 600;">LINK MEDIA READY</span>
+                        <span style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">External Source</span>
+                    </div>
+                `;
+                chatImagePreview.style.display = 'flex';
+            }
+            handled = true;
+        }
+    }
+}
+
+// Chat Image Selection & Preview
+function handleChatImageSelection(event) {
+    const file = event.target.files[0];
+    processMediaFile(file, false);
+}
+
+function removeChatImagePreview() {
+    selectedChatImage = null;
+    chatImageInput.value = '';
+    chatImagePreview.style.display = 'none';
+    chatImagePreview.innerHTML = '';
+}
+
+// Image Viewer Logic
+function openImageViewer(src) {
+    if (!src) return;
+
+    // Close other sidebars/modals to prevent conflicts
+    if (userHamburgerMenu) userHamburgerMenu.classList.remove('open');
+    if (userHamburgerBtn) userHamburgerBtn.classList.remove('active');
+    if (onlineUsersModal) onlineUsersModal.classList.remove('active');
+
+    viewerImage.src = src;
+    viewerZoom = 1;
+    applyZoom();
+    imageViewerModal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+}
+
+function closeImageViewer() {
+    imageViewerModal.classList.remove('active');
+    document.body.style.overflow = ''; // Restore scrolling
+    setTimeout(() => {
+        viewerImage.src = '';
+    }, 300);
+}
+
+function updateZoom(delta) {
+    viewerZoom = Math.min(Math.max(0.5, viewerZoom + delta), 3);
+    applyZoom();
+}
+
+function applyZoom() {
+    if (viewerImage) {
+        viewerImage.style.transform = `scale(${viewerZoom})`;
+    }
+    if (viewerZoomLevel) {
+        viewerZoomLevel.textContent = `${viewerZoom.toFixed(2)}x`;
+    }
+}
+
+// Add these to window for button clicks
+window.removeChatImagePreview = removeChatImagePreview;
+window.openImageViewer = openImageViewer;
 
 function playMessageSound() {
     // Create a subtle notification sound
@@ -2011,34 +2315,64 @@ function renderPublicUserList(users, mode) {
         const statusClass = isOnline ? 'online' : 'offline';
         const userColor = onlineUserData ? onlineUserData.color : '#ffffff';
         const avatarUrl = user.avatar_url || (onlineUserData ? (onlineUserData.profilePic || DEFAULT_AVATAR) : DEFAULT_AVATAR);
-        const uidParam = (onlineUserData && onlineUserData.uid) ? `'${onlineUserData.uid}'` : (user.id ? `'${user.id}'` : 'null');
+        const targetUid = onlineUserData ? onlineUserData.uid : user.id;
+        const uidParam = `'${targetUid}'`;
+
+        // Follow Logic
+        const doesFollowMe = currentUserFollowers.has(targetUid);
+        const amIFollowing = currentUserFollowing.has(targetUid);
+        const isMutual = amIFollowing && doesFollowMe;
 
         const userDiv = document.createElement('div');
         userDiv.className = 'user-item';
 
-        const dmAction = isOnline ?
-            `onclick="openDMByUsername('${username}')"` :
-            `onclick="alert('User is offline. You can only message online users.')" style="opacity: 0.6; cursor: not-allowed;"`;
+        const isSelf = targetUid === supabaseUser?.id;
 
         userDiv.innerHTML = `
-            <div class="user-avatar-small" style="border-color: ${userColor}; position: relative; width: 40px; height: 40px; border-radius: 50%; border: 2px solid ${userColor}; overflow: visible; margin-right: 15px;">
+            <div class="user-avatar-small" style="border-color: ${userColor}; position: relative; width: 40px; height: 40px; border-radius: 50%; border: 2px solid ${userColor}; overflow: visible; margin-right: 15px; cursor: pointer;">
                 <img src="${avatarUrl}" onerror="this.src='${DEFAULT_AVATAR}'" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
                 <div class="status-dot ${statusClass}" style="position: absolute; bottom: -2px; right: -2px; border: 2px solid #000;"></div>
             </div>
-            <div class="user-info" style="flex: 1;">
-                <div class="user-name" style="color: ${isOnline ? userColor : '#ccc'}; font-weight: bold; font-family: 'Rajdhani', sans-serif; font-size: 1.1rem;">
+            <div class="user-info" style="flex: 1; cursor: pointer;">
+                <div class="user-name" style="color: ${isOnline ? userColor : '#ccc'}; font-weight: bold; font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; display: flex; align-items: center;">
                     ${username}
+                    ${isMutual ? '<span class="mutual-badge">Mutual ??</span>' : ''}
                 </div>
                 <div class="user-status-text" style="font-size: 0.8rem; color: #888;">
-                    ${isOnline ? 'Online now' : 'Offline'}
+                    ${amIFollowing ? '<span style="color: var(--accent-primary);">Following</span>' : (doesFollowMe ? 'Follows you' : (isOnline ? 'Online now' : 'Offline'))}
                 </div>
             </div>
-            <div class="user-actions">
-                <button class="user-action-btn message-btn" ${dmAction} title="Message">
-                    <i class="fas fa-comment-alt"></i>
-                </button>
+            <div class="user-actions" style="display: flex; gap: 8px;">
+                ${(isMutual || isSelf) ?
+                `<button class="user-action-btn message-btn dm-trigger-btn" data-username="${username}">
+                        <i class="fas fa-comment-alt"></i>
+                    </button>` :
+                `<button class="user-action-btn message-btn dm-locked" title="Mutual Follow Required" disabled>
+                        <i class="fas fa-lock"></i>
+                    </button>`
+            }
             </div>
         `;
+
+        // Attach event listeners AFTER rendering
+        // Profile click - entire row except actions area
+        userDiv.addEventListener('click', (e) => {
+            if (e.target.closest('.user-actions')) return;
+            window.showUserProfile(targetUid);
+        });
+
+        // DM button click - only attach if mutual or self
+        if (isMutual || isSelf) {
+            const dmBtn = userDiv.querySelector('.dm-trigger-btn');
+            if (dmBtn) {
+                dmBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // openDMByUsername has fresh mutual-follow check as backup
+                    window.openDMByUsername(dmBtn.dataset.username);
+                });
+            }
+        }
+
         usersList.appendChild(userDiv);
     });
 
@@ -2058,9 +2392,20 @@ function filterPublicUserList(term) {
     });
 }
 
-function openDMByUsername(username) {
+window.openDMByUsername = function (username) {
     const user = currentOnlineUsersList.find(u => u.username === username);
     if (user) {
+        // Double check mutual follow (safeguard)
+        const targetUid = user.uid;
+        const doesFollowMe = currentUserFollowers.has(targetUid);
+        const amIFollowing = currentUserFollowing.has(targetUid);
+        const isMutual = amIFollowing && doesFollowMe;
+        const isSelf = targetUid === supabaseUser?.id;
+
+        if (!isMutual && !isSelf) {
+            return showNotification('Mutual follow required to start DMs.', 'info');
+        }
+
         openDMWindow(user);
         // Close modal and hamburger if open
         const modal = document.getElementById('onlineUsersModal');
@@ -2073,7 +2418,7 @@ function openDMByUsername(username) {
         const hBtn = document.getElementById('userHamburgerBtn');
         if (hBtn) hBtn.classList.remove('active');
     } else {
-        alert(`User ${username} is not currently available for DM.`);
+        showNotification(`User ${username} is not currently available for DM.`, 'info');
     }
 }
 
@@ -2172,9 +2517,11 @@ function requestUsersList() {
     socket.emit('get-users-for-dm');
 }
 
+// Render Detailed User List for DM Modal
 function displayUsersForDM(users) {
     const container = document.getElementById('usersListContainer');
     if (!container) return;
+
     container.innerHTML = '';
 
     // Filter out current user so they can't message themselves
@@ -2187,37 +2534,77 @@ function displayUsersForDM(users) {
     if (onlineCountBadge) onlineCountBadge.textContent = `${users.length} Online`;
 
     otherUsers.forEach(user => {
+        const targetUid = user.uid;
+        const doesFollowMe = currentUserFollowers.has(targetUid);
+        const amIFollowing = currentUserFollowing.has(targetUid);
+        const isMutual = amIFollowing && doesFollowMe;
+        const isSelf = targetUid === supabaseUser?.id;
+
         // Create the detailed item for the new modal
         const userDiv = document.createElement('div');
         userDiv.className = 'detailed-user-item';
 
-        // Open DM on click (Default action for the row)
-        userDiv.onclick = () => {
-            openDMWindow(user);
-            onlineUsersModal.classList.remove('active');
-        };
-
         const profilePic = user.profilePic || DEFAULT_AVATAR;
-        const uidParam = user.uid ? `'${user.uid}'` : 'null';
 
         userDiv.innerHTML = `
-            <img src="${profilePic}" class="user-item-pic" onclick="event.stopPropagation(); showUserProfile(${uidParam})">
+            <img src="${profilePic}" class="user-item-pic">
             <div class="user-item-info">
-                <div class="user-item-name" style="color: ${user.color}; cursor: pointer;" onclick="event.stopPropagation(); showUserProfile(${uidParam})">
+                <div class="user-item-name" style="color: ${user.color}; cursor: pointer;">
                     ${user.username}
                     ${user.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
+                    ${isMutual ? '<span class="mutual-badge" style="font-size:0.5rem; padding: 1px 4px;">Mutual</span>' : ''}
                 </div>
-                <div class="user-item-status">Online</div>
+                <div class="user-item-status">${isMutual ? 'Online' : (doesFollowMe ? 'Follows you' : 'Online')}</div>
             </div>
             <div class="user-item-action">
-                <i class="fas fa-comment-dots" style="color: #00C9FF; opacity: 0.7;"></i>
+                ${(isMutual || isSelf) ?
+                '<i class="fas fa-comment-dots dm-trigger-icon" style="color: #00C9FF; opacity: 0.7; cursor: pointer;"></i>' :
+                '<i class="fas fa-lock" style="opacity: 0.3; font-size: 0.8rem;"></i>'
+            }
             </div>
         `;
+
+        // Attach event listeners AFTER rendering
+        // Profile click - entire row except action area
+        userDiv.addEventListener('click', (e) => {
+            if (e.target.closest('.user-item-action')) return;
+            window.showUserProfile(targetUid);
+        });
+
+        // DM click - only the icon
+        if (isMutual || isSelf) {
+            const dmIcon = userDiv.querySelector('.dm-trigger-icon');
+            if (dmIcon) {
+                dmIcon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    window.openDMWindow(user);
+                    onlineUsersModal.classList.remove('active');
+                });
+            }
+        }
+
         container.appendChild(userDiv);
     });
 }
+window.displayUsersForDM = displayUsersForDM;
 
-function openDMWindow(user) {
+window.openDMWindow = function (user) {
+    if (!user) {
+        return;
+    }
+
+    // Security Safeguard: Mutual follow check
+    const targetUid = user.uid || user.id; // Use database UID first, not socket ID
+
+    const doesFollowMe = currentUserFollowers.has(targetUid);
+    const amIFollowing = currentUserFollowing.has(targetUid);
+    const isMutual = amIFollowing && doesFollowMe;
+    const isSelf = targetUid === supabaseUser?.id;
+
+    if (!isMutual && !isSelf) {
+        return showNotification('Mutual follow required to start DMs.', 'info');
+    }
+
     // Close hamburger menu
     document.getElementById('userHamburgerBtn').classList.remove('active');
     document.getElementById('userHamburgerMenu').classList.remove('open');
@@ -2256,15 +2643,13 @@ function openDMWindow(user) {
         <div class="dm-messages" id="dmMessages-${user.id}"></div>
         <div class="dm-typing-indicator" id="dmTyping-${user.id}"></div>
         <div class="dm-input-area">
+            <div class="dm-image-preview" id="dmImagePreview-${user.id}" style="display: none;"></div>
             <div class="dm-reply-preview-container" id="dmReply-${user.id}"></div>
             <div class="dm-input-wrapper">
-                <button class="dm-emoji-btn" onclick="toggleDMEmojis('${user.id}')">
-                    <i class="fas fa-smile"></i>
+                <button class="dm-gallery-btn" onclick="document.getElementById('dmImageInput-${user.id}').click()">
+                    <i class="fas fa-image"></i>
                 </button>
-                <label class="gif-upload-btn" for="gifInput-${user.id}">
-                    <i class="fas fa-images"></i>
-                </label>
-                <input type="file" class="gif-input" id="gifInput-${user.id}" accept=".gif,image/*" onchange="handleGIFUpload('${user.id}', this)">
+                <input type="file" id="dmImageInput-${user.id}" class="dm-image-input" accept="image/*" style="display: none;" onchange="handleDMImageSelection('${user.id}', this)">
                 <textarea class="dm-input" id="dmInput-${user.id}" placeholder="Message ${user.username}..." rows="1" maxlength="500"></textarea>
                 <button class="dm-send-btn" onclick="sendDMMessage('${user.id}')">
                     <i class="fas fa-paper-plane"></i>
@@ -2316,6 +2701,9 @@ function setupDMInputEvents(userId) {
         }
     });
 
+    // Paste handler for DM chat
+    input.addEventListener('paste', (e) => handlePaste(e, true, userId));
+
     // Make window draggable
 
 }
@@ -2355,12 +2743,14 @@ function makeDMWindowDraggable(userId) {
 function sendDMMessage(userId) {
     const input = document.getElementById(`dmInput-${userId}`);
     const message = input.value.trim();
+    const selectedImage = selectedDMImages.get(userId);
 
-    if (!message) return;
+    if (!message && !selectedImage) return;
 
     const messageData = {
         targetUserId: userId,
         message: message,
+        image: selectedImage,
         timestamp: new Date(),
         messageId: Date.now() + Math.random()
     };
@@ -2377,6 +2767,7 @@ function sendDMMessage(userId) {
 
     input.value = '';
     input.style.height = 'auto';
+    removeDMImagePreview(userId);
 }
 
 function addDMMessageToWindow(userId, messageData, skipStore = false) {
@@ -2413,11 +2804,27 @@ function addDMMessageToWindow(userId, messageData, skipStore = false) {
             '<i class="fas fa-check message-status-single"></i>';
     }
 
-    let contentHtml = escapeHtml(messageData.message);
+    let contentHtml = parseMessage(messageData.message);
 
-    // Handle GIF content
-    if (messageData.isGIF) {
-        contentHtml = `<div class="gif-container"><img src="${messageData.message}" class="gif-image" alt="GIF"></div>`;
+    // Handle Image content
+    let imageHtml = '';
+    const imageToRender = messageData.image || (messageData.isGIF ? messageData.message : null);
+
+    if (imageToRender) {
+        if (messageData.isGIF && !messageData.image) {
+            contentHtml = ''; // Clear text if it's a legacy GIF
+        }
+        imageHtml = `
+            <div class="image-thumbnail-wrapper dm-image-thumb media-aesthetic-frame" onclick="openImageViewer('${imageToRender}')">
+                <div class="image-loading-overlay">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <img src="${imageToRender}" 
+                     class="chat-rendered-image" 
+                     onload="this.previousElementSibling.style.opacity='0'; setTimeout(() => this.previousElementSibling.remove(), 500)">
+                <div class="media-badge">MEDIA</div>
+            </div>
+        `;
     }
 
     messageDiv.innerHTML = `
@@ -2428,6 +2835,7 @@ function addDMMessageToWindow(userId, messageData, skipStore = false) {
                 <div class="dm-message-status">${statusIcon}</div>
             </div>
             <div class="dm-message-content">${contentHtml}</div>
+            ${imageHtml}
         </div>
     `;
 
@@ -2502,46 +2910,20 @@ function showDMReactionPicker(event, messageElement, userId) {
     reactionPicker.style.animation = 'pickerSlideIn 0.3s ease-out';
 }
 
-function handleGIFUpload(userId, input) {
+function handleDMImageSelection(userId, input) {
     const file = input.files[0];
-    if (!file) return;
+    processMediaFile(file, true, userId);
+}
 
-    // Check if it's an image
-    if (!file.type.startsWith('image/')) {
-        alert('Please select an image file!');
-        return;
+function removeDMImagePreview(userId) {
+    selectedDMImages.delete(userId);
+    const input = document.getElementById(`dmImageInput-${userId}`);
+    if (input) input.value = '';
+    const preview = document.getElementById(`dmImagePreview-${userId}`);
+    if (preview) {
+        preview.style.display = 'none';
+        preview.innerHTML = '';
     }
-
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB!');
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const messageData = {
-            targetUserId: userId,
-            message: e.target.result,
-            timestamp: new Date(),
-            messageId: Date.now() + Math.random(),
-            isGIF: true
-        };
-
-        socket.emit('dm-message', messageData);
-
-        // Add to local messages immediately
-        addDMMessageToWindow(userId, {
-            ...messageData,
-            sender: currentUser,
-            isOwn: true,
-            status: 'sent'
-        });
-    };
-    reader.readAsDataURL(file);
-
-    // Clear input
-    input.value = '';
 }
 
 function showDMTypingIndicator(userId, username, color) {
@@ -4341,202 +4723,11 @@ socket.on('user-game-status-updated', function (data) {
     });
 });
 
-// ================= STRANGER THINGS SEASON =================
-
-let stActive = false;
-let stVideoPlayed = false;
-
-// Initialize Stranger Things System
-function initializeStrangerThings() {
-    const bulbBtn = document.getElementById('bulbBtn');
-    const bulbContainer = document.getElementById('bulbContainer');
-    const stModal = document.getElementById('stModal');
-    const stImageContainer = document.getElementById('stImageContainer');
-    const stVideoContainer = document.getElementById('stVideoContainer');
-    const stVideo = document.getElementById('stVideo');
-    const upsideDownOverlay = document.getElementById('upsideDownOverlay');
-    const stLogo = document.querySelector('.st-logo');
-
-    if (!bulbBtn) return;
-
-    bulbBtn.addEventListener('click', function () {
-        if (!stActive) {
-            // Activate Stranger Things mode
-            stActive = true;
-            bulbContainer.classList.add('bulb-active', 'bulb-flickering');
-
-            // Show modal after brief delay
-            setTimeout(() => {
-                showStrangerThingsSequence();
-            }, 500);
-
-        } else {
-            // Deactivate Stranger Things mode
-            deactivateStrangerThings();
-        }
-    });
-
-    // Video ended event
-    if (stVideo) {
-        stVideo.addEventListener('ended', function () {
-            activateUpsideDown();
-        });
-    }
-}
-
-function showStrangerThingsSequence() {
-    const stModal = document.getElementById('stModal');
-    const stImageContainer = document.getElementById('stImageContainer');
-    const stLogo = document.querySelector('.st-logo');
-
-    // Show modal
-    stModal.classList.add('active');
-
-    // Show logo with fade in
-    setTimeout(() => {
-        stImageContainer.classList.add('show');
-    }, 300);
-
-    // Start whip zoom animation
-    setTimeout(() => {
-        stLogo.classList.add('whip-zoom');
-    }, 1500);
-
-    // After whip zoom, show video
-    setTimeout(() => {
-        showStrangerThingsVideo();
-    }, 3500); // 1.5s delay + 2s animation
-}
-
-function showStrangerThingsVideo() {
-    const stImageContainer = document.getElementById('stImageContainer');
-    const stVideoContainer = document.getElementById('stVideoContainer');
-    const stVideo = document.getElementById('stVideo');
-
-    // Hide image
-    stImageContainer.classList.remove('show');
-
-    // Show video
-    setTimeout(() => {
-        stVideoContainer.classList.add('show');
-        stVideo.play().catch(err => {
-            console.log('Video autoplay prevented:', err);
-            // If autoplay fails, try with user interaction
-            stVideo.muted = true;
-            stVideo.play();
-        });
-    }, 500);
-}
-
-function activateUpsideDown() {
-    const stModal = document.getElementById('stModal');
-    const upsideDownOverlay = document.getElementById('upsideDownOverlay');
-    const dustParticles = document.getElementById('dustParticles');
-
-    // Hide modal
-    stModal.classList.remove('active');
-
-    // Show upside down overlay with flip effect
-    setTimeout(() => {
-        upsideDownOverlay.classList.add('active');
-
-        // Create dust particles
-        createDustParticles(dustParticles);
-
-        // Continue creating particles periodically
-        setInterval(() => {
-            if (stActive) {
-                createDustParticles(dustParticles);
-            }
-        }, 3000);
-    }, 500);
-}
-
-function createDustParticles(container) {
-    if (!container) return;
-
-    // Create 30 dust particles
-    for (let i = 0; i < 30; i++) {
-        setTimeout(() => {
-            const particle = document.createElement('div');
-            particle.className = 'dust-particle';
-
-            // Random starting position
-            const startX = Math.random() * window.innerWidth;
-            const startY = Math.random() * window.innerHeight;
-
-            particle.style.left = startX + 'px';
-            particle.style.top = startY + 'px';
-
-            // Random movement
-            const moveX = (Math.random() - 0.5) * 200;
-            const moveY = (Math.random() - 0.5) * 200;
-            const duration = 5 + Math.random() * 5;
-
-            particle.style.setProperty('--tx', moveX + 'px');
-            particle.style.setProperty('--ty', moveY + 'px');
-            particle.style.animationDuration = duration + 's';
-
-            container.appendChild(particle);
-
-            // Remove particle after animation
-            setTimeout(() => {
-                particle.remove();
-            }, duration * 1000);
-        }, i * 100);
-    }
-}
-
-function deactivateStrangerThings() {
-    const bulbContainer = document.getElementById('bulbContainer');
-    const stModal = document.getElementById('stModal');
-    const stImageContainer = document.getElementById('stImageContainer');
-    const stVideoContainer = document.getElementById('stVideoContainer');
-    const stVideo = document.getElementById('stVideo');
-    const upsideDownOverlay = document.getElementById('upsideDownOverlay');
-    const stLogo = document.querySelector('.st-logo');
-    const dustParticles = document.getElementById('dustParticles');
-
-    stActive = false;
-    stVideoPlayed = false;
-
-    // Remove all active classes
-    bulbContainer.classList.remove('bulb-active', 'bulb-flickering');
-    stModal.classList.remove('active');
-    stImageContainer.classList.remove('show');
-    stVideoContainer.classList.remove('show');
-    upsideDownOverlay.classList.remove('active');
-
-    if (stLogo) {
-        stLogo.classList.remove('whip-zoom');
-    }
-
-    // Stop and reset video
-    if (stVideo) {
-        stVideo.pause();
-        stVideo.currentTime = 0;
-    }
-
-    // Clear dust particles
-    if (dustParticles) {
-        dustParticles.innerHTML = '';
-    }
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function () {
-    initializeStrangerThings();
-});
-
-// Clean up on page unload
-window.addEventListener('beforeunload', function () {
-    deactivateStrangerThings();
-});
-
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function () {
     initializeTicTacToe();
 });
+
 
 // Clean up on page unload
 window.addEventListener('beforeunload', function () {
@@ -4836,7 +5027,8 @@ window.sendDMMessage = sendDMMessage;
 window.closeDMWindow = closeDMWindow;
 window.minimizeDMWindow = minimizeDMWindow;
 window.toggleDMEmojis = toggleDMEmojis;
-window.handleGIFUpload = handleGIFUpload;
+window.handleDMImageSelection = handleDMImageSelection;
+window.removeDMImagePreview = removeDMImagePreview;
 window.deleteDMMessage = deleteDMMessage;
 window.kickUser = kickUser;
 window.openWarnModal = openWarnModal;
@@ -4941,8 +5133,15 @@ async function handleUpdateProfile() {
 
 
 
-async function showUserProfile(uid) {
+window.showUserProfile = async function (uid) {
     if (!uid) return;
+
+    // Show Loader First
+    if (profileLoaderOverlay) profileLoaderOverlay.classList.add('active');
+    userProfileModal.classList.add('active');
+
+    // Store active UID for real-time updates
+    viewProfileUsername.dataset.activeuid = uid;
 
     try {
         const { data: profile, error } = await supabase
@@ -4955,11 +5154,31 @@ async function showUserProfile(uid) {
             viewProfilePic.src = profile.avatar_url || DEFAULT_AVATAR;
             viewProfileUsername.textContent = profile.username;
             viewProfileBio.textContent = profile.bio || "Write something about uh.";
-            userProfileModal.classList.add('active');
+
+            // Follow System Integration (Parallel)
+            updateFollowButtonUI(uid);
+            updateProfileStats(uid).finally(() => {
+                // Hide loader once core info is loaded
+                if (profileLoaderOverlay) profileLoaderOverlay.classList.remove('active');
+            });
+
+            // Handle Stats Clicks (Cyclic Navigation)
+            const followersStat = document.getElementById('viewFollowersStat');
+            const followingStat = document.getElementById('viewFollowingStat');
+
+            followersStat.onclick = () => openFollowList('followers', uid, `${profile.username}'s Followers`);
+            followingStat.onclick = () => openFollowList('following', uid, `${profile.username}'s Following`);
+
+            // Follow Button Listener
+            if (followUserBtn) {
+                followUserBtn.onclick = () => toggleFollow(uid, profile.username);
+            }
         } else {
+            if (profileLoaderOverlay) profileLoaderOverlay.classList.remove('active');
             showNotification('User profile not found', 'error');
         }
     } catch (error) {
+        if (profileLoaderOverlay) profileLoaderOverlay.classList.remove('active');
         console.error("Show Profile Error:", error);
     }
 }
@@ -4991,7 +5210,7 @@ function setupAuthListener() {
             try {
                 // Add timeout to prevent hanging on profile fetch
                 const profileTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("Profile fetch timeout")), 5000)
+                    setTimeout(() => reject(new Error("Profile fetch timeout")), 10000)
                 );
 
                 const { data: profiles, error } = await Promise.race([
@@ -5029,6 +5248,8 @@ function setupAuthListener() {
 
                     // Setup Listeners
                     setupBanListener(supabaseUser.id);
+                    await fetchUserFollowData(); // Load follow system data
+                    setupFollowRealtime(); // Enable real-time sync for follows
 
                     // Initialize Chat
                     // Hide Welcome / Auth screens
@@ -5128,7 +5349,7 @@ window.nextWizardStep = function (step) {
         // else finishBtn.setAttribute('disabled', 'true'); // Not strictly needed if not visible
     }
 };
-window.handleGIFUpload = handleGIFUpload;
+// window.handleGIFUpload = handleGIFUpload; // Removed - function no longer exists
 window.deleteDMMessage = deleteDMMessage;
 window.kickUser = kickUser;
 window.openWarnModal = openWarnModal;
@@ -5142,3 +5363,395 @@ window.removeImagePreview = removeImagePreview;
 window.handleLogout = handleLogout;
 window.openDMByUsername = openDMByUsername;
 
+// Settings Window Handlers
+document.addEventListener('DOMContentLoaded', function () {
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const settingsWindow = document.getElementById('settingsWindow');
+    const settingsBackBtn = document.getElementById('settingsBackBtn');
+    const userHamburgerMenu = document.getElementById('userHamburgerMenu');
+
+    // Open Settings Window
+    if (openSettingsBtn) {
+        openSettingsBtn.addEventListener('click', function () {
+            settingsWindow.classList.add('active');
+            userHamburgerMenu.classList.remove('active'); // Close hamburger menu
+        });
+    }
+
+    // Close Settings Window (Back button)
+    if (settingsBackBtn) {
+        settingsBackBtn.addEventListener('click', function () {
+            settingsWindow.classList.remove('active');
+            userHamburgerMenu.classList.add('active'); // Reopen hamburger menu
+        });
+    }
+
+    // Theme Toggle Card
+    const themeToggleCard = document.getElementById('themeToggleCard');
+    if (themeToggleCard) {
+        themeToggleCard.addEventListener('click', function () {
+            toggleTheme();
+        });
+    }
+
+    // Edit Profile Card - Open existing unique Profile Editor (which was called settingsModal)
+    const editProfileBtnCard = document.getElementById('editProfileBtnCard');
+    const settingsModal = document.getElementById('settingsModal');
+
+    if (editProfileBtnCard) {
+        editProfileBtnCard.addEventListener('click', function () {
+            // Close the new settings window
+            settingsWindow.classList.remove('active');
+
+            // Open the existing Profile Edit modal
+            if (settingsModal) {
+                settingsModal.classList.add('active');
+
+                // Populate current values using the correct global variables
+                try {
+                    const nameInput = document.getElementById('editUsernameInput');
+                    const bioInput = document.getElementById('editBioInput');
+                    const picPreview = document.getElementById('editProfilePicPreview');
+
+                    // Variables are global strings: currentUser(name), currentUserBio, currentUserProfilePic
+                    if (nameInput) nameInput.value = (typeof currentUser === 'string' ? currentUser : '');
+                    if (bioInput) bioInput.value = (typeof currentUserBio === 'string' ? currentUserBio : '');
+                    if (picPreview) picPreview.src = (typeof currentUserProfilePic === 'string' && currentUserProfilePic) ? currentUserProfilePic : 'default-avatar.png';
+                } catch (e) {
+                    console.error("Error populating profile data:", e);
+                }
+            } else {
+                console.error("Original settingsModal not found!");
+            }
+        });
+    }
+
+    // Logout Card - Use existing handleLogout() for custom popup
+    const logoutBtnCard = document.getElementById('logoutBtnCard');
+    if (logoutBtnCard) {
+        logoutBtnCard.addEventListener('click', function () {
+            if (typeof handleLogout === 'function') {
+                handleLogout(); // Uses the custom confirm popup
+            } else {
+                // Fallback
+                if (confirm('Are you sure you want to logout?')) {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.reload();
+                }
+            }
+        });
+    }
+
+    // Follow List Modal Listeners
+    if (followListClose) {
+        followListClose.addEventListener('click', closeFollowList);
+    }
+    if (followListBack) {
+        followListBack.addEventListener('click', closeFollowList); // Simple back for now
+    }
+});
+
+// ================= FOLLOW SYSTEM LOGIC =================
+
+// Real-time Follow Sync
+function setupFollowRealtime() {
+    if (!supabase || !supabaseUser) return;
+
+    // Listen for changes in follows table
+    supabase
+        .channel('public:follows')
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'follows'
+        }, async (payload) => {
+            console.log('Follow change detected:', payload);
+
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+
+            // Use the available data. For DELETE, we rely on replica identity full
+            const data = (eventType === 'DELETE') ? oldRecord : newRecord;
+            if (!data) return;
+
+            // If it involves the current user
+            const isRelevant = (data.follower_id === supabaseUser.id) || (data.following_id === supabaseUser.id);
+
+            if (isRelevant) {
+                // Re-fetch everything for accuracy
+                await fetchUserFollowData();
+
+                // Refresh active profile if open
+                if (userProfileModal.classList.contains('active')) {
+                    const activeUid = viewProfileUsername.dataset.activeuid;
+                    if (activeUid) updateProfileStats(activeUid);
+                }
+
+                // Refresh Lists immediately
+                if (currentUserListTab === 'global') fetchGlobalUsers();
+                if (typeof requestOnlineUsers === 'function') requestOnlineUsers();
+            }
+        })
+        .subscribe();
+}
+
+async function fetchUserFollowData() {
+    if (!supabaseUser) return;
+    try {
+        const { data: following, error: fErr } = await supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', supabaseUser.id);
+
+        const { data: followers, error: rErr } = await supabase
+            .from('follows')
+            .select('follower_id')
+            .eq('following_id', supabaseUser.id);
+
+        if (fErr || rErr) throw (fErr || rErr);
+
+        currentUserFollowing = new Set((following || []).map(f => f.following_id));
+        currentUserFollowers = new Set((followers || []).map(f => f.follower_id));
+
+        console.log("Follow data updated:", { following: currentUserFollowing.size, followers: currentUserFollowers.size });
+        updateMyStatsDisplay();
+
+    } catch (error) {
+        console.error("Error fetching follow data:", error);
+    }
+}
+
+function updateMyStatsDisplay() {
+    // Also try to find elements dynamically in case they were replaced or are in a specific scope
+    const followersEl = document.getElementById('myFollowersCount');
+    const followingEl = document.getElementById('myFollowingCount');
+
+    if (followersEl) followersEl.textContent = currentUserFollowers.size;
+    if (followingEl) followingEl.textContent = currentUserFollowing.size;
+
+    // Log for debugging
+    console.log("Settings stats updated:", {
+        followers: currentUserFollowers.size,
+        following: currentUserFollowing.size
+    });
+}
+
+async function toggleFollow(targetId, targetUsername) {
+    if (!supabaseUser) return showNotification("Please login to follow users", "error");
+    if (targetId === supabaseUser.id) return;
+
+    if (followUserBtn) followUserBtn.classList.add('loading');
+    const isFollowing = currentUserFollowing.has(targetId);
+
+    try {
+        if (isFollowing) {
+            // Unfollow
+            const { error } = await supabase
+                .from('follows')
+                .delete()
+                .eq('follower_id', supabaseUser.id)
+                .eq('following_id', targetId);
+
+            if (error) throw error;
+            currentUserFollowing.delete(targetId);
+            showNotification(`Unfollowed ${targetUsername}`, "info");
+        } else {
+            // Follow
+            const { error } = await supabase
+                .from('follows')
+                .insert({
+                    follower_id: supabaseUser.id,
+                    following_id: targetId
+                });
+
+            if (error) throw error;
+            currentUserFollowing.add(targetId);
+            showNotification(`Following ${targetUsername}`, "success");
+        }
+
+        // Refresh UI
+        if (followUserBtn) updateFollowButtonUI(targetId);
+        await updateProfileStats(targetId);
+
+        // Refresh User Lists to update DM locks
+        if (currentUserListTab === 'global') fetchGlobalUsers();
+        else {
+            // Check if requestOnlineUsers exists or if we should just fetchGlobalUsers
+            if (typeof requestOnlineUsers === 'function') requestOnlineUsers();
+            else fetchGlobalUsers();
+        }
+
+    } catch (error) {
+        console.error("Toggle Follow Error:", error);
+        showNotification("Failed to update follow status", "error");
+    } finally {
+        if (followUserBtn) followUserBtn.classList.remove('loading');
+    }
+}
+
+function updateFollowButtonUI(uid) {
+    if (!followUserBtn) return;
+    const isFollowing = currentUserFollowing.has(uid);
+
+    if (isFollowing) {
+        followUserBtn.classList.add('following');
+        followUserBtn.innerHTML = '<i class="fas fa-user-minus"></i> <span>UNFOLLOW</span>';
+    } else {
+        followUserBtn.classList.remove('following');
+        followUserBtn.innerHTML = '<i class="fas fa-user-plus"></i> <span>FOLLOW</span>';
+    }
+
+    // Hide for self
+    followUserBtn.style.display = (uid === supabaseUser?.id) ? 'none' : 'flex';
+}
+
+async function updateProfileStats(uid) {
+    try {
+        // Fetch Counts
+        const { count: followersCount } = await supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', uid);
+
+        const { count: followingCount } = await supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('follower_id', uid);
+
+        if (viewFollowersCount) viewFollowersCount.textContent = followersCount || 0;
+        if (viewFollowingCount) viewFollowingCount.textContent = followingCount || 0;
+
+        // Contextual Badge (Mutual, Follows You)
+        const isFollowingMe = currentUserFollowers.has(uid);
+        const amIFollowing = currentUserFollowing.has(uid);
+
+        let contextHTML = '';
+        let dmGuidanceHTML = '';
+
+        if (isFollowingMe && amIFollowing) {
+            contextHTML = '<span class="mutual-badge">Mutual ??</span>';
+        } else if (isFollowingMe) {
+            contextHTML = '<span class="follows-you-tag">Follows you</span>';
+        }
+
+        const isMutual = isFollowingMe && amIFollowing;
+
+        // DM Guidance if not mutual
+        if (!isMutual && uid !== supabaseUser?.id) {
+            dmGuidanceHTML = `<div class="dm-guidance-tag">
+                <i class="fas fa-lock" style="font-size: 0.7rem; margin-right: 5px; opacity: 0.6;"></i>
+                Enable DMs by following each other
+            </div>`;
+        }
+
+        // Inject or clear badge near username
+        const usernameEl = document.getElementById('viewProfileUsername');
+        if (!usernameEl) return;
+
+        // Remove existing badge/guidance if any
+        const existingBadge = usernameEl.querySelector('.mutual-badge');
+        if (existingBadge) existingBadge.remove();
+        const existingTag = document.querySelector('.follows-you-tag');
+        if (existingTag) existingTag.remove();
+        const existingGuidance = document.querySelector('.dm-guidance-tag');
+        if (existingGuidance) existingGuidance.remove();
+
+        if (isFollowingMe && amIFollowing) {
+            usernameEl.insertAdjacentHTML('beforeend', contextHTML);
+        } else if (isFollowingMe) {
+            const bioContainer = document.querySelector('.profile-bio-container');
+            if (bioContainer) bioContainer.insertAdjacentHTML('afterend', contextHTML);
+        }
+
+        // Always show guidance if not mutual
+        if (dmGuidanceHTML) {
+            const statsBar = document.querySelector('.profile-stats-bar');
+            if (statsBar) statsBar.insertAdjacentHTML('afterend', dmGuidanceHTML);
+        }
+
+    } catch (error) {
+        console.error("Update Profile Stats Error:", error);
+    }
+}
+
+async function openFollowList(type, userId, title) {
+    if (!followListModal) return;
+
+    followListTitle.textContent = title;
+    followListItems.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div>';
+    followListModal.classList.add('active');
+
+    try {
+        let data, error;
+
+        if (type === 'followers') {
+            const { data: d, error: e } = await supabase
+                .from('follows')
+                .select('follower:profiles!follower_id(*)')
+                .eq('following_id', userId);
+            data = d ? d.map(item => item.follower) : [];
+            error = e;
+        } else {
+            const { data: d, error: e } = await supabase
+                .from('follows')
+                .select('following:profiles!following_id(*)')
+                .eq('follower_id', userId);
+            data = d ? d.map(item => item.following) : [];
+            error = e;
+        }
+
+        if (error) throw error;
+
+        followListItems.innerHTML = '';
+        if (!data || data.length === 0) {
+            followListItems.innerHTML = '<div style="text-align:center; padding: 20px; opacity: 0.5;">No users found.</div>';
+            return;
+        }
+
+        data.forEach(profile => {
+            if (!profile) return;
+            const item = document.createElement('div');
+            item.className = 'user-item';
+            item.style.padding = '12px';
+            item.style.marginBottom = '8px';
+            item.style.background = 'rgba(255,255,255,0.03)';
+            item.style.borderRadius = '12px';
+            item.style.cursor = 'pointer';
+            item.style.display = 'flex';
+            item.style.alignItems = 'center';
+
+            const isFollowingMe = currentUserFollowers.has(profile.id);
+            const amIFollowing = currentUserFollowing.has(profile.id);
+            const isMutual = isFollowingMe && amIFollowing;
+
+            item.innerHTML = `
+                <div class="user-avatar-small" style="width: 35px; height: 35px; margin-right: 12px; flex-shrink: 0;">
+                    <img src="${profile.avatar_url || DEFAULT_AVATAR}" style="border-radius: 50%; width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div style="flex: 1; overflow: hidden;">
+                    <div style="font-family: 'Rajdhani', sans-serif; font-weight: 700; display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${profile.username}
+                        ${isMutual ? '<span class="mutual-badge" style="font-size:0.55rem; padding: 1px 5px; flex-shrink: 0;">Mutual</span>' : ''}
+                    </div>
+                    ${(isFollowingMe && !amIFollowing) ? '<span class="follows-you-tag" style="font-size:0.6rem;">Follows you</span>' : ''}
+                </div>
+                <div class="user-actions">
+                    <i class="fas fa-chevron-right" style="opacity: 0.3;"></i>
+                </div>
+            `;
+            item.onclick = () => {
+                followListModal.classList.remove('active');
+                showUserProfile(profile.id);
+            };
+            followListItems.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error("Open Follow List Error:", error);
+        followListItems.innerHTML = '<div style="text-align:center; color:#ff006e; padding: 20px;">Error loading list.</div>';
+    }
+}
+
+function closeFollowList() {
+    followListModal.classList.remove('active');
+}

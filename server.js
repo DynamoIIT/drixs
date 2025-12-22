@@ -47,7 +47,7 @@ const io = new Server(server, {
     transports: ['websocket', 'polling'],
     pingTimeout: 60000,
     pingInterval: 25000,
-    maxHttpBufferSize: 1e6,
+    maxHttpBufferSize: 10e6, // 10MB limit for images/GIFs
     serveClient: false
 });
 
@@ -378,10 +378,12 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            if (!data || !data.message || typeof data.message !== 'string') return;
+            if (!data) return;
+            const message = (data.message || '').trim();
+            const hasImage = !!data.image;
 
-            const message = data.message.trim();
-            if (message.length === 0 || message.length > 1000) return;
+            if (message.length === 0 && !hasImage) return;
+            if (message.length > 1000) return;
 
             // 🔍 STONE SYSTEM DEBUG VERSION
             console.log('🔍 DEBUG: Message received from', user.username);
@@ -520,7 +522,8 @@ io.on('connection', (socket) => {
                     isDeveloper: user.isDeveloper,
                     isModerator: user.isModerator,
                     uid: user.uid,
-                    profilePic: user.profilePic
+                    profilePic: user.profilePic,
+                    image: data.image // 🔥 CRITICAL: Include the image!
                 };
                 io.emit('chat-message', messageData);
             }
@@ -646,6 +649,7 @@ io.on('connection', (socket) => {
                 messageId: messageId,
                 timestamp: new Date(),
                 isGIF: isGIF || false,
+                image: data.image, // 🔥 CRITICAL: Include the image!
                 status: 'delivered'
             };
 

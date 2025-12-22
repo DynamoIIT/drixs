@@ -8,9 +8,11 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>DRIXS - Ultimate Chat Experience</title>
-    <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="stylesheet" href="style.css?v=2.4">
     <link rel="stylesheet" href="style_profiles.css?v=2.0">
     <link rel="stylesheet" href="style_tabs.css?v=2.0">
+    <link rel="stylesheet" href="settings-window.css?v=2.0">
+    <link rel="stylesheet" href="menu-bars.css?v=2.0">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;200;300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -296,24 +298,6 @@
 
                 <!-- Right-aligned Controls -->
                 <div class="right-controls">
-                    <div class="bulb-container" id="bulbContainer">
-                        <button class="bulb-btn" id="bulbBtn">
-                            <div class="bulb-icon">
-                                <div class="bulb-glass"></div>
-                                <div class="bulb-filament"></div>
-                                <div class="bulb-base"></div>
-                            </div>
-                        </button>
-                    </div>
-
-                    <div class="theme-toggle-container">
-                        <button class="theme-toggle-btn" id="themeToggleBtn">
-                            <div class="theme-btn-glow"></div>
-                            <i class="fas fa-sun theme-icon" id="themeIcon"></i>
-                            <div class="theme-particles"></div>
-                        </button>
-                    </div>
-
                     <div class="online-counter">
                         <div class="counter-bg"></div>
                         <div class="online-indicator">
@@ -345,13 +329,17 @@
             <div class="message-reply-preview" id="replyPreview"></div>
 
             <div class="input-wrapper">
-                <div class="emoji-btn" id="emojiBtn">
-                    <i class="fas fa-smile"></i>
+                <div class="gallery-btn" id="chatGalleryBtn" title="Send Image">
+                    <i class="fas fa-image"></i>
                 </div>
+                <input type="file" id="chatImageInput" accept="image/*" style="display: none;">
+
+                <!-- Chat Image Preview Container -->
+                <div class="chat-image-preview" id="chatImagePreview" style="display: none;"></div>
 
                 <div class="message-input-container">
                     <textarea id="messageInput" placeholder="Type your message... (Use /ai for AI chat)" rows="1"
-                        maxlength="500"></textarea>
+                        maxlength="500" enterkeyhint="send" inputmode="text"></textarea>
                     <div class="input-effects"></div>
                 </div>
 
@@ -448,56 +436,105 @@
                 </button>
             </div>
 
-            <!-- Gen-Z Style Container Grid - UPDATED WITH GAMES -->
-            <!-- Full-Width Online Users Bar -->
-            <div class="online-users-bar" id="openOnlineListBtn">
-                <div class="bar-icon"><i class="fas fa-users"></i></div>
-                <div class="bar-info">
-                    <span class="bar-title">USERS</span>
-                    <span class="bar-count" id="onlineCountBadge">0 Online</span>
+            <!-- COMPACT MENU BARS - All Uniform -->
+            <div class="menu-bars-container">
+                <!-- Users Bar -->
+                <div class="menu-bar" id="openOnlineListBtn">
+                    <div class="menu-bar-icon"><i class="fas fa-users"></i></div>
+                    <div class="menu-bar-info">
+                        <span class="menu-bar-title">USERS</span>
+                        <span class="menu-bar-subtitle" id="onlineCountBadge">0 Online</span>
+                    </div>
+                    <i class="fas fa-chevron-right menu-bar-arrow"></i>
                 </div>
-                <div class="bar-arrow"><i class="fas fa-chevron-right"></i></div>
+
+                <!-- Games Bar -->
+                <div class="menu-bar" id="ticTacToeGame">
+                    <div class="menu-bar-icon"><i class="fas fa-gamepad"></i></div>
+                    <div class="menu-bar-info">
+                        <span class="menu-bar-title">GAMES</span>
+                        <span class="menu-bar-subtitle">Tic-Tac-Toe</span>
+                    </div>
+                    <i class="fas fa-chevron-right menu-bar-arrow"></i>
+                </div>
+
+                <!-- Posts Bar -->
+                <div class="menu-bar" id="postsContainer">
+                    <div class="menu-bar-icon"><i class="fas fa-newspaper"></i></div>
+                    <div class="menu-bar-info">
+                        <span class="menu-bar-title">POSTS</span>
+                        <span class="menu-bar-subtitle">Trending</span>
+                    </div>
+                    <i class="fas fa-chevron-right menu-bar-arrow"></i>
+                </div>
+
+                <!-- Settings Bar -->
+                <div class="menu-bar" id="openSettingsBtn">
+                    <div class="menu-bar-icon"><i class="fas fa-cog"></i></div>
+                    <div class="menu-bar-info">
+                        <span class="menu-bar-title">SETTINGS</span>
+                        <span class="menu-bar-subtitle">Preferences</span>
+                    </div>
+                    <i class="fas fa-chevron-right menu-bar-arrow"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Window (Full Page) -->
+    <div class="settings-window" id="settingsWindow">
+        <div class="settings-header">
+            <button class="settings-back-btn" id="settingsBackBtn">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2>SETTINGS</h2>
+        </div>
+
+        <div class="settings-content">
+            <!-- Profile Option -->
+            <div class="setting-card" id="editProfileBtnCard">
+                <div class="setting-card-icon">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <div class="setting-card-info">
+                    <h3>Profile</h3>
+                    <p>Edit your profile and avatar</p>
+                    <div class="setting-stats"
+                        style="display: flex; gap: 10px; margin-top: 5px; font-size: 0.8rem; color: var(--accent-primary); font-weight: bold;">
+                        <span><span id="myFollowersCount">0</span> Followers</span>
+                        <span><span id="myFollowingCount">0</span> Following</span>
+                    </div>
+                </div>
+                <div class="setting-card-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
             </div>
 
-            <div class="genz-container-grid">
-                <div class="genz-container" id="gamesContainer">
-                    <div class="genz-header">
-                        <i class="fas fa-gamepad"></i>
-                        <span>GAMES</span>
-                    </div>
-                    <div class="games-mini-list">
-                        <div class="game-btn-mini" id="ticTacToeGame" title="Tic-Tac-Toe">
-                            <i class="fas fa-times"></i>
-                        </div>
-                    </div>
+            <!-- Theme Toggle Option -->
+            <div class="setting-card" id="themeToggleCard">
+                <div class="setting-card-icon">
+                    <i class="fas fa-sun theme-icon" id="themeIcon"></i>
                 </div>
-
-                <div class="genz-container" id="postsContainer">
-                    <div class="genz-header">
-                        <i class="fas fa-newspaper"></i>
-                        <span>POSTS</span>
-                    </div>
-                    <div class="posts-preview">
-                        <p>Trending</p>
-                    </div>
+                <div class="setting-card-info">
+                    <h3>Theme</h3>
+                    <p id="themeDescription">Switch between RGB and Onyx themes</p>
                 </div>
+                <div class="setting-card-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
 
-                <!-- Settings Section -->
-                <div class="genz-container" id="settingsMenuContainer">
-                    <div class="genz-header">
-                        <i class="fas fa-cog"></i>
-                        <span>SETTINGS</span>
-                    </div>
-                    <div class="settings-options">
-                        <div class="setting-item" id="editProfileBtn">
-                            <i class="fas fa-user-edit"></i>
-                            <span>Profile</span>
-                        </div>
-                        <div class="setting-item logout" id="logoutBtn">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Logout</span>
-                        </div>
-                    </div>
+            <!-- Logout Option -->
+            <div class="setting-card logout-card" id="logoutBtnCard">
+                <div class="setting-card-icon">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+                <div class="setting-card-info">
+                    <h3>Logout</h3>
+                    <p>Sign out of your account</p>
+                </div>
+                <div class="setting-card-arrow">
+                    <i class="fas fa-chevron-right"></i>
                 </div>
             </div>
         </div>
@@ -783,6 +820,10 @@
     <!-- User Profile View Modal -->
     <div class="profile-view-modal" id="userProfileModal">
         <div class="profile-modal-content">
+            <!-- Loading Overlay -->
+            <div id="profileLoaderOverlay" class="profile-loader-overlay">
+                <div class="elegant-loader"></div>
+            </div>
             <div class="profile-modal-banner"></div>
             <button class="profile-modal-close" id="profileModalClose">
                 <i class="fas fa-times"></i>
@@ -796,6 +837,26 @@
                 <span class="profile-view-status">Online now</span>
                 <div class="profile-bio-container">
                     <p id="viewProfileBio">Write something about uh.</p>
+                </div>
+
+                <!-- Follow Stats -->
+                <div class="profile-stats-bar">
+                    <div class="stat-item" id="viewFollowersStat">
+                        <span class="stat-count" id="viewFollowersCount">0</span>
+                        <span class="stat-label">Followers</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item" id="viewFollowingStat">
+                        <span class="stat-count" id="viewFollowingCount">0</span>
+                        <span class="stat-label">Following</span>
+                    </div>
+                </div>
+
+                <!-- Follow/Unfollow Button -->
+                <div class="profile-actions" id="profileActionsContainer">
+                    <button id="followUserBtn" class="follow-btn">
+                        <i class="fas fa-user-plus"></i> <span>FOLLOW</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -903,22 +964,6 @@
         <div class="flickering-light"></div>
     </div>
 
-    <!-- Stranger Things Modal (GLOBAL) -->
-    <div class="st-modal" id="stModal">
-        <div class="st-overlay"></div>
-        <div class="st-content">
-            <div class="st-image-container" id="stImageContainer">
-                <img src="/stranger-things-logo.png" class="st-logo">
-            </div>
-            <div class="st-video-container" id="stVideoContainer">
-                <video id="stVideo" autoplay muted playsinline>
-                    <source src="/st.mp4" type="video/mp4">
-                </video>
-            </div>
-        </div>
-    </div>
-
-
 
     <!-- Custom Error Popup -->
     <div class="custom-error-overlay" id="customErrorOverlay">
@@ -935,9 +980,42 @@
         </div>
     </div>
 
+
+    <!-- Follow List Modal -->
+    <div class="follow-list-modal" id="followListModal">
+        <div class="follow-modal-content">
+            <div class="follow-modal-header">
+                <button class="follow-modal-back" id="followListBack">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h3 id="followListTitle">Followers</h3>
+                <button class="follow-modal-close" id="followListClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="follow-list-container" id="followListItems">
+                <!-- User items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div class="image-viewer-modal" id="imageViewerModal">
+        <button class="viewer-close" id="viewerCloseBtn" title="Close"><i class="fas fa-times"></i></button>
+        <div class="viewer-content">
+            <div class="viewer-zoom-level" id="viewerZoomLevel">1.00x</div>
+            <img src="" id="viewerImage" alt="Zoomed View">
+            <div class="viewer-controls">
+                <button id="zoomOutBtn" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                <button id="zoomResetBtn" title="Reset Zoom"><i class="fas fa-expand"></i></button>
+                <button id="zoomInBtn" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script type="module" src="script.js?v=2.0"></script>
+    <script type="module" src="script.js?v=2.4"></script>
 </body>
 
 </html>
