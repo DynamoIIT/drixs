@@ -4659,8 +4659,11 @@ function setupFollowRealtime() {
             const data = (eventType === 'DELETE') ? oldRecord : newRecord;
             if (!data) return;
 
-            // If it involves the current user
-            const isRelevant = (data.follower_id === supabaseUser.id) || (data.following_id === supabaseUser.id);
+            // If it involves the current user OR the user currently being viewed
+            const activeUid = viewProfileUsername?.dataset?.activeuid;
+            const isRelevant = (data.follower_id === supabaseUser.id) ||
+                (data.following_id === supabaseUser.id) ||
+                (activeUid && (data.follower_id === activeUid || data.following_id === activeUid));
 
             if (isRelevant) {
                 // Re-fetch everything for accuracy
@@ -4668,7 +4671,6 @@ function setupFollowRealtime() {
 
                 // Refresh active profile if open
                 if (userProfileModal.classList.contains('active')) {
-                    const activeUid = viewProfileUsername.dataset.activeuid;
                     if (activeUid) updateProfileStats(activeUid);
                 }
 
@@ -4725,8 +4727,26 @@ async function toggleFollow(targetId, targetUsername) {
     if (!supabaseUser) return showNotification("Please login to follow users", "error");
     if (targetId === supabaseUser.id) return;
 
-    if (followUserBtn) followUserBtn.classList.add('loading');
     const isFollowing = currentUserFollowing.has(targetId);
+
+    // OPTIMISTIC UPDATE
+    if (isFollowing) {
+        currentUserFollowing.delete(targetId);
+    } else {
+        currentUserFollowing.add(targetId);
+    }
+
+    // Update UI Instantly
+    updateFollowButtonUI(targetId);
+
+    // Optimistically update the stats count if viewing that profile
+    const activeUid = viewProfileUsername?.dataset?.activeuid;
+    if (activeUid === targetId && viewFollowersCount) {
+        let currentCount = parseInt(viewFollowersCount.textContent) || 0;
+        viewFollowersCount.textContent = isFollowing ? Math.max(0, currentCount - 1) : currentCount + 1;
+    }
+
+    if (followUserBtn) followUserBtn.classList.add('loading');
 
     try {
         if (isFollowing) {
@@ -4738,7 +4758,6 @@ async function toggleFollow(targetId, targetUsername) {
                 .eq('following_id', targetId);
 
             if (error) throw error;
-            currentUserFollowing.delete(targetId);
             showNotification(`Unfollowed ${targetUsername}`, "info");
         } else {
             // Follow
@@ -4750,18 +4769,16 @@ async function toggleFollow(targetId, targetUsername) {
                 });
 
             if (error) throw error;
-            currentUserFollowing.add(targetId);
             showNotification(`Following ${targetUsername}`, "success");
         }
 
-        // Refresh UI
-        if (followUserBtn) updateFollowButtonUI(targetId);
+        // Final sync for accuracy (handles stats and secondary UI)
         await updateProfileStats(targetId);
+        await fetchUserFollowData(); // Sync total counts
 
         // Refresh User Lists to update DM locks
         if (currentUserListTab === 'global') fetchGlobalUsers();
         else {
-            // Check if requestOnlineUsers exists or if we should just fetchGlobalUsers
             if (typeof requestOnlineUsers === 'function') requestOnlineUsers();
             else fetchGlobalUsers();
         }
@@ -4769,6 +4786,15 @@ async function toggleFollow(targetId, targetUsername) {
     } catch (error) {
         console.error("Toggle Follow Error:", error);
         showNotification("Failed to update follow status", "error");
+
+        // ROLLBACK
+        if (isFollowing) {
+            currentUserFollowing.add(targetId);
+        } else {
+            currentUserFollowing.delete(targetId);
+        }
+        updateFollowButtonUI(targetId);
+        await updateProfileStats(targetId);
     } finally {
         if (followUserBtn) followUserBtn.classList.remove('loading');
     }
