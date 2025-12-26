@@ -5,6 +5,9 @@
 
 /* DEFAULT THEME: RGB / CYBER-LITE (Rajdhani) */
 :root {
+    --rough-frost-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.18'/%3E%3C/svg%3E");
+    --frost-glass-bg: rgba(15, 15, 20, 0.35);
+    --frost-glass-blur: blur(25px) saturate(200%) contrast(110%);
     --bg-primary: #0a0a0a;
     --bg-secondary: rgba(0, 0, 0, 0.3);
     --text-primary: #ffffff;
@@ -537,7 +540,7 @@ button {
 }
 
 .feature-item i {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     background: linear-gradient(45deg, #ff006e, #3a86ff);
     -webkit-background-clip: text;
     background-clip: text;
@@ -573,17 +576,43 @@ button {
     transform: translateY(0);
 }
 
-/* Chat Header (Restored Layout) */
-.chat-header {
+/* SLIM ROUGH GLASS HEADER (CONSOLIDATED) */
+#mainChatHeader {
     position: relative;
-    height: 70px;
-    display: flex;
+    height: 52px !important;
+    /* Slightly slimmer per user request */
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
-    /* Force spacing */
-    z-index: 100;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0 25px;
+    z-index: 1000 !important;
+
+    /* GLASS BASE */
+    background: rgba(15, 15, 20, 0.35) !important;
+    backdrop-filter: blur(25px) saturate(200%) contrast(110%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(200%) contrast(110%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3) !important;
+    padding: 0 15px !important;
+    overflow: hidden;
+    /* For noise pseudo-element */
+}
+
+/* ROUGH TEXTURE OVERLAY */
+#mainChatHeader::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.18'/%3E%3C/svg%3E");
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: -1;
+}
+
+#mainChatHeader .logo-text {
+    font-size: 1.15rem !important;
 }
 
 .header-content {
@@ -610,7 +639,7 @@ button {
 .logo-text {
     font-family: 'Orbitron', monospace;
     font-weight: 700;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     background: linear-gradient(45deg, #ff006e, #3a86ff);
     -webkit-background-clip: text;
     background-clip: text;
@@ -843,7 +872,7 @@ button {
 }
 
 .ai-message::before {
-    content: '🤖';
+    content: '??';
     position: absolute;
     top: -8px;
     left: 15px;
@@ -1948,6 +1977,11 @@ button {
 }
 
 .dm-window {
+    `n position: relative;
+    overflow: hidden;
+    background: var(--frost-glass-bg) !important;
+    backdrop-filter: var(--frost-glass-blur) !important;
+    -webkit-backdrop-filter: var(--frost-glass-blur) !important;
     position: fixed;
     top: 0;
     left: 0;
@@ -2296,21 +2330,7 @@ button {
     background: var(--accent-primary);
 }
 
-.user-hamburger-menu {
-    position: fixed;
-    top: 0;
-    left: -380px;
-    width: 380px;
-    max-width: 90%;
-    height: 100%;
-    background: rgba(10, 10, 15, 0.98);
-    backdrop-filter: blur(30px);
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 2000;
-    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-}
+
 
 .user-hamburger-menu.open {
     left: 0;
@@ -2414,12 +2434,7 @@ button {
 }
 
 /* Mobile Responsive for DM */
-@media (max-width: 768px) {
-    .user-hamburger-menu {
-        width: 100%;
-        left: -100%;
-    }
-}
+@media (max-width: 768px) {}
 
 .regular-user-controls {
     margin-right: 10px;
@@ -2605,6 +2620,11 @@ button {
 
     /* Force DM windows to fullscreen like global chat */
     .dm-window {
+        `n position: relative;
+        overflow: hidden;
+        background: var(--frost-glass-bg) !important;
+        backdrop-filter: var(--frost-glass-blur) !important;
+        -webkit-backdrop-filter: var(--frost-glass-blur) !important;
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
@@ -4279,7 +4299,7 @@ button {
 .ttt-vs {
     font-family: 'Orbitron', monospace;
     font-weight: 900;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff);
     -webkit-background-clip: text;
     background-clip: text;
@@ -4827,7 +4847,7 @@ button {
     }
 
     .ttt-result-message {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
     }
 
     .winner-banner {
@@ -5285,7 +5305,7 @@ button {
 .ttt-vs {
     font-family: 'Orbitron', monospace;
     font-weight: 900;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     background: linear-gradient(45deg, #ff00ff, #00ffff);
     -webkit-background-clip: text;
     background-clip: text;
@@ -5833,7 +5853,7 @@ button {
     }
 
     .ttt-result-message {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
     }
 
     .winner-banner {
@@ -5887,7 +5907,7 @@ button {
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
 }
 
-/* ================= 🎊 STONE AWARD SYSTEM STYLES ================= */
+/* ================= ?? STONE AWARD SYSTEM STYLES ================= */
 
 .stone-award-message {
     margin: 30px auto;
@@ -6030,7 +6050,7 @@ button {
 
 .stone-award-fireworks::before,
 .stone-award-fireworks::after {
-    content: '✨';
+    content: '?';
     position: absolute;
     font-size: 30px;
     animation: fireworkBurst 2s ease-out infinite;
@@ -6342,7 +6362,7 @@ button {
 
     /* Compact Header */
     .chat-header {
-        height: 60px !important;
+        height: 54px !important;
         padding: 0 10px !important;
     }
 
@@ -6480,10 +6500,7 @@ button {
 }
 
 /* Hamburger Menu Scrollable */
-.user-hamburger-menu {
-    overflow-y: auto !important;
-    max-height: 100vh;
-}
+
 
 .genz-container-grid {
     padding-bottom: 20px;
@@ -7559,4 +7576,345 @@ button {
     max-height: 250px;
     display: block;
     object-fit: cover;
+}
+
+/* ================= PREMIUM AUTH LOADER ================= */
+
+.auth-loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5, 10, 15, 0.85);
+    /* Deep dark blue-black */
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-loader-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.auth-loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+/* Orbital Spinner */
+.auth-spinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Center Core - Pulsing */
+.auth-spinner::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--accent-primary, #00C9FF);
+    border-radius: 50%;
+    box-shadow: 0 0 20px var(--accent-primary, #00C9FF);
+    animation: corePulse 2s ease-in-out infinite;
+}
+
+/* Rotating Ring */
+.auth-spinner::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: rgba(255, 255, 255, 0.8);
+    border-right-color: rgba(0, 201, 255, 0.5);
+    /* Cyan tint */
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+    animation: ringSpin 1.5s linear infinite;
+}
+
+/* Second subtle outer ring for depth */
+.auth-loader-content::before {
+    content: '';
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    animation: reverseSpin 10s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes ringSpin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes reverseSpin {
+    0% {
+        transform: rotate(360deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes corePulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(0.8);
+        box-shadow: 0 0 10px var(--accent-primary, #00C9FF);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+        box-shadow: 0 0 30px var(--accent-primary, #00C9FF);
+    }
+}
+
+.auth-loader-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    min-width: 200px;
+    text-align: center;
+}
+
+
+
+
+#mainChatHeader::before,
+.user-hamburger-menu::before,
+.hamburger-menu::before,
+.dm-window::before,
+.profile-tray::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--rough-frost-noise);
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: -1;
+}
+
+
+
+/* NUCLEAR PREMIUM PROFILE TRAY OVERHAUL */
+body #userHamburgerMenu {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    right: 0 !important;
+    top: 0 !important;
+    height: 100% !important;
+    width: 340px !important;
+    background: rgba(15, 15, 20, 0.1) !important;
+    backdrop-filter: url(#liquidGlass) blur(30px) saturate(250%) contrast(125%) !important;
+    -webkit-backdrop-filter: url(#liquidGlass) blur(30px) saturate(250%) contrast(125%) !important;
+    border-left: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.7) !important;
+    z-index: 99999 !important;
+    transform: translateX(100%);
+    transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+    overflow: hidden;
+}
+
+body #userHamburgerMenu.open {
+    transform: translateX(0) !important;
+}
+
+body #userHamburgerMenu::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(0, 201, 255, 0.08) 0%, transparent 60%);
+    animation: luxuryGlow 15s ease-in-out infinite;
+    z-index: -2;
+    pointer-events: none;
+}
+
+body #userHamburgerMenu::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.18'/%3E%3C/svg%3E"),
+        var(--rough-frost-noise);
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: -1;
+}
+
+@keyframes luxuryGlow {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+        opacity: 0.4;
+    }
+
+    50% {
+        transform: translate(-10%, 10%);
+        opacity: 0.7;
+    }
+}
+
+
+/* ================= REMOVED ALL MILKY RULES - CLEAN SLATE ================= */
+/* All previous conflicting rules removed */
+
+
+
+/* ================= FORCE LIQUID TRANSPARENT GLASS (APPLE STYLE) ================= */
+
+/* SHARED GLASS CLASS */
+.glass-panel-shared,
+#userHamburgerMenu,
+.online-modal-content,
+#tttGameWindow,
+.dm-window,
+.settings-window,
+.profile-view-modal {
+    /* Base Glass - Ultra Low Opacity for "Liquid" feel */
+    background: rgba(20, 20, 20, 0.45) !important;
+
+    /* Heavy Blur */
+    backdrop-filter: blur(40px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+
+    /* Refined Apple-style Borders */
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
+
+    /* Deep Smooth Shadows */
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+
+    /* Corner Radius */
+    border-radius: 24px !important;
+
+    /* Ensure no white haze from other rules */
+    background-image: none !important;
+}
+
+/* Specific: Hamburger Menu */
+#userHamburgerMenu {
+    position: fixed !important;
+    top: 70px !important;
+    right: 20px !important;
+    width: 280px !important;
+    height: auto !important;
+    min-height: 200px !important;
+    transform: translateX(120%) !important;
+    transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s ease !important;
+    opacity: 0;
+    z-index: 9999 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+}
+
+#userHamburgerMenu.open {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+}
+
+/* Inner Header shared */
+#userHamburgerMenu .hamburger-header,
+.settings-header,
+.warn-header,
+.confirm-header,
+.ttt-opponent-header,
+.ttt-game-header {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 20px 25px !important;
+}
+
+/* Titles */
+#userHamburgerMenu .hamburger-header h3,
+.settings-header h2,
+.warn-header h3,
+.confirm-header h3 {
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Close Buttons */
+.hamburger-close,
+.panel-close,
+.settings-back-btn,
+.warn-close {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 50% !important;
+    width: 32px !important;
+    height: 32px !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    transition: all 0.3s ease !important;
+}
+
+.hamburger-close:hover,
+.panel-close:hover,
+.settings-back-btn:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    transform: scale(1.1);
+}
+
+/* NO NOISE OVERLAYS - CLEAN LIQUID LOOK */
+#userHamburgerMenu::before,
+.online-modal-content::before,
+#tttGameWindow::before,
+.dm-window::before,
+.settings-window::before {
+    display: none !important;
+    content: none !important;
+}
+
+/* Item styling adjustment to remove blocks */
+.menu-bars-container {
+    padding: 10px !important;
 }

@@ -8,11 +8,11 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>DRIXS - Ultimate Chat Experience</title>
-    <link rel="stylesheet" href="style.css?v=2.4">
-    <link rel="stylesheet" href="style_profiles.css?v=2.0">
-    <link rel="stylesheet" href="style_tabs.css?v=2.0">
-    <link rel="stylesheet" href="settings-window.css?v=2.0">
-    <link rel="stylesheet" href="menu-bars.css?v=2.0">
+    <link rel="stylesheet" href="style.css?v=38.0">
+    <link rel="stylesheet" href="style_profiles.css?v=38.0">
+    <link rel="stylesheet" href="style_tabs.css?v=38.0">
+    <link rel="stylesheet" href="settings-window.css?v=38.0">
+    <link rel="stylesheet" href="menu-bars.css?v=38.0">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;200;300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -20,9 +20,33 @@
     <!-- Cropper.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="posts_frost.css?v=38.0">
+    <link rel="stylesheet" href="liquid-glass-override.css?v=1.0">
+
 </head>
 
 <body>
+
+    <!-- LIQUID GLASS REFRACTION ENGINE (SMOOTH IOS) -->
+    <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+        <defs>
+            <filter id="liquidGlass" x="-20%" y="-20%" width="140%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="25" xChannelSelector="R"
+                    yChannelSelector="G" />
+                <feGaussianBlur stdDeviation="0.5" result="blurredNoise" />
+                <feComposite operator="in" in="blurredNoise" in2="SourceGraphic" result="softLiquid" />
+                <feSpecularLighting surfaceScale="5" specularConstant="1.2" specularExponent="20"
+                    lighting-color="#ffffff" in="noise" result="specular">
+                    <fePointLight x="-5000" y="-10000" z="20000" />
+                </feSpecularLighting>
+                <feComposite operator="in" in="specular" in2="SourceGraphic" result="specularComposite" />
+                <feComposite operator="arithmetic" k1="0" k2="1" k3="1" k4="0" in="SourceGraphic"
+                    in2="specularComposite" />
+            </filter>
+        </defs>
+    </svg>
     <!-- Animated Background Effects -->
     <div class="bg-effects">
         <div class="floating-orbs">
@@ -267,7 +291,7 @@
     <!-- Chat Screen -->
     <div id="chatScreen" class="chat-screen">
         <!-- Chat Header -->
-        <div class="chat-header">
+        <div class="chat-header" id="mainChatHeader">
             <div class="header-bg"></div>
             <div class="header-content">
                 <div class="logo-mini">
@@ -448,22 +472,22 @@
                     <i class="fas fa-chevron-right menu-bar-arrow"></i>
                 </div>
 
+
+                <!-- Posts -->
+                <div class="menu-bar" id="postsMenuBar">
+                    <div class="menu-bar-icon"><i class="fas fa-stream"></i></div>
+                    <div class="menu-bar-info">
+                        <div class="menu-bar-title">Posts</div>
+                        <div class="menu-bar-desc">Share your thoughts</div>
+                    </div>
+                </div>
+
                 <!-- Games Bar -->
                 <div class="menu-bar" id="ticTacToeGame">
                     <div class="menu-bar-icon"><i class="fas fa-gamepad"></i></div>
                     <div class="menu-bar-info">
                         <span class="menu-bar-title">GAMES</span>
                         <span class="menu-bar-subtitle">Tic-Tac-Toe</span>
-                    </div>
-                    <i class="fas fa-chevron-right menu-bar-arrow"></i>
-                </div>
-
-                <!-- Posts Bar -->
-                <div class="menu-bar" id="postsContainer">
-                    <div class="menu-bar-icon"><i class="fas fa-newspaper"></i></div>
-                    <div class="menu-bar-info">
-                        <span class="menu-bar-title">POSTS</span>
-                        <span class="menu-bar-subtitle">Trending</span>
                     </div>
                     <i class="fas fa-chevron-right menu-bar-arrow"></i>
                 </div>
@@ -540,114 +564,55 @@
         </div>
     </div>
 
-    <!-- Posts Window -->
-    <div class="posts-window" id="postsWindow">
-        <div class="posts-header">
-            <button class="posts-back-btn" id="postsBackBtn">
+
+
+    <!-- ==================== FROSTED GLASS POSTS SYSTEM ==================== -->
+
+    <!-- Social Container (Posts Feed) -->
+    <div class="social-container" id="socialContainer">
+        <div class="social-header">
+            <button class="frost-icon-btn" id="closeSocialBtn">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <h2>POSTS</h2>
-            <div class="posts-controls">
-                <button class="posts-refresh-btn" id="postsRefreshBtn" title="Refresh">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <button class="posts-home-btn" id="postsHomeBtn" title="Home">
-                    <i class="fas fa-home"></i>
-                </button>
-                <button class="posts-create-btn" id="postsCreateBtn" title="Create Post">
-                    <i class="fas fa-pencil-alt"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Posts Navigation -->
-        <div class="posts-navigation">
-            <button class="posts-nav-btn active" id="featuredPostsBtn">FEATURED</button>
-            <button class="posts-nav-btn" id="myPostsBtn">MY POSTS</button>
-        </div>
-
-        <!-- Posts Feed -->
-        <div class="posts-feed" id="postsFeed">
-            <!-- Posts will be loaded here -->
-        </div>
-    </div>
-
-    <!-- Create Post Window -->
-    <div class="create-post-window" id="createPostWindow">
-        <div class="create-post-header">
-            <button class="create-back-btn" id="createBackBtn">
-                <i class="fas fa-arrow-left"></i>
+            <h1>Feed</h1>
+            <div style="flex: 1;"></div> <!-- Spacer -->
+            <button class="frost-icon-btn" id="refreshPostsBtn" style="margin-right: 8px;">
+                <i class="fas fa-sync-alt"></i>
             </button>
-            <h2>CREATE POST</h2>
-        </div>
-
-        <div class="create-post-form">
-            <textarea id="postContent" placeholder="What's on your mind..." maxlength="500"></textarea>
-
-            <div class="post-image-section">
-                <label for="postImageInput" class="image-upload-btn">
-                    <i class="fas fa-image"></i>
-                    <span>Attach Image</span>
-                </label>
-                <input type="file" id="postImageInput" accept="image/*" style="display: none;">
-                <div class="image-preview" id="imagePreview"></div>
-            </div>
-
-            <div class="create-post-actions">
-                <button class="cancel-post-btn" id="cancelPostBtn">CANCEL</button>
-                <button class="publish-post-btn" id="publishPostBtn">PUBLISH</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Comments Window -->
-    <div class="comments-window" id="commentsWindow">
-        <div class="comments-header">
-            <button class="comments-back-btn" id="commentsBackBtn">
-                <i class="fas fa-arrow-left"></i>
+            <button class="frost-button" id="createPostBtn">
+                <i class="fas fa-plus"></i>
+                <span>New Post</span>
             </button>
-            <h2>COMMENTS</h2>
         </div>
 
-        <!-- Original Post Display -->
-        <div class="original-post" id="originalPost">
-            <!-- Original post will be displayed here -->
-        </div>
-
-        <!-- Comments Section -->
-        <div class="comments-section" id="commentsSection">
-            <!-- Comments will be loaded here -->
-        </div>
-
-        <!-- Add Comment -->
-        <div class="add-comment-section">
-            <div class="comment-input-wrapper">
-                <textarea id="commentInput" placeholder="Add a comment..." rows="2" maxlength="300"></textarea>
-                <button class="send-comment-btn" id="sendCommentBtn">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+        <div class="posts-grid" id="postsGrid">
+            <!-- Posts will be dynamically loaded here -->
+            <div class="empty-state" id="emptyState">
+                <i class="fas fa-inbox"></i>
+                <p>No posts yet. Be the first to share something!</p>
             </div>
         </div>
+
+        <!-- Bottom Tab Navigation -->
+        <nav class="frost-tabs">
+            <button class="tab-item active" data-view="feed" id="feedTab">
+                <i class="fas fa-home"></i>
+                <span>Feed</span>
+            </button>
+            <button class="tab-item" data-view="my-posts" id="myPostsTab">
+                <i class="fas fa-user"></i>
+                <span>My Posts</span>
+            </button>
+        </nav>
     </div>
 
-    <!-- Edit Post Modal -->
-    <div class="edit-post-modal" id="editPostModal">
-        <div class="edit-post-content">
-            <div class="edit-post-header">
-                <h3>Edit Post</h3>
-                <button class="edit-close-btn" id="editCloseBtn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="edit-post-body">
-                <textarea id="editPostContent" maxlength="500"></textarea>
-                <div class="edit-post-actions">
-                    <button class="edit-cancel-btn" id="editCancelBtn">Cancel</button>
-                    <button class="edit-save-btn" id="editSaveBtn">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
+
+
+
+
+
+
 
     <!-- Warn Modal -->
     <div class="warn-modal" id="warnModal">
@@ -1013,9 +978,100 @@
         </div>
     </div>
 
+    <!-- Authentication Loader Overlay -->
+    <div id="authLoader" class="auth-loader-overlay">
+        <div class="auth-loader-content">
+            <div class="auth-spinner"></div>
+            <div class="auth-loader-text">Preparing your chat...</div>
+        </div>
+    </div>
+
     <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script type="module" src="script.js?v=2.4"></script>
+    <script src="socket_init.js"></script>
+    <!-- Frosted Glass Posts System -->
+    <script src="posts_frost.js"></script>
+    <script type="module" src="script.js?v=38.0"></script>
+
+
+    <!-- Create Post Modal -->
+    <div class="frost-modal" id="createPostModal">
+        <div class="frost-modal-content">
+            <div class="frost-modal-header">
+                <h2>Create Post</h2>
+                <button class="frost-close-btn" id="closeCreateModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="frost-modal-body">
+                <textarea class="frost-input" id="postTextarea" placeholder="What's on your mind..." maxlength="500"
+                    rows="6"></textarea>
+
+                <div class="frost-image-section" style="margin-top: 16px;">
+                    <input type="file" id="postImageInput" accept="image/*" style="display: none;">
+                    <button class="frost-button" id="imageUploadBtn" style="width: 100%;">
+                        <i class="fas fa-image"></i>
+                        <span>Attach Image</span>
+                    </button>
+                    <div id="imagePreviewContainer" style="margin-top: 12px; display: none;">
+                        <img id="imagePreview" style="width: 100%; border-radius: 12px; margin-bottom: 10px;">
+                        <button class="frost-button" id="removeImageBtn"
+                            style="background: rgba(255, 0, 110, 0.1); border-color: rgba(255, 0, 110, 0.3);">
+                            <i class="fas fa-trash"></i>
+                            <span>Remove Image</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="frost-modal-actions" style="margin-top: 20px; display: flex; gap: 12px;">
+                    <button class="frost-button" id="cancelCreatePost"
+                        style="flex: 1; background: rgba(255, 255, 255, 0.02);">
+                        Cancel
+                    </button>
+                    <button class="frost-button" id="publishPostBtn"
+                        style="flex: 1; background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Publish</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments Modal -->
+    <div class="frost-modal" id="commentsModal">
+        <div class="frost-modal-content" style="max-width: 600px;">
+            <div class="frost-modal-header">
+                <h2>Comments</h2>
+                <button class="frost-close-btn" id="closeCommentsModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="frost-modal-body">
+                <!-- Original Post (Condensed) -->
+                <div id="originalPostDisplay" class="frost-card" style="margin-bottom: 20px; cursor: default;">
+                    <!-- Original post content will be inserted here -->
+                </div>
+
+                <!-- Comments List -->
+                <div id="commentsList" style="max-height: 400px; overflow-y: auto; margin-bottom: 16px;">
+                    <div class="empty-state" style="padding: 40px 20px;">
+                        <i class="fas fa-comment-slash"></i>
+                        <p>No comments yet</p>
+                    </div>
+                </div>
+
+                <!-- Add Comment Input -->
+                <div style="display: flex; gap: 10px;">
+                    <textarea class="frost-input" id="commentTextarea" placeholder="Add a comment..." rows="2"
+                        maxlength="300"></textarea>
+                    <button class="frost-button" id="sendCommentBtn" style="height: fit-content;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
