@@ -293,21 +293,33 @@ io.on('connection', (socket) => {
             if (existingUserEntry) {
                 const [oldSocketId, oldUser] = existingUserEntry;
 
-                // Allow "re-join" if it's the same socket regarding glitch, but if different socket ID, it is a new tab/device
+                // CRITICAL: Only force logout if it's genuinely a DIFFERENT socket
+                // This prevents false positives from reconnections/refreshes
                 if (oldSocketId !== socket.id) {
-                    console.log(`⚠️ User ${cleanUsername} logged in from another device. Disconnecting old session (${oldSocketId}).`);
+                    console.log(`⚠️ User ${cleanUsername} attempting login from new device/tab.`);
+                    console.log(`   Old Socket: ${oldSocketId}, New Socket: ${socket.id}`);
 
-                    // Notify the old session
-                    io.to(oldSocketId).emit('force-logout', {
-                        message: 'You have logged in from another device or tab.'
-                    });
+                    // Check if old socket is still connected
+                    const oldSocket = io.sockets.sockets.get(oldSocketId);
+                    if (oldSocket && oldSocket.connected) {
+                        console.log(`   Old socket is connected, forcing logout.`);
 
-                    // Force disconnect the old socket
-                    io.sockets.sockets.get(oldSocketId)?.disconnect(true);
+                        // Notify the old session
+                        io.to(oldSocketId).emit('force-logout', {
+                            message: 'You have logged in from another device or tab.'
+                        });
+
+                        // Force disconnect the old socket
+                        oldSocket.disconnect(true);
+                    } else {
+                        console.log(`   Old socket already disconnected, cleaning up stale entry.`);
+                    }
+
+                    // Clean up old entry
                     onlineUsers.delete(oldSocketId);
-
-                    // Wait a tiny bit to ensure cleanup
-                    // Proceed to add new user...
+                } else {
+                    // Same socket ID - this is a reconnection, just skip the duplicate check
+                    console.log(`✓ Same socket reconnecting: ${socket.id}`);
                 }
             }
 
@@ -603,9 +615,16 @@ io.on('connection', (socket) => {
             if (userEntry) {
                 const [targetId, user] = userEntry;
 
-                io.to(targetId).emit('user-kicked', { username });
+                // Send admin-action to properly handle kick
+                io.to(targetId).emit('admin-action', {
+                    action: 'kick',
+                    reason: 'Kicked by admin'
+                });
+
+                // Also send kick notification to all users
                 io.emit('kick-notification', { username });
 
+                // Disconnect the user
                 io.sockets.sockets.get(targetId)?.disconnect(true);
                 onlineUsers.delete(targetId);
 

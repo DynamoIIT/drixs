@@ -40,7 +40,7 @@ html body .profile-modal-content {
     background-image: none !important;
 }
 
-/* HAMBURGER MENU - ORIGINAL FULL SIZE */
+/* HAMBURGER MENU - ULTRA SMOOTH MOBILE */
 html body #userHamburgerMenu {
     display: flex !important;
     flex-direction: column !important;
@@ -49,18 +49,21 @@ html body #userHamburgerMenu {
     right: 0 !important;
     width: 340px !important;
     height: 100% !important;
-    transform: translateX(100%) !important;
-    transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+    transform: translate3d(100%, 0, 0) !important;
+    transition: transform 0.15s ease-out !important;
     opacity: 1 !important;
     z-index: 99999 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     padding: 0 !important;
     border-radius: 0 !important;
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
 }
 
 html body #userHamburgerMenu.open {
-    transform: translateX(0) !important;
+    transform: translate3d(0, 0, 0) !important;
 }
 
 /* FROSTED TEXTURE - 20% GRAIN */

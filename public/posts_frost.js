@@ -31,6 +31,12 @@ function initializeFrostedPosts() {
             if (socialContainer) {
                 socialContainer.classList.remove('active');
                 console.log('ðŸ”´ socialContainer hidden');
+
+                // Re-open hamburger menu
+                const menu = document.getElementById('userHamburgerMenu');
+                if (menu) menu.classList.add('open');
+                const btn = document.getElementById('userHamburgerBtn');
+                if (btn) btn.classList.add('active');
             }
         });
         console.log('ðŸŸ¢ Click listener added to closeSocialBtn');

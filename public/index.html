@@ -23,6 +23,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="posts_frost.css?v=38.0">
     <link rel="stylesheet" href="liquid-glass-override.css?v=1.0">
+    <link rel="stylesheet" href="mobile-performance.css?v=1.0">
 
 </head>
 
@@ -439,6 +440,19 @@
 
             <div class="online-users-list" id="devOnlineUsersList">
                 <!-- Users will be populated here -->
+            </div>
+
+            <!-- Banned Users Section - Collapsible -->
+            <div class="banned-users-section" id="bannedUsersSection"
+                style="margin-top: 20px; padding: 15px; background: rgba(255, 0, 0, 0.1); border: 1px solid rgba(255, 0, 0, 0.3); border-radius: 8px;">
+                <h3 onclick="document.getElementById('bannedUsersList').style.display = document.getElementById('bannedUsersList').style.display === 'none' ? 'block' : 'none';"
+                    style="margin: 0 0 10px 0; color: #ff4444; font-family: 'Rajdhani', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-ban"></i> Banned Users</span>
+                    <i class="fas fa-chevron-down" style="font-size: 0.8em;"></i>
+                </h3>
+                <div class="banned-users-list" id="bannedUsersList" style="display: none;">
+                    <!-- Banned users will be populated here -->
+                </div>
             </div>
         </div>
     </div>

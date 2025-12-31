@@ -557,16 +557,25 @@ function initializeEventListeners() {
     confirmMessage = document.getElementById('confirmMessage');
     confirmYesBtn = document.getElementById('confirmYesBtn');
     confirmNoBtn = document.getElementById('confirmNoBtn');
-    developerPanel = document.getElementById('developerPanel');
-    panelCloseBtn = document.getElementById('panelCloseBtn');
-    hamburgerBtn = document.getElementById('hamburgerBtn');
+    // Developer Hamburger Menu
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const developerPanel = document.getElementById('developerPanel');
+    const panelCloseBtn = document.getElementById('panelCloseBtn');
 
-    // Developer Panel Events
     if (hamburgerBtn) {
-        hamburgerBtn.addEventListener('click', function () {
-            this.classList.toggle('active');
+        hamburgerBtn.addEventListener('click', () => {
+            hamburgerBtn.classList.toggle('active');
             developerPanel.classList.toggle('open');
-            requestOnlineUsers();
+
+            // Fetch online users and banned users when panel opens
+            if (developerPanel.classList.contains('open')) {
+                socket.emit('get-online-users');
+
+                // Fetch banned users if developer
+                if (isDeveloper && typeof fetchBannedUsers === 'function') {
+                    fetchBannedUsers();
+                }
+            }
         });
     }
 
@@ -760,7 +769,6 @@ function initializeEventListeners() {
             setupProfilePicPreview.src = `https://ui-avatars.com/api/?name=${newUsernameInput.value || 'User'}&background=random`;
             // Clear input
             profilePicInput.value = '';
-            showNotification('Default profile picture assigned', 'info');
         });
     }
 
@@ -907,6 +915,10 @@ function initializeEventListeners() {
     if (closeOnlineModal) {
         closeOnlineModal.addEventListener('click', () => {
             onlineUsersModal.classList.remove('active');
+            // Re-open hamburger menu on back
+            if (userHamburgerMenu) userHamburgerMenu.classList.add('open');
+            const userHamburgerBtn = document.getElementById('userHamburgerBtn');
+            if (userHamburgerBtn) userHamburgerBtn.classList.add('active');
         });
     }
 
@@ -1312,6 +1324,17 @@ socket.on('user-kicked', function (data) {
     }
 });
 
+// Handle being logged in from another device
+socket.on('force-logout', function (data) {
+    console.log('Force logout received:', data);
+    alert(data.message || 'You have been logged in from another device or tab.');
+
+    // Clear session and reload
+    sessionStorage.clear();
+    localStorage.setItem('intentionalLogout', 'true');
+    window.location.reload();
+});
+
 // Message blocked notification
 socket.on('message-blocked', function (data) {
     showNotification(data.message, 'error');
@@ -1484,6 +1507,31 @@ function addMessage(data) {
         messageDiv.style.opacity = '1';
     }, 50);
 }
+
+
+socket.on('admin-action', function (data) {
+    console.log('Admin action received:', data);
+    if (data.action === 'kick') {
+        // Mark user as kicked to prevent auto-login
+        localStorage.setItem('wasKicked', 'true');
+        localStorage.setItem('intentionalLogout', 'true');
+
+        // Sign out and clear session
+        if (supabase) {
+            supabase.auth.signOut().then(() => {
+                alert(`You have been kicked from the chat. Reason: ${data.reason || 'No reason provided'}`);
+                sessionStorage.clear();
+                window.location.reload();
+            });
+        } else {
+            alert(`You have been kicked from the chat. Reason: ${data.reason || 'No reason provided'}`);
+            sessionStorage.clear();
+            window.location.reload();
+        }
+    } else if (data.action === 'warn') {
+        alert(`⚠️ WARNING from Admin: ${data.reason || 'Please follow the rules.'}`);
+    }
+});
 
 function addAdminMessage(message) {
     const messageDiv = document.createElement('div');
@@ -2226,10 +2274,15 @@ document.addEventListener('DOMContentLoaded', () => {
         tabGlobalBtn.addEventListener('click', () => switchPublicUserListTab('global'));
     }
 
+    // Debounce search input for better performance
+    let searchDebounceTimer = null;
     if (publicUserSearch) {
         publicUserSearch.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            filterPublicUserList(searchTerm);
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterPublicUserList(searchTerm);
+            }, 200); // 200ms debounce
         });
     }
 
@@ -2333,17 +2386,19 @@ function renderDevUserList(users) {
         if (user.username !== currentUser) {
             const userDiv = document.createElement('div');
             userDiv.className = 'user-item';
+            // Responsive flex wrap to prevent buttons from hiding
+            userDiv.style.cssText = 'display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 10px; margin: 5px 0; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; gap: 8px;';
             const uidParam = user.uid ? `'${user.uid}'` : 'null';
 
             userDiv.innerHTML = `
-                <div class="user-info" onclick="showUserProfile(${uidParam})" style="cursor: pointer;" title="View Profile">
-                    <div class="user-name" style="color: ${user.color}">${user.username}</div>
-                    <div class="user-ip">IP: ${user.ip}</div>
+                <div class="user-info" onclick="showUserProfile(${uidParam})" style="cursor: pointer; flex: 1 1 150px; min-width: 0; overflow: hidden;" title="View Profile">
+                    <div class="user-name" style="color: ${user.color}; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${user.username}</div>
+                    <div class="user-ip" style="font-size: 0.8em; color: #888;">IP: ${user.ip}</div>
                 </div>
-                <div class="user-actions">
-                    <button class="user-action-btn kick-btn" onclick="kickUser('${user.username}')">Kick</button>
-                    <button class="user-action-btn warn-btn" onclick="openWarnModal('${user.username}')">Warn</button>
-                    <button class="user-action-btn ban-btn" style="background: #ff0000; color: white;" onclick="banUser(${uidParam}, '${user.username}')">BAN</button>
+                <div class="user-actions" style="display: flex; gap: 5px; flex-shrink: 0; flex: 1 1 auto; justify-content: flex-end;">
+                    <button class="user-action-btn kick-btn" onclick="kickUser('${user.username}')" style="padding: 5px 10px; background: #ff9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85em; white-space: nowrap;">Kick</button>
+                    <button class="user-action-btn warn-btn" onclick="openWarnModal('${user.username}')" style="padding: 5px 10px; background: #ffeb3b; color: #000; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85em; white-space: nowrap;">Warn</button>
+                    <button class="user-action-btn ban-btn" onclick="banUser(${uidParam}, '${user.username}')" style="padding: 5px 10px; background: #ff0000; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85em; white-space: nowrap;">BAN</button>
                 </div>
             `;
             devList.appendChild(userDiv);
@@ -2356,7 +2411,8 @@ function renderPublicUserList(users, mode) {
     const usersList = document.getElementById('usersListContainer');
     if (!usersList) return;
 
-    usersList.innerHTML = '';
+    // Use DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
 
     // Create Map for quick online status lookup
     const onlineMap = new Map();
@@ -2398,7 +2454,7 @@ function renderPublicUserList(users, mode) {
             <div class="user-info" style="flex: 1; cursor: pointer;">
                 <div class="user-name" style="color: ${isOnline ? userColor : '#ccc'}; font-weight: bold; font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; display: flex; align-items: center;">
                     ${username}
-                    ${isMutual ? '<span class="mutual-badge">Mutual ??</span>' : ''}
+                    ${isMutual ? '<span class="mutual-badge">Mutual 💜</span>' : ''}
                 </div>
                 <div class="user-status-text" style="font-size: 0.8rem; color: #888;">
                     ${amIFollowing ? '<span style="color: var(--accent-primary);">Following</span>' : (doesFollowMe ? 'Follows you' : (isOnline ? 'Online now' : 'Offline'))}
@@ -2435,8 +2491,13 @@ function renderPublicUserList(users, mode) {
             }
         }
 
-        usersList.appendChild(userDiv);
+        // Append to fragment instead of directly to DOM
+        fragment.appendChild(userDiv);
     });
+
+    // Clear and batch-append for better performance
+    usersList.innerHTML = '';
+    usersList.appendChild(fragment);
 
     // Re-apply search filter
     const searchTerm = document.getElementById('publicUserSearch') ? document.getElementById('publicUserSearch').value.toLowerCase() : '';
@@ -2491,7 +2552,7 @@ window.banUser = async function (uid, username) {
         return;
     }
 
-    if (!confirm(`?? PERMANENT BAN WARNING ??\n\nAre you sure you want to permanently BAN ${username}?\n\nThey will be immediately disconnected and unable to log back in.`)) {
+    if (!confirm(`🚫 PERMANENT BAN WARNING 🚫\n\nAre you sure you want to permanently BAN ${username}?\n\nThey will be immediately disconnected and unable to log back in.`)) {
         return;
     }
 
@@ -2507,9 +2568,107 @@ window.banUser = async function (uid, username) {
         socket.emit('kick-user', { username: username });
         alert(`${username} has been BANNED.`);
 
+        // Refresh banned users list
+        if (typeof fetchBannedUsers === 'function') {
+            fetchBannedUsers();
+        }
+
     } catch (err) {
         console.error("Ban Error:", err);
         alert("Failed to ban user: " + err.message);
+    }
+};
+
+// Fetch all banned users from Supabase
+window.fetchBannedUsers = async function () {
+    if (!supabase) {
+        console.error("Supabase not initialized");
+        return;
+    }
+
+    try {
+        const { data: bannedUsers, error } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url, updated_at')
+            .eq('status', 'banned')
+            .order('updated_at', { ascending: false });
+
+        if (error) {
+            console.error("Supabase error fetching banned users:", error);
+            console.error("Error details:", JSON.stringify(error, null, 2));
+            return;
+        }
+
+        console.log("Banned users fetched:", bannedUsers);
+        renderBannedUsersList(bannedUsers || []);
+    } catch (err) {
+        console.error("Error fetching banned users:", err);
+        console.error("Error message:", err.message);
+        console.error("Error stack:", err.stack);
+    }
+};
+
+// Render banned users list in developer panel
+function renderBannedUsersList(users) {
+    const bannedList = document.getElementById('bannedUsersList');
+    if (!bannedList) return;
+
+    if (users.length === 0) {
+        bannedList.innerHTML = '<div style="color: #888; font-style: italic; padding: 10px;">No banned users</div>';
+        return;
+    }
+
+    bannedList.innerHTML = '';
+    users.forEach(user => {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'banned-user-item';
+        userDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; margin: 5px 0; background: rgba(0, 0, 0, 0.3); border-radius: 5px;';
+
+        const uidParam = `'${user.id}'`;
+
+        userDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${user.avatar_url || DEFAULT_AVATAR}" 
+                     style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #ff4444;"
+                     onerror="this.src='${DEFAULT_AVATAR}'">
+                <div>
+                    <div style="color: #ff4444; font-weight: bold;">${user.username}</div>
+                    <div style="color: #888; font-size: 0.8em;">UID: ${user.id.substring(0, 8)}...</div>
+                </div>
+            </div>
+            <button class="unban-btn" 
+                    onclick="unbanUser(${uidParam}, '${user.username}')"
+                    style="background: #00ff00; color: #000; padding: 5px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
+                UNBAN
+            </button>
+        `;
+
+        bannedList.appendChild(userDiv);
+    });
+}
+
+// Unban a user
+window.unbanUser = async function (uid, username) {
+    if (!confirm(`Unban ${username}?\n\nThey will be able to log in again.`)) {
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ status: 'normal' })
+            .eq('id', uid);
+
+        if (error) throw error;
+
+        alert(`${username} has been UNBANNED.`);
+
+        // Refresh banned users list
+        fetchBannedUsers();
+
+    } catch (err) {
+        console.error("Unban Error:", err);
+        alert("Failed to unban user: " + err.message);
     }
 };
 
@@ -4293,7 +4452,7 @@ async function handleUpdateProfile() {
             bio: newBio
         });
 
-        showNotification('Profile updated successfully!', 'success');
+        alert('Profile updated successfully!');
         settingsModal.classList.remove('active');
 
     } catch (error) {
@@ -4350,7 +4509,7 @@ window.showUserProfile = async function (uid) {
             }
         } else {
             if (profileLoaderOverlay) profileLoaderOverlay.classList.remove('active');
-            showNotification('User profile not found', 'error');
+            alert('User profile not found');
         }
     } catch (error) {
         if (profileLoaderOverlay) profileLoaderOverlay.classList.remove('active');
@@ -4364,6 +4523,9 @@ function handleLogout() {
     showCustomConfirm('Are you sure you want to logout?', () => {
         console.log("Custom confirm accepted, calling signOut");
 
+        // Mark intentional logout to prevent auto-login
+        localStorage.setItem('intentionalLogout', 'true');
+
         // INSTANT VISUAL FEEDBACK
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
@@ -4372,19 +4534,17 @@ function handleLogout() {
             logoutBtn.style.pointerEvents = 'none';
         }
 
-        // Force reload after 1.5s max even if Supabase is slow
-        const forceReload = setTimeout(() => {
-            console.warn("Force reloading...");
-            window.location.reload();
-        }, 1500);
-
+        // Sign out and clear all data
         supabase.auth.signOut().then(() => {
-            console.log("Sign out successful, reloading...");
-            clearTimeout(forceReload);
+            console.log("Sign out successful, clearing session...");
+            // Clear all cached data
+            sessionStorage.clear();
+            // Reload to welcome screen
             window.location.reload();
         }).catch((error) => {
             console.error('Logout error:', error);
-            clearTimeout(forceReload);
+            // Clear anyway
+            sessionStorage.clear();
             window.location.reload();
         });
     });
@@ -4395,7 +4555,25 @@ function setupAuthListener() {
     if (!supabase) return;
 
     supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth event:', event, 'Session:', !!session);
+
         supabaseUser = session?.user || null;
+
+        // Handle SIGNED_OUT event - user logged out intentionally
+        if (event === 'SIGNED_OUT') {
+            console.log('User signed out, staying on welcome screen');
+            // Clear any logout flag after handling
+            localStorage.removeItem('intentionalLogout');
+            return; // Stay on welcome screen
+        }
+
+        // Check if this is an intentional logout (prevents auto-login after logout)
+        const wasIntentionalLogout = localStorage.getItem('intentionalLogout');
+        if (wasIntentionalLogout && !supabaseUser) {
+            console.log('Intentional logout detected, clearing flag');
+            localStorage.removeItem('intentionalLogout');
+            return; // Don't auto-login
+        }
 
         if (supabaseUser) {
             // User is logged in - Check Profile
@@ -4417,20 +4595,25 @@ function setupAuthListener() {
                 const profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
                 if (profile) {
+                    // CRITICAL: Check Ban Status FIRST before any login
+                    if (profile.status === 'banned') {
+                        console.log('Banned user detected, signing out');
+                        localStorage.setItem('bannedUser', 'true');
+                        await supabase.auth.signOut();
+                        alert('You have been banned. Access denied.');
+                        window.location.reload();
+                        return;
+                    }
+
+                    // Check if user was kicked (optional - implement if you track kicks in profile)
+                    // This requires adding a 'kicked' field to profiles or a separate kicks table
+
                     // Sync Email if missing (e.g. from Google Login first time)
                     if (!profile.email && supabaseUser.email) {
                         await supabase
                             .from('profiles')
                             .update({ email: supabaseUser.email })
                             .eq('id', supabaseUser.id);
-                    }
-
-                    // Check Ban Status
-                    if (profile.status === 'banned') {
-                        await supabase.auth.signOut();
-                        alert('You have been banned. Access denied.');
-                        window.location.reload();
-                        return;
                     }
 
                     // Restore Session Data
@@ -4475,7 +4658,6 @@ function setupAuthListener() {
                 console.error("Auth State Check Error:", err);
             }
         }
-        // Note: If no user, we stay on Welcome Screen (default HTML state)
         // Note: If no user, we stay on Welcome Screen (default HTML state)
     });
 }
@@ -4568,6 +4750,23 @@ document.addEventListener('DOMContentLoaded', function () {
         settingsBackBtn.addEventListener('click', function () {
             settingsWindow.classList.remove('active');
             userHamburgerMenu.classList.add('open'); // Reopen hamburger menu
+            const openSettingsBtn = document.getElementById('userHamburgerBtn');
+            if (openSettingsBtn) openSettingsBtn.classList.add('active');
+        });
+    }
+
+    // Tic-Tac-Toe Navigation Fix
+    const tttOpponentBackBtn = document.getElementById('tttOpponentBackBtn');
+    if (tttOpponentBackBtn) {
+        tttOpponentBackBtn.addEventListener('click', () => {
+            const tttWindow = document.getElementById('tttOpponentWindow');
+            if (tttWindow) tttWindow.classList.remove('active');
+
+            // Re-open hamburger
+            const menu = document.getElementById('userHamburgerMenu');
+            if (menu) menu.classList.add('open');
+            const btn = document.getElementById('userHamburgerBtn');
+            if (btn) btn.classList.add('active');
         });
     }
 

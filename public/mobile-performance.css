@@ -1,0 +1,244 @@
+/* ================= MOBILE PERFORMANCE OPTIMIZATIONS ================= */
+
+/* Apply optimizations for mobile and tablet devices */
+@media (max-width: 768px) {
+
+    /* ===== REDUCE EXPENSIVE BLUR EFFECTS ===== */
+    /* Reduce all backdrop-filter blur by 60% for mobile performance */
+    html body .glass-panel-shared,
+    html body #userHamburgerMenu,
+    html body .user-hamburger-menu,
+    html body .online-modal-content,
+    html body #tttGameWindow,
+    html body .dm-window,
+    html body .settings-window,
+    html body .profile-view-modal,
+    html body .ttt-opponent-window,
+    html body .warn-modal-content,
+    html body .confirm-modal-content,
+    html body .online-list-modal,
+    html body .social-container,
+    html body #settingsModal,
+    html body .settings-modal-content,
+    html body #userProfileModal,
+    html body .profile-modal-content {
+        /* Reduced from 60px to 20px */
+        backdrop-filter: blur(20px) saturate(150%) brightness(1.05) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.05) !important;
+
+        /* Enable hardware acceleration */
+        transform: translateZ(0) !important;
+        will-change: transform !important;
+
+        /* Reduce box-shadow complexity */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Profile modal - slightly more blur for distinction */
+    html body .profile-view-modal .profile-modal-content {
+        backdrop-filter: blur(25px) saturate(150%) brightness(1.05) !important;
+        -webkit-backdrop-filter: blur(25px) saturate(150%) brightness(1.05) !important;
+    }
+
+    /* ===== OPTIMIZE HAMBURGER MENU ANIMATIONS ===== */
+    html body #userHamburgerMenu {
+        /* Use translate3d for GPU acceleration */
+        transform: translate3d(100%, 0, 0) !important;
+        will-change: transform !important;
+
+        /* Ultra-fast transition for mobile - no stutter */
+        transition: transform 0.12s ease-out !important;
+
+        /* Reduce backdrop-filter */
+        backdrop-filter: blur(15px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(15px) saturate(150%) !important;
+
+        /* Prevent flickering */
+        backface-visibility: hidden !important;
+        -webkit-backface-visibility: hidden !important;
+        perspective: 1000px !important;
+    }
+
+    html body #userHamburgerMenu.open {
+        transform: translate3d(0, 0, 0) !important;
+    }
+
+    /* Optimize hamburger content scrolling */
+    html body .hamburger-content {
+        /* Enable smooth scrolling with containment */
+        contain: layout style paint !important;
+        will-change: contents !important;
+
+        /* Use native momentum scrolling on iOS */
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* ===== OPTIMIZE MODAL TRANSITIONS ===== */
+    html body .settings-modal,
+    html body .user-profile-modal,
+    html body .online-list-modal {
+        /* Faster transitions */
+        transition: opacity 0.2s ease !important;
+    }
+
+    html body .settings-modal-content,
+    html body .profile-modal-content,
+    html body .online-modal-content {
+        /* Faster transform transitions */
+        transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+
+        /* Hardware acceleration */
+        transform: translateZ(0) scale(0.95) !important;
+        will-change: transform !important;
+    }
+
+    html body .settings-modal.active .settings-modal-content,
+    html body .user-profile-modal.active .profile-modal-content,
+    html body .online-list-modal.active .online-modal-content {
+        transform: translateZ(0) scale(1) !important;
+    }
+
+    /* ===== REDUCE HOVER EFFECT COMPLEXITY ===== */
+    /* Disable complex hover effects on touch devices */
+    html body .menu-bar:hover,
+    html body .setting-item:hover,
+    html body .online-users-bar:hover,
+    html body .genz-container:hover,
+    html body .online-user-item:hover {
+        /* Simpler hover effects for mobile */
+        box-shadow: none !important;
+        transform: none !important;
+    }
+
+    /* ===== OPTIMIZE LIST RENDERING ===== */
+    html body #usersListContainer,
+    html body .detailed-users-list,
+    html body #devOnlineUsersList {
+        /* CSS containment for better scroll performance */
+        contain: layout style !important;
+
+        /* Native momentum scrolling */
+        -webkit-overflow-scrolling: touch !important;
+
+        /* Prevent layout shifts */
+        overflow-anchor: auto !important;
+    }
+
+    /* Optimize user items */
+    html body .user-item,
+    html body .online-user-item,
+    html body .detailed-user-item {
+        /* Simple containment */
+        contain: layout paint !important;
+
+        /* Hardware acceleration for smooth scrolling */
+        transform: translateZ(0) !important;
+
+        /* Faster transitions */
+        transition: background 0.15s ease !important;
+    }
+
+    /* ===== SIMPLIFY GRAIN TEXTURE ===== */
+    /* Reduce grain opacity for better performance */
+    html body #userHamburgerMenu::after,
+    html body .online-modal-content::after,
+    html body .dm-window::after,
+    html body .settings-window::after,
+    html body .profile-view-modal::after,
+    html body #settingsModal::after,
+    html body #userProfileModal::after {
+        /* Reduce grain visibility */
+        opacity: 0.02 !important;
+
+        /* Prevent repaints */
+        will-change: auto !important;
+    }
+
+    /* ===== OPTIMIZE BUTTONS AND INTERACTIONS ===== */
+    html body button,
+    html body .btn,
+    html body .save-btn,
+    html body .crop-apply-btn {
+        /* Faster button transitions */
+        transition: all 0.15s ease !important;
+
+        /* Hardware acceleration */
+        transform: translateZ(0) !important;
+    }
+
+    /* ===== DISABLE COMPLEX ANIMATIONS ===== */
+    /* Disable rotating borders on mobile for performance */
+    html body .profile-view-modal .profile-modal-content::before {
+        animation: none !important;
+        display: none !important;
+    }
+
+    /* Simplify glow animations */
+    @keyframes luxuryGlow {
+
+        0%,
+        100% {
+            transform: translateZ(0) scale(1);
+            opacity: 0.8;
+        }
+
+        50% {
+            transform: translateZ(0) scale(1.05);
+            opacity: 1;
+        }
+    }
+
+    /* ===== OPTIMIZE SCROLLABLE CONTAINERS ===== */
+    /* Add containment to all scrollable areas */
+    html body .chat-messages,
+    html body .ai-messages,
+    html body .dm-messages {
+        contain: layout style !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+}
+
+/* ===== LOW-END DEVICE OPTIMIZATIONS ===== */
+/* Detect and optimize for low-end mobile devices */
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+
+    /* Disable all animations for accessibility and performance */
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    /* Remove all blur effects */
+    html body * {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+}
+
+/* ===== PERFORMANCE HINTS FOR ALL DEVICES ===== */
+/* Apply these even on desktop for better overall performance */
+
+/* Optimize frequently animated elements */
+html body .user-hamburger-menu,
+html body .settings-modal,
+html body .user-profile-modal {
+    contain: layout style !important;
+}
+
+/* Optimize profile picture rendering */
+html body img[src*="avatar"],
+html body .user-avatar-small img,
+html body .profile-pic,
+html body #viewProfilePic,
+html body #editProfilePicPreview {
+    /* Prevent layout shifts */
+    contain: layout !important;
+
+    /* Hardware acceleration */
+    transform: translateZ(0) !important;
+
+    /* Prevent image flickering */
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+}
