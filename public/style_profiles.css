@@ -67,7 +67,10 @@
 .profile-modal-content::before {
     content: "";
     position: absolute;
-    top: -50%; left: -50%; width: 200%; height: 200%;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     background: radial-gradient(circle at center, rgba(0, 201, 255, 0.08) 0%, transparent 60%);
     animation: luxuryGlow 15s ease-in-out infinite;
     z-index: -2;
@@ -78,9 +81,12 @@
 .profile-modal-content::after {
     content: "";
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: 
-        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.22'/%3E%3C/svg%3E"), 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.22'/%3E%3C/svg%3E"),
         var(--rough-frost-noise);
     opacity: 0.3;
     pointer-events: none;
@@ -228,7 +234,10 @@
 .settings-modal-content::before {
     content: '';
     position: absolute;
-    top: -50%; left: -50%; width: 200%; height: 200%;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     background: radial-gradient(circle at center, rgba(0, 201, 255, 0.08) 0%, transparent 60%);
     animation: luxuryGlow 15s ease-in-out infinite;
     z-index: -2;
@@ -238,9 +247,12 @@
 .settings-modal-content::after {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: 
-        url('data:image/svg+xml,%3Csvg viewBox=''0 0 200 200'' xmlns=''http://www.w3.org/2000/svg''%3E%3Cfilter id=''noiseFilter''%3E%3CfeTurbulence type=''fractalNoise'' baseFrequency=''0.65'' numOctaves=''3'' stitchTiles=''stitch''/%3E%3C/filter%3E%3Crect width=''100%25'' height=''100%25'' filter=''url(%23noiseFilter)'' opacity=''0.14''/%3E%3C/svg%3E'), 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        url('data:image/svg+xml,%3Csvg viewBox=' '0 0 200 200' ' xmlns=' 'http://www.w3.org/2000/svg' '%3E%3Cfilter id=' 'noiseFilter' '%3E%3CfeTurbulence type=' 'fractalNoise' ' baseFrequency=' '0.65' ' numOctaves=' '3' ' stitchTiles=' 'stitch' '/%3E%3C/filter%3E%3Crect width=' '100%25' ' height=' '100%25' ' filter=' 'url(%23noiseFilter)' ' opacity=' '0.14' '/%3E%3C/svg%3E'),
         var(--rough-frost-noise);
     opacity: 0.20;
     pointer-events: none;
@@ -265,7 +277,10 @@
 .settings-modal-content::before {
     content: '';
     position: absolute;
-    top: -50%; left: -50%; width: 200%; height: 200%;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     background: radial-gradient(circle at center, rgba(0, 201, 255, 0.08) 0%, transparent 60%);
     animation: luxuryGlow 15s ease-in-out infinite;
     z-index: -2;
@@ -275,9 +290,12 @@
 .settings-modal-content::after {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: 
-        url('data:image/svg+xml,%3Csvg viewBox=''0 0 200 200'' xmlns=''http://www.w3.org/2000/svg''%3E%3Cfilter id=''noiseFilter''%3E%3CfeTurbulence type=''fractalNoise'' baseFrequency=''0.65'' numOctaves=''3'' stitchTiles=''stitch''/%3E%3C/filter%3E%3Crect width=''100%25'' height=''100%25'' filter=''url(%23noiseFilter)'' opacity=''0.14''/%3E%3C/svg%3E'), 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        url('data:image/svg+xml,%3Csvg viewBox=' '0 0 200 200' ' xmlns=' 'http://www.w3.org/2000/svg' '%3E%3Cfilter id=' 'noiseFilter' '%3E%3CfeTurbulence type=' 'fractalNoise' ' baseFrequency=' '0.65' ' numOctaves=' '3' ' stitchTiles=' 'stitch' '/%3E%3C/filter%3E%3Crect width=' '100%25' ' height=' '100%25' ' filter=' 'url(%23noiseFilter)' ' opacity=' '0.14' '/%3E%3C/svg%3E'),
         var(--rough-frost-noise);
     opacity: 0.20;
     pointer-events: none;
@@ -496,7 +514,8 @@
     top: 0;
     height: 100%;
     width: 320px;
-    background: rgba(15, 15, 20, 0.1) !important; /* 60% Transparent */
+    background: rgba(15, 15, 20, 0.1) !important;
+    /* 60% Transparent */
     backdrop-filter: url(#liquidGlass) blur(30px) saturate(250%) contrast(120%) !important;
     -webkit-backdrop-filter: url(#liquidGlass) blur(30px) saturate(250%) contrast(120%) !important;
     border-left: 1.5px solid rgba(255, 255, 255, 0.15);
@@ -889,7 +908,7 @@
 }
 
 @media (max-width: 480px) {
-    
+
 
     .header-content {
         justify-content: space-between !important;
@@ -1438,7 +1457,10 @@
 .user-hamburger-menu::before {
     content: "";
     position: absolute;
-    top: -50%; left: -50%; width: 200%; height: 200%;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     background: radial-gradient(circle at center, rgba(0, 201, 255, 0.05) 0%, transparent 60%);
     animation: luxuryGlow 15s ease-in-out infinite;
     z-index: -2;
@@ -1448,9 +1470,12 @@
 .user-hamburger-menu::after {
     content: "";
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: 
-        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E"), 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E"),
         var(--rough-frost-noise);
     opacity: 0.25;
     pointer-events: none;
@@ -1458,8 +1483,17 @@
 }
 
 @keyframes luxuryGlow {
-    0%, 100% { transform: translate(0, 0); opacity: 0.3; }
-    50% { transform: translate(-10%, 10%); opacity: 0.6; }
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: translate(-10%, 10%);
+        opacity: 0.6;
+    }
 }
 
 /* Luxury Menu Bars */
@@ -1596,6 +1630,7 @@
     font-family: 'Orbitron', sans-serif;
     font-weight: 700;
 }
+
 /* RESTORED CSS END */
 
 
@@ -1611,9 +1646,12 @@
 .settings-modal-content::after {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: 
-        url('data:image/svg+xml,%3Csvg viewBox=''0 0 200 200'' xmlns=''http://www.w3.org/2000/svg''%3E%3Cfilter id=''noiseFilter''%3E%3CfeTurbulence type=''fractalNoise'' baseFrequency=''0.65'' numOctaves=''3'' stitchTiles=''stitch''/%3E%3C/filter%3E%3Crect width=''100%25'' height=''100%25'' filter=''url(%23noiseFilter)'' opacity=''0.14''/%3E%3C/svg%3E'), 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        url('data:image/svg+xml,%3Csvg viewBox=' '0 0 200 200' ' xmlns=' 'http://www.w3.org/2000/svg' '%3E%3Cfilter id=' 'noiseFilter' '%3E%3CfeTurbulence type=' 'fractalNoise' ' baseFrequency=' '0.65' ' numOctaves=' '3' ' stitchTiles=' 'stitch' '/%3E%3C/filter%3E%3Crect width=' '100%25' ' height=' '100%25' ' filter=' 'url(%23noiseFilter)' ' opacity=' '0.14' '/%3E%3C/svg%3E'),
         var(--rough-frost-noise);
     opacity: 0.20;
     pointer-events: none;
@@ -1635,9 +1673,12 @@
 #settingsModal .settings-modal-content::after {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: 
-        url('data:image/svg+xml,%3Csvg viewBox=''0 0 200 200'' xmlns=''http://www.w3.org/2000/svg''%3E%3Cfilter id=''noiseFilter''%3E%3CfeTurbulence type=''fractalNoise'' baseFrequency=''0.65'' numOctaves=''3'' stitchTiles=''stitch''/%3E%3C/filter%3E%3Crect width=''100%25'' height=''100%25'' filter=''url(%23noiseFilter)'' opacity=''0.14''/%3E%3C/svg%3E'), 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        url('data:image/svg+xml,%3Csvg viewBox=' '0 0 200 200' ' xmlns=' 'http://www.w3.org/2000/svg' '%3E%3Cfilter id=' 'noiseFilter' '%3E%3CfeTurbulence type=' 'fractalNoise' ' baseFrequency=' '0.65' ' numOctaves=' '3' ' stitchTiles=' 'stitch' '/%3E%3C/filter%3E%3Crect width=' '100%25' ' height=' '100%25' ' filter=' 'url(%23noiseFilter)' ' opacity=' '0.14' '/%3E%3C/svg%3E'),
         var(--rough-frost-noise);
     opacity: 0.20;
     pointer-events: none;
@@ -1647,7 +1688,10 @@
 #settingsModal .settings-modal-content::before {
     content: '';
     position: absolute;
-    top: -50%; left: -50%; width: 200%; height: 200%;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     background: radial-gradient(circle at center, rgba(0, 201, 255, 0.08) 0%, transparent 60%);
     animation: luxuryGlow 15s ease-in-out infinite;
     z-index: -2;
@@ -1671,7 +1715,7 @@
 
 /* Add specular highlight for that 'wet' surface look */
 #settingsModal .settings-modal-content::before {
-    background: linear-gradient(125deg, rgba(255,255,255,0.3) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.1) 100%) !important;
+    background: linear-gradient(125deg, rgba(255, 255, 255, 0.3) 0%, transparent 40%, transparent 60%, rgba(255, 255, 255, 0.1) 100%) !important;
     opacity: 0.6 !important;
 }
 
@@ -1687,12 +1731,92 @@
 
 #settingsModal .settings-modal-content::before {
     /* Subtle gloss only, no heavy white fill */
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%) !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%) !important;
     opacity: 1 !important;
 }
 
 #settingsModal .settings-modal-content::after {
     /* Minimal noise for texture, barely visible */
-    opacity: 0.08 !important; 
+    opacity: 0.08 !important;
 }
 
+
+/* ================= SKELETON LOADER ANIMATIONS ================= */
+.skeleton-loader-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.skeleton-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    margin-right: 15px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.skeleton-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skeleton-text {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    position: relative;
+}
+
+.skeleton-text.title {
+    width: 50%;
+    height: 14px;
+}
+
+.skeleton-text.subtitle {
+    width: 30%;
+}
+
+/* Shimmer Animation */
+.skeleton-item::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.05) 50%,
+            transparent 100%);
+    transform: translateX(-100%);
+    animation: shimmer 1.5s infinite;
+    z-index: 1;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}

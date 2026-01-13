@@ -382,10 +382,111 @@ let onlineUsers = new Map();
 let phonkAudio = new Audio();
 phonkAudio.loop = false;
 
+// ================= SOUND EFFECTS SYSTEM =================
+// Initialize from localStorage with proper string-to-boolean conversion
+let soundEffectsEnabled = localStorage.getItem('soundEffectsEnabled') !== 'false'; // Default true
+
+// Getter function to always check current state
+function isSoundEnabled() {
+    return localStorage.getItem('soundEffectsEnabled') !== 'false';
+}
+
+// Audio Context for generating beep sounds
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// Sound effect generator
+function playBeep(frequency = 800, duration = 100, volume = 0.3) {
+    // Always check fresh from localStorage
+    if (!isSoundEnabled()) {
+        console.log('Sound blocked: soundEffectsEnabled =', isSoundEnabled());
+        return;
+    }
+
+    try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + duration / 1000);
+    } catch (err) {
+        console.log('Sound playback failed:', err);
+    }
+}
+
+// Different sound effects
+const SoundEffects = {
+    messageSent: () => playBeep(1000, 80, 0.2),      // High pitch, short beep
+    messageReceived: () => playBeep(600, 100, 0.15), // Medium pitch
+    notification: () => playBeep(800, 120, 0.2),     // Alert sound
+    uiClick: () => playBeep(1200, 50, 0.1),          // Quick tick
+    success: () => {                                  // Success chord
+        playBeep(800, 100, 0.15);
+        setTimeout(() => playBeep(1000, 100, 0.15), 100);
+    },
+    error: () => {                                    // Error buzz
+        playBeep(300, 150, 0.2);
+        setTimeout(() => playBeep(250, 150, 0.2), 150);
+    }
+};
+
+// Initialize sound toggle from localStorage
+function initializeSoundEffects() {
+    const toggle = document.getElementById('soundEffectsToggle');
+    const soundIcon = document.getElementById('soundIcon');
+    const soundDescription = document.getElementById('soundDescription');
+
+    if (toggle) {
+        // Sync toggle with variable
+        toggle.checked = soundEffectsEnabled;
+        updateSoundIcon(soundEffectsEnabled);
+
+        console.log('Sound effects initialized:', soundEffectsEnabled);
+
+        toggle.addEventListener('change', function () {
+            soundEffectsEnabled = this.checked;
+            // Store as explicit string 'true' or 'false'
+            localStorage.setItem('soundEffectsEnabled', soundEffectsEnabled ? 'true' : 'false');
+            updateSoundIcon(soundEffectsEnabled);
+
+            console.log('Sound effects toggled:', soundEffectsEnabled, 'localStorage:', localStorage.getItem('soundEffectsEnabled'));
+
+            // Play a test beep when enabling
+            if (soundEffectsEnabled) {
+                SoundEffects.success();
+            }
+        });
+    } else {
+        console.warn('Sound toggle element not found');
+    }
+}
+
+function updateSoundIcon(enabled) {
+    const soundIcon = document.getElementById('soundIcon');
+    const soundDescription = document.getElementById('soundDescription');
+
+    if (soundIcon) {
+        soundIcon.className = enabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+    }
+
+    if (soundDescription) {
+        soundDescription.textContent = enabled ? 'Sounds are enabled' : 'Sounds are disabled';
+    }
+}
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', function () {
     createParticleField();
     initializeEventListeners();
+    initializeSoundEffects(); // Initialize sound system
 
 
     // Auto-resize textarea
@@ -521,11 +622,14 @@ function initializeEventListeners() {
 
             // Play Phonk track once per session
             if (!sessionStorage.getItem('phonkPlayed')) {
-                phonkAudio.src = 'phonk.mp3';
-                phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
-                phonkAudio.onended = () => {
-                    phonkAudio.src = '';
-                };
+                // Check if sounds are enabled
+                if (isSoundEnabled()) {
+                    phonkAudio.src = 'phonk.mp3';
+                    phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
+                    phonkAudio.onended = () => {
+                        phonkAudio.src = '';
+                    };
+                }
                 sessionStorage.setItem('phonkPlayed', 'true');
             }
         }
@@ -1281,7 +1385,14 @@ function createStoneConfetti(container) {
 }
 
 // Play celebration sound
+// Play celebration sound
 function playStoneAwardSound() {
+    // Check if sounds are enabled
+    if (!isSoundEnabled()) {
+        console.log('playStoneAwardSound blocked: sounds disabled');
+        return;
+    }
+
     try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -1390,7 +1501,7 @@ socket.on('dm-message', function (data) {
     }
 
     // ? Play sound for every new DM
-    playMessageSound();
+    SoundEffects.messageReceived();
 });
 
 
@@ -1426,7 +1537,10 @@ socket.on('dm-reaction', function (data) {
 });
 
 // Developer login sound (Phonk broadcast)
+// Developer login sound (Phonk broadcast)
 socket.on("playPhonk", function (data) {
+    if (!isSoundEnabled()) return; // check toggle
+
     try {
         const audio = new Audio(data.track);
         audio.volume = 0.5; // adjust volume if needed
@@ -2155,6 +2269,12 @@ window.removeChatImagePreview = removeChatImagePreview;
 window.openImageViewer = openImageViewer;
 
 function playMessageSound() {
+    // Check if sounds are enabled
+    if (!isSoundEnabled()) {
+        console.log('playMessageSound blocked: sounds disabled');
+        return;
+    }
+
     // Create a subtle notification sound
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
@@ -2322,9 +2442,35 @@ function switchPublicUserListTab(tab) {
     }
 }
 
+
+function showUserListSkeleton() {
+    const usersList = document.getElementById('usersListContainer');
+    if (!usersList) return;
+
+    usersList.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    // Create 8 skeleton items
+    for (let i = 0; i < 8; i++) {
+        const div = document.createElement('div');
+        div.className = 'skeleton-item';
+        div.innerHTML = `
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-info">
+                <div class="skeleton-text title"></div>
+                <div class="skeleton-text subtitle"></div>
+            </div>
+        `;
+        fragment.appendChild(div);
+    }
+
+    usersList.appendChild(fragment);
+}
+
 async function fetchGlobalUsers() {
     const usersList = document.getElementById('usersListContainer');
-    usersList.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div>';
+    // Show skeleton loader instead of spinner
+    showUserListSkeleton();
 
     // Cache for 60 seconds
     if (Date.now() - lastGlobalFetchTime < 60000 && globalProfilesCache.length > 0) {
@@ -2977,6 +3123,9 @@ function sendDMMessage(userId) {
     };
 
     socket.emit('dm-message', messageData);
+
+    // Play send sound effect
+    SoundEffects.messageSent();
 
     // Add to local messages immediately
     addDMMessageToWindow(userId, {
