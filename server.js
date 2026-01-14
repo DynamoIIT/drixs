@@ -95,7 +95,7 @@ app.get('/health', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
         status: 'OK',
-        message: 'BRO_CHATZ is running!',
+        message: 'Drixs is running!',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     }));
@@ -357,7 +357,7 @@ io.on('connection', (socket) => {
             // Welcome message
             const welcomeMessage = isDeveloper ?
                 `👑 Welcome back, Developer! You have full administrative access.` :
-                `🎉 Welcome to BRO_CHATZ, ${cleanUsername}! Ready to chat with awesome people? Let's get this party started! 🚀`;
+                `Welcome to Drixs , ${cleanUsername}! and Explore! `;
 
             console.log(`DEBUG: Sending welcome to ${cleanUsername} (socket: ${socket.id})`);
             socket.emit('admin-message', { message: welcomeMessage, timestamp: new Date(), type: 'welcome' });
@@ -368,7 +368,7 @@ io.on('connection', (socket) => {
             // Notify all users (except dev) of join
             if (!isDeveloper) {
                 socket.broadcast.emit('user-notification', {
-                    message: `${cleanUsername} entered the chatz`,
+                    message: `${cleanUsername} entered the Drixs`,
                     type: 'join',
                     username: cleanUsername,
                     color: userColor,
@@ -1387,7 +1387,7 @@ io.on('connection', (socket) => {
             if (user) {
                 // Broadcast exit popup
                 socket.broadcast.emit('user-notification', {
-                    message: `${user.username} exited the chatz`,
+                    message: `${user.username} exited the Drixs`,
                     type: 'exit',
                     username: user.username,
                     color: user.color,
