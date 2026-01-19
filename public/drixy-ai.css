@@ -1,0 +1,305 @@
+/* ================= DRIXY AI CHAT WINDOW STYLES ================= */
+
+/* Modal Container (Hidden by default) */
+#drixyAIModal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#drixyAIModal.show {
+    opacity: 1;
+}
+
+/* Chat Window */
+.drixy-chat-window {
+    width: 90%;
+    max-width: 600px;
+    height: 80vh;
+    background: rgba(10, 10, 15, 0.95);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#drixyAIModal.show .drixy-chat-window {
+    transform: scale(1);
+}
+
+/* Header */
+.drixy-chat-header {
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.drixy-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.2rem;
+}
+
+.drixy-icon-spin {
+    color: #00D4FF;
+    animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.drixy-close-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.drixy-close-btn:hover {
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Messages Area */
+.drixy-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    scroll-behavior: smooth;
+}
+
+/* Scrollbar styling */
+.drixy-chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.drixy-chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 255, 0.2);
+    border-radius: 3px;
+}
+
+/* Message Bubbles */
+.drixy-message {
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    position: relative;
+    animation: messageIn 0.3s ease-out;
+}
+
+@keyframes messageIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.drixy-message.user {
+    align-self: flex-end;
+    background: rgba(0, 212, 255, 0.15);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: #fff;
+    border-bottom-right-radius: 2px;
+}
+
+.drixy-message.assistant {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #eee;
+    border-bottom-left-radius: 2px;
+}
+
+/* Date/Time Separators */
+.drixy-date-separator {
+    text-align: center;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 10px 0;
+    position: relative;
+}
+
+.drixy-date-separator::before,
+.drixy-date-separator::after {
+    content: '';
+    display: inline-block;
+    width: 30px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    vertical-align: middle;
+    margin: 0 10px;
+}
+
+/* Thinking Indicator (Bubble Wave) */
+.drixy-thinking {
+    align-self: flex-start;
+    display: flex;
+    gap: 4px;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border-bottom-left-radius: 2px;
+    margin-bottom: 10px;
+    opacity: 0;
+    /* Hidden by default, script will show it */
+}
+
+.drixy-thinking.active {
+    opacity: 1;
+}
+
+.thinking-bubble {
+    width: 8px;
+    height: 8px;
+    background: #00D4FF;
+    border-radius: 50%;
+    animation: bubbleWave 1.2s infinite ease-in-out both;
+}
+
+.thinking-bubble:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.thinking-bubble:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+.thinking-bubble:nth-child(3) {
+    animation-delay: 0s;
+}
+
+@keyframes bubbleWave {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 0 10px #00D4FF;
+    }
+}
+
+/* Input Area */
+.drixy-input-area {
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.drixy-input-wrapper {
+    flex: 1;
+    position: relative;
+    background: rgba(0, 0, 0, 0.5);
+    /* Darker reflected look */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 8px 15px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.drixy-input-wrapper:focus-within {
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.1) inset;
+}
+
+#drixyInput {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: none;
+    max-height: 100px;
+    outline: none;
+    line-height: 1.5;
+}
+
+#drixySendBtn {
+    background: linear-gradient(135deg, #00D4FF, #0056b3);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, opacity 0.2s;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+#drixySendBtn:hover:not(:disabled) {
+    transform: scale(1.05);
+}
+
+#drixySendBtn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+#drixySendBtn:disabled {
+    background: #333;
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Typing Cursor Effect */
+.typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background-color: #00D4FF;
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}

@@ -264,7 +264,7 @@ function resetCreatePostForm() {
 }
 
 // Publish Post
-async function publishFrostPost() {
+function publishFrostPost() {
     const textarea = document.getElementById('postTextarea');
     const content = textarea?.value.trim();
 
@@ -273,32 +273,33 @@ async function publishFrostPost() {
         return;
     }
 
-    try {
-        const postData = {
-            content: content,
-            image: PostsState.selectedImage,
-            timestamp: Date.now()
-        };
+    const postData = {
+        content: content,
+        image: PostsState.selectedImage,
+        id: Date.now() + '-' + Math.random().toString(36).substr(2, 9)
+    };
 
-        socket.emit('create-post', postData);
+    console.log('📤 Publishing post via socket:', postData);
 
-        // Close modal and reset
-        document.getElementById('createPostModal').classList.remove('active');
-        resetCreatePostForm();
+    // Emit to server
+    socket.emit('create-post', postData);
 
-    } catch (error) {
-        console.error('Error publishing post:', error);
-        alert('Failed to publish post. Please try again.');
-    }
+    // Close modal and reset
+    document.getElementById('createPostModal').classList.remove('active');
+    resetCreatePostForm();
 }
 
 // Load Posts
 function loadFrostedPosts(type) {
+    console.log('❄️ loadFrostedPosts called with type:', type);
+
+    // Request posts from server via socket
     socket.emit('get-posts', { type: type });
 }
 
 // Render Posts
 function renderFrostedPosts(posts) {
+    console.log('❄️ renderFrostedPosts called with:', posts ? posts.length : 'null', 'posts');
     const grid = document.getElementById('postsGrid');
     const emptyState = document.getElementById('emptyState');
 
@@ -388,6 +389,7 @@ function createFrostPostCard(post) {
 
 // Toggle Like
 function toggleFrostLike(postId) {
+    console.log('❤️ Toggling like for post:', postId);
     socket.emit('toggle-post-like', { postId });
 }
 
@@ -461,9 +463,12 @@ function sendFrostComment() {
 
     if (!content || !PostsState.currentPostId) return;
 
+    console.log('💬 Sending comment:', content);
+
     socket.emit('add-comment', {
         postId: PostsState.currentPostId,
-        content: content
+        content: content,
+        id: Date.now() + '-' + Math.random().toString(36).substr(2, 9)
     });
 
     textarea.value = '';
@@ -505,9 +510,13 @@ function escapeHtml(text) {
 // ================= SOCKET EVENTS =================
 
 // Posts loaded
-socket.on('posts-loaded', function (data) {
-    if (data && data.posts) {
-        renderFrostedPosts(data.posts);
+// Posts loaded (Server emits 'posts-list' with array)
+socket.on('posts-list', function (posts) {
+    console.log('❄️ Socket: posts-list received', posts);
+    if (posts) {
+        renderFrostedPosts(posts);
+    } else {
+        console.error('❄️ Socket: posts-list received null or undefined');
     }
 });
 
@@ -545,7 +554,8 @@ socket.on('post-like-updated', function (data) {
 });
 
 // Comments loaded
-socket.on('comments-loaded', function (data) {
+// Comments loaded (Server emits 'post-comments' with { postId, comments })
+socket.on('post-comments', function (data) {
     if (data && data.comments) {
         renderFrostComments(data.comments);
     }
@@ -562,6 +572,16 @@ socket.on('comment-added', function (data) {
     if (commentBtn) {
         const current = parseInt(commentBtn.textContent) || 0;
         commentBtn.textContent = current + 1;
+    }
+});
+
+// Post creation acknowledgement (Debug)
+socket.on('post-creation-ack', function (data) {
+    console.log('❄️ Socket: post-creation-ack received', data);
+    if (!data.success) {
+        alert('Post failed: ' + (data.error || 'Unknown error'));
+    } else {
+        console.log('✅ Post created successfully!');
     }
 });
 

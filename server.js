@@ -2,8 +2,9 @@ const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-// Store posts in memory
-const posts = new Map();
+const { createClient } = require('@supabase/supabase-js');
+const { systemPrompt } = require('./ai-system-prompt');
+
 
 // Load environment variables with error handling
 try {
@@ -20,6 +21,12 @@ try {
 
 const app = express();
 const server = createServer(app);
+
+// Initialize Supabase Client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
 // DM System Storage
 const dmMessages = new Map(); // userId-userId -> messages array
 const dmTypingUsers = new Map(); // userId -> Set of users they're typing to
@@ -95,10 +102,152 @@ app.get('/health', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
         status: 'OK',
-        message: 'Drixs is running!',
+        message: 'BRO_CHATZ is running!',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     }));
+});
+
+// ===================================
+// AI CHAT API ENDPOINTS
+// ===================================
+
+// API: Send message to Drixy AI
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { message, userId, sessionId } = req.body;
+
+        if (!message || !userId) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (!supabase) {
+            return res.status(500).json({ error: 'Database connection not configured' });
+        }
+
+        // 0. Save User Message (CRITICAL FIX: Was missing!)
+        const { error: saveError1 } = await supabase
+            .from('ai_chat_history')
+            .insert({
+                user_id: userId,
+                role: 'user',
+                content: message
+            });
+
+        if (saveError1) console.error('Error saving User message:', saveError1);
+
+        // 1. Get Conversation History (Context)
+        const { data: history, error: historyError } = await supabase
+            .from('ai_chat_history')
+            .select('role, content')
+            .eq('user_id', userId)
+            // Optional: filter by session if provided
+            // .eq('session_id', sessionId) 
+            .order('created_at', { ascending: false })
+            .limit(50); // Increased Context window size as requested
+
+        if (historyError) {
+            console.error('History fetch error:', historyError);
+            // Continue without history if error? Or fail? Let's continue.
+        }
+
+        // Reverse history to be chronological: [Oldest ... Newest]
+        const conversationHistory = (history || []).reverse();
+
+        // 2. Build Messages Array for HuggingFace
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...conversationHistory,
+            // Add current user message
+            { role: 'user', content: message }
+        ];
+
+        // 3. Call HuggingFace Router (OpenAI Compatible API)
+        const HF_API_URL = 'https://router.huggingface.co/v1/chat/completions';
+        const modelId = process.env.HUGGINGFACE_MODEL || 'meta-llama/Meta-Llama-3-8B-Instruct';
+
+        const hfResponse = await fetch(
+            HF_API_URL,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: messages, // Send standard messages array directly
+                    max_tokens: 500,
+                    temperature: 0.7,
+                    stream: false
+                })
+            }
+        );
+
+        if (!hfResponse.ok) {
+            const errorText = await hfResponse.text();
+            console.error('HuggingFace Router Error:', hfResponse.status, errorText);
+            throw new Error(`AI Provider Error: ${hfResponse.status} - ${errorText}`);
+        }
+
+        const data = await hfResponse.json();
+
+        // Standard OpenAI Response Format: choices[0].message.content
+        const botMessage = data.choices?.[0]?.message?.content || "I'm lost for words.";
+
+        // 4. Save AI Response
+        const { error: saveError2 } = await supabase
+            .from('ai_chat_history')
+            .insert({
+                user_id: userId,
+                role: 'assistant',
+                content: botMessage
+            });
+
+        if (saveError2) console.error('Error saving AI response:', saveError2);
+
+        // 5. Send Response
+        res.json({
+            success: true,
+            response: botMessage,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('AI Chat Logic Error:', error);
+        res.status(500).json({
+            error: 'Failed to process AI chat',
+            details: error.message
+        });
+    }
+});
+
+// API: Get Chat History
+app.get('/api/chat/history/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        if (!supabase) {
+            console.error('Database connection not configured for /api/chat/history/:userId');
+            return res.status(500).json({ error: 'Database connection not configured' });
+        }
+
+        const { data, error } = await supabase
+            .from('ai_chat_history')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true }); // Oldest first for display
+
+        if (error) {
+            console.error('Supabase fetch history error for user', userId, ':', error.message, error.details);
+            throw error;
+        }
+
+        res.json({ success: true, messages: data });
+    } catch (error) {
+        console.error('SERVER CHAT HISTORY ERROR:', error);
+        res.status(500).json({ success: false, error: error.message || 'Failed to fetch chat history' });
+    }
 });
 
 // Root route with error handling
@@ -124,6 +273,11 @@ const onlineUsers = new Map();
 // ===== TIC-TAC-TOE GAME STORAGE =====
 const activeGames = new Map(); // gameId -> game object
 const userGameStatus = new Map(); // userId -> gameId
+
+// ================= POSTS SYSTEM STORAGE =================
+const postsStorage = new Map(); // postId -> post object
+const postComments = new Map(); // postId -> comments array
+const postReactions = new Map(); // postId -> reactions object
 
 const restrictedUsernames = ['developer', 'DEVELOPER', 'Developer', 'DEVEL0PER', 'devel0per', 'BSE SENSEX', 'bse sensex', 'BSE', 'bse'];
 const userColors = [
@@ -357,7 +511,7 @@ io.on('connection', (socket) => {
             // Welcome message
             const welcomeMessage = isDeveloper ?
                 `👑 Welcome back, Developer! You have full administrative access.` :
-                `Welcome to Drixs , ${cleanUsername}! and Explore! `;
+                `🎉 Welcome to BRO_CHATZ, ${cleanUsername}! Ready to chat with awesome people? Let's get this party started! 🚀`;
 
             console.log(`DEBUG: Sending welcome to ${cleanUsername} (socket: ${socket.id})`);
             socket.emit('admin-message', { message: welcomeMessage, timestamp: new Date(), type: 'welcome' });
@@ -368,7 +522,7 @@ io.on('connection', (socket) => {
             // Notify all users (except dev) of join
             if (!isDeveloper) {
                 socket.broadcast.emit('user-notification', {
-                    message: `${cleanUsername} entered the Drixs`,
+                    message: `${cleanUsername} entered the chatz`,
                     type: 'join',
                     username: cleanUsername,
                     color: userColor,
@@ -748,16 +902,17 @@ io.on('connection', (socket) => {
 
     // ================= POSTS SYSTEM SERVER HANDLERS =================
 
-    // Posts storage (in-memory)
-    const postsStorage = new Map(); // postId -> post object
-    const postComments = new Map(); // postId -> comments array
-    const postReactions = new Map(); // postId -> reactions object
-
     // ===== Create Post =====
     socket.on('create-post', (postData) => {
         try {
+            console.log('📝 SERVER: create-post received from socket', socket.id, 'Data:', postData);
             const user = onlineUsers.get(socket.id);
-            if (!user) return;
+            console.log('📝 SERVER: User lookup result:', user ? user.username : 'NOT_FOUND');
+            if (!user) {
+                console.log('❌ SERVER: User not found for socket', socket.id);
+                socket.emit('post-creation-ack', { success: false, error: 'User not found. Try refreshing.' });
+                return;
+            }
 
             // Validate post data
             if (!postData.content || postData.content.trim().length === 0) {
@@ -772,7 +927,7 @@ io.on('connection', (socket) => {
 
             // Create post object
             const post = {
-                id: postData.id,
+                id: postData.id || (Date.now() + '-' + Math.random().toString(36).substr(2, 9)),
                 content: postData.content.trim(),
                 image: postData.image || null,
                 author: user.username,
@@ -780,7 +935,8 @@ io.on('connection', (socket) => {
                 isDeveloper: user.isDeveloper,
                 timestamp: new Date(),
                 reactions: {},
-                impressions: 0
+                impressions: 0,
+                likedBy: new Set() // Initialize likes tracking
             };
 
             // Store post
@@ -791,10 +947,14 @@ io.on('connection', (socket) => {
             // Broadcast to all users
             io.emit('post-created', post);
 
+            // Ack to sender
+            socket.emit('post-creation-ack', { success: true, postId: post.id });
+
             console.log(`📝 New post created by ${user.username}: ${post.content.substring(0, 50)}...`);
 
         } catch (error) {
             console.error('Error in create-post:', error);
+            socket.emit('post-creation-ack', { success: false, error: 'Server error' });
             socket.emit('error-message', { message: 'Failed to create post' });
         }
     });
@@ -1011,15 +1171,85 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ===== Get All Posts =====
-    socket.on('get-posts', () => {
+    // ===== Get All Posts (with filtering) =====
+    socket.on('get-posts', (data) => {
         try {
-            const posts = Array.from(postsStorage.values())
+            console.log('📝 SERVER: get-posts received', data);
+            const filterType = data && data.type ? data.type : 'featured'; // 'featured' or 'user'
+            const user = onlineUsers.get(socket.id);
+
+            let posts = Array.from(postsStorage.values())
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-            socket.emit('posts-list', posts);
+            // Filter if requested
+            if (filterType === 'user' && user) {
+                posts = posts.filter(p => p.author === user.username);
+            }
+
+            // Transform to match client expectations
+            const transformedPosts = posts.map(p => ({
+                id: p.id,
+                content: p.content,
+                imageUrl: p.image,
+                username: p.author,
+                userId: p.author, // Using author as userId
+                timestamp: p.timestamp,
+                likes: p.likedBy ? p.likedBy.size : 0,
+                commentCount: (postComments.get(p.id) || []).length
+            }));
+
+            console.log(`📝 SERVER: Sending ${transformedPosts.length} posts to client`);
+            socket.emit('posts-list', transformedPosts);
         } catch (error) {
             console.error('Error in get-posts:', error);
+        }
+    });
+
+    // ===== Toggle Post Like =====
+    socket.on('toggle-post-like', (data) => {
+        try {
+            const user = onlineUsers.get(socket.id);
+            if (!user) return;
+
+            const { postId } = data;
+            const post = postsStorage.get(postId);
+
+            if (!post) {
+                // socket.emit('error-message', { message: 'Post not found' });
+                return;
+            }
+
+            // Init likes set if not exists
+            if (!post.likedBy) {
+                post.likedBy = new Set();
+            }
+
+            let liked = false;
+            if (post.likedBy.has(user.username)) {
+                post.likedBy.delete(user.username);
+                liked = false;
+            } else {
+                post.likedBy.add(user.username);
+                liked = true;
+            }
+
+            // Update count
+            post.likes = post.likedBy.size;
+
+            // Broadcast update
+            io.emit('post-like-updated', {
+                postId: postId,
+                liked: liked,
+                likes: post.likes,
+                username: user.username // Who performed the action
+            });
+
+            // Should also tell the specific user their state if needed, 
+            // but the client usually handles the toggle visual immediately or waits for server.
+            // In this case, we broadcast to everyone so the UI updates.
+
+        } catch (error) {
+            console.error('Error in toggle-post-like:', error);
         }
     });
 
@@ -1037,6 +1267,61 @@ io.on('connection', (socket) => {
             console.error('Error in get-post-comments:', error);
         }
     });
+
+    // ===== Add Comment =====
+    socket.on('add-comment', (data) => {
+        try {
+            const user = onlineUsers.get(socket.id);
+            if (!user) return;
+
+            const { postId, content, id } = data;
+
+            // Validate
+            if (!content || content.trim().length === 0) {
+                socket.emit('error-message', { message: 'Comment cannot be empty' });
+                return;
+            }
+
+            if (content.length > 300) {
+                socket.emit('error-message', { message: 'Comment too long (max 300 characters)' });
+                return;
+            }
+
+            const post = postsStorage.get(postId);
+            if (!post) {
+                socket.emit('error-message', { message: 'Post not found' });
+                return;
+            }
+
+            // Create comment
+            const comment = {
+                id: id || (Date.now() + '-' + Math.random().toString(36).substr(2, 9)),
+                postId: postId,
+                content: content.trim(),
+                username: user.username,
+                color: user.color,
+                timestamp: new Date()
+            };
+
+            // Store comment
+            if (!postComments.has(postId)) {
+                postComments.set(postId, []);
+            }
+            postComments.get(postId).push(comment);
+
+            // Broadcast comment added event
+            io.emit('comment-added', {
+                postId: postId,
+                comment: comment
+            });
+
+            console.log(`💬 Comment added by ${user.username} on post ${postId}`);
+
+        } catch (error) {
+            console.error('Error in add-comment:', error);
+        }
+    });
+
 
     // ================= TIC-TAC-TOE GAME SYSTEM (SERVER) =================
     // ===== Get TTT Opponents =====
@@ -1387,7 +1672,7 @@ io.on('connection', (socket) => {
             if (user) {
                 // Broadcast exit popup
                 socket.broadcast.emit('user-notification', {
-                    message: `${user.username} exited the Drixs`,
+                    message: `${user.username} exited the chatz`,
                     type: 'exit',
                     username: user.username,
                     color: user.color,

@@ -7,12 +7,13 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>DRIXS </title>
+    <title>DRIXS - Ultimate Chat Experience</title>
     <link rel="stylesheet" href="style.css?v=38.0">
     <link rel="stylesheet" href="style_profiles.css?v=38.0">
     <link rel="stylesheet" href="style_tabs.css?v=38.0">
     <link rel="stylesheet" href="settings-window.css?v=38.0">
     <link rel="stylesheet" href="menu-bars.css?v=38.0">
+    <link rel="stylesheet" href="username-glow.css?v=1.0">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;200;300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -20,10 +21,12 @@
     <!-- Cropper.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="posts_frost.css?v=38.0">
     <link rel="stylesheet" href="liquid-glass-override.css?v=1.0">
     <link rel="stylesheet" href="mobile-performance.css?v=1.0">
+    <link rel="stylesheet" href="username-glow.css?v=1.0">
 
 </head>
 
@@ -502,6 +505,19 @@
                     <div class="menu-bar-info">
                         <span class="menu-bar-title">GAMES</span>
                         <span class="menu-bar-subtitle">Tic-Tac-Toe</span>
+                    </div>
+                    <i class="fas fa-chevron-right menu-bar-arrow"></i>
+                </div>
+
+                <!-- Drixy AI Bar -->
+                <div class="menu-bar drixy-ai-bar" id="drixyAIMenuBar">
+                    <div class="menu-bar-icon"><i class="fas fa-robot"></i></div>
+                    <div class="menu-bar-info">
+                        <div class="menu-bar-title drixy-ai-title">
+                            Drixy <span class="ai-text">AI</span>
+                            <img src="verified-tick.png" alt="verified" class="verified-tick">
+                        </div>
+                        <div class="menu-bar-subtitle">AI Assistant</div>
                     </div>
                     <i class="fas fa-chevron-right menu-bar-arrow"></i>
                 </div>
@@ -1022,6 +1038,7 @@
     <script src="socket_init.js"></script>
     <!-- Frosted Glass Posts System -->
     <script src="posts_frost.js"></script>
+    <script src="username-glow-function.js?v=1.0"></script>
     <script type="module" src="script.js?v=38.0"></script>
 
 

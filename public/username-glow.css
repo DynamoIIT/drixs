@@ -1,0 +1,60 @@
+/* ================= GLOWING USERNAME EFFECTS ================= */
+
+.username-glow {
+    font-weight: 700;
+    position: relative;
+
+    /* Ensure only text is painted */
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+
+    /* Ensure no background color leaks */
+    background-color: transparent !important;
+
+    background-size: 300% 100%;
+
+    /* Animate both sweep (bg pos) and pulse (shadow) */
+    animation: usernameGlowSweep 3s ease-in-out infinite;
+}
+
+/* Glowing Sweep Animation - Exactly matching AI text logic but with variable color */
+@keyframes usernameGlowSweep {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+        text-shadow:
+            0 0 10px rgba(var(--glow-rgb), 0.3),
+            0 0 20px rgba(var(--glow-rgb), 0.2);
+    }
+
+    50% {
+        background-position: 100% 50%;
+        text-shadow:
+            0 0 15px rgba(var(--glow-rgb), 0.6),
+            0 0 30px rgba(var(--glow-rgb), 0.4),
+            0 0 45px rgba(var(--glow-rgb), 0.2);
+    }
+}
+
+/* Faster animation on hover */
+.username-glow:hover {
+    animation-duration: 2s;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .username-glow {
+        animation-duration: 4s;
+    }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .username-glow {
+        animation: none;
+        background-position: 50% 50%;
+        text-shadow: 0 0 10px rgba(var(--glow-rgb), 0.3);
+    }
+}

@@ -222,6 +222,124 @@ let currentUserFollowing = new Set(); // Set of user UIDs current user follows
 let currentUserFollowers = new Set(); // Set of user UIDs following current user
 let followListStack = []; // For cyclic navigation (stack of {type, userId, title})
 
+// ================= USERNAME GLOW COLOR SYSTEM =================
+
+// Store glow colors per username for consistency
+const usernameGlowColors = new Map();
+
+// Generate a random vibrant color for username glow
+function generateRandomGlowColor() {
+    const glowPalette = [
+        // Cyan/Blue tones
+        { light: '#00D4FF', mid: '#4477FF', dark: '#0066CC' },
+        { light: '#00FFF2', mid: '#00CCDD', dark: '#008899' },
+
+        // Purple/Magenta tones
+        { light: '#FF00FF', mid: '#CC00FF', dark: '#9900CC' },
+        { light: '#FF4DFF', mid: '#DD00DD', dark: '#AA0088' },
+
+        // Green tones
+        { light: '#00FF99', mid: '#00CC77', dark: '#009955' },
+        { light: '#7FFF00', mid: '#66CC00', dark: '#559900' },
+
+        // Orange/Red tones
+        { light: '#FF6B35', mid: '#FF5522', dark: '#CC4400' },
+        { light: '#FF1744', mid: '#DD0033', dark: '#AA0022' },
+
+        // Yellow/Gold tones
+        { light: '#FFD700', mid: '#FFCC00', dark: '#CC9900' },
+        { light: '#FFF44F', mid: '#FFDD33', dark: '#CCAA00' },
+
+        // Pink tones
+        { light: '#FF69B4', mid: '#FF5599', dark: '#CC4477' },
+        { light: '#FF1493', mid: '#DD0077', dark: '#AA0055' },
+    ];
+
+    return glowPalette[Math.floor(Math.random() * glowPalette.length)];
+}
+
+// Get or create a glow color for a username
+function getGlowColorForUsername(username) {
+    if (!username) return null;
+
+    const cleanUsername = username.trim().toLowerCase();
+
+    if (!usernameGlowColors.has(cleanUsername)) {
+        usernameGlowColors.set(cleanUsername, generateRandomGlowColor());
+    }
+
+    return usernameGlowColors.get(cleanUsername);
+}
+
+// Apply glow effect to a username element
+function applyUsernameGlow(element, username, userColor) {
+    if (!element || !username) return;
+
+    const glowColor = getGlowColorForUsername(username);
+    if (!glowColor) return;
+
+    // Add the glow class
+    element.classList.add('username-glow');
+
+    // Ensure inline-block for proper transform/clip
+    element.style.display = 'inline-block';
+
+    // Extract RGB from hex color for text-shadow
+    const r = parseInt(glowColor.light.slice(1, 3), 16);
+    const g = parseInt(glowColor.light.slice(3, 5), 16);
+    const b = parseInt(glowColor.light.slice(5, 7), 16);
+
+    // Set CSS variable for the animation to use dynamic color
+    element.style.setProperty('--glow-rgb', `${r}, ${g}, ${b}`);
+
+    // Set color for fallback
+    element.style.color = '#1a1a1a';
+
+    // Set initial text-shadow (animation will override/enhance this)
+    element.style.textShadow = `
+        0 0 10px rgba(${r}, ${g}, ${b}, 0.5),
+        0 0 20px rgba(${r}, ${g}, ${b}, 0.3),
+        0 0 30px rgba(${r}, ${g}, ${b}, 0.2)
+    `;
+
+    // Ensure NO background color causes a bar
+    element.style.backgroundColor = 'transparent';
+
+    // Use backgroundImage specifically
+    element.style.backgroundImage = `linear-gradient(
+        135deg,
+        #0a0a0a 0%,
+        #2a2a2a 25%,
+        ${glowColor.light} 50%,
+        #2a2a2a 75%,
+        #0a0a0a 100%
+    )`;
+
+    element.style.backgroundSize = '300% 100%';
+
+    // Force clip properties
+    element.style.webkitBackgroundClip = 'text';
+    element.style.backgroundClip = 'text';
+    element.style.webkitTextFillColor = 'transparent';
+
+    // Keep the original user color as fallback (though it won't be visible due to background-clip)
+    if (userColor) {
+        element.style.color = userColor;
+    }
+}
+
+// Utility function to apply glow to all username elements in a container
+function applyGlowToAllUsernames(container = document) {
+    // Find all elements with username class or data-username attribute
+    const usernameElements = container.querySelectorAll('.username, [data-username-glow]');
+
+    usernameElements.forEach(element => {
+        const username = element.textContent.trim() || element.dataset.username;
+        const userColor = element.style.color || getComputedStyle(element).color;
+        applyUsernameGlow(element, username, userColor);
+    });
+}
+
 // ================= CYBERPUNK THEME SYSTEM =================
 
 let currentTheme = 'default';
@@ -1613,6 +1731,13 @@ function addMessage(data) {
     `;
 
     chatMessages.appendChild(messageDiv);
+
+    // Apply glow effect to username
+    const usernameElement = messageDiv.querySelector('.username');
+    if (usernameElement) {
+        applyUsernameGlow(usernameElement, data.username, data.color);
+    }
+
     scrollToBottom();
 
     // Add entrance animation
@@ -1690,7 +1815,7 @@ function showTypingIndicator(data) {
     typingDiv.dataset.username = data.username;
 
     typingDiv.innerHTML = `
-        <span style="color: ${data.color}">${data.username}</span> is typing
+        <span class="typing-username" style="color: ${data.color}">${data.username}</span> is typing
         <div class="typing-dots">
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
@@ -1699,6 +1824,13 @@ function showTypingIndicator(data) {
     `;
 
     typingIndicators.appendChild(typingDiv);
+
+    // Apply glow to username in typing indicator
+    const typingUsername = typingDiv.querySelector('.typing-username');
+    if (typingUsername) {
+        applyUsernameGlow(typingUsername, data.username, data.color);
+    }
+
     scrollToBottom();
 }
 
@@ -2538,7 +2670,9 @@ function renderDevUserList(users) {
 
             userDiv.innerHTML = `
                 <div class="user-info" onclick="showUserProfile(${uidParam})" style="cursor: pointer; flex: 1 1 150px; min-width: 0; overflow: hidden;" title="View Profile">
-                    <div class="user-name" style="color: ${user.color}; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${user.username}</div>
+                    <div class="user-name" style="color: ${user.color}; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span class="glow-username-text">${user.username}</span>
+                    </div>
                     <div class="user-ip" style="font-size: 0.8em; color: #888;">IP: ${user.ip}</div>
                 </div>
                 <div class="user-actions" style="display: flex; gap: 5px; flex-shrink: 0; flex: 1 1 auto; justify-content: flex-end;">
@@ -2548,6 +2682,12 @@ function renderDevUserList(users) {
                 </div>
             `;
             devList.appendChild(userDiv);
+
+            // Apply glow to username text span
+            const usernameEl = userDiv.querySelector('.glow-username-text');
+            if (usernameEl) {
+                applyUsernameGlow(usernameEl, user.username, user.color);
+            }
         }
     });
 }
@@ -2599,7 +2739,7 @@ function renderPublicUserList(users, mode) {
             </div>
             <div class="user-info" style="flex: 1; cursor: pointer;">
                 <div class="user-name" style="color: ${isOnline ? userColor : '#ccc'}; font-weight: bold; font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; display: flex; align-items: center;">
-                    ${username}
+                    <span class="glow-username-text">${username}</span>
                     ${isMutual ? '<span class="mutual-badge">Mutual 💜</span>' : ''}
                 </div>
                 <div class="user-status-text" style="font-size: 0.8rem; color: #888;">
@@ -2639,6 +2779,12 @@ function renderPublicUserList(users, mode) {
 
         // Append to fragment instead of directly to DOM
         fragment.appendChild(userDiv);
+
+        // Apply glow to username text span ONLY
+        const usernameEl = userDiv.querySelector('.glow-username-text');
+        if (usernameEl) {
+            applyUsernameGlow(usernameEl, username, userColor);
+        }
     });
 
     // Clear and batch-append for better performance
@@ -2996,7 +3142,9 @@ window.openDMWindow = function (user) {
                 <div class="dm-user-avatar" style="background: ${user.color}">
                     ${firstLetter}
                 </div>
-                <div class="dm-user-name" style="color: ${user.color}">${user.username}</div>
+                <div class="dm-user-name" style="color: ${user.color}">
+                    <span class="glow-username-text">${user.username}</span>
+                </div>
             </div>
             <div class="dm-controls">
                 <button class="dm-home-btn" onclick="minimizeDMWindow('${user.id}')">
@@ -3027,6 +3175,12 @@ window.openDMWindow = function (user) {
 
     document.getElementById('dmWindowsContainer').appendChild(dmWindow);
     openDMWindows.set(user.id, dmWindow);
+
+    // Apply glow to DM window username text span
+    const dmUsernameEl = dmWindow.querySelector('.glow-username-text');
+    if (dmUsernameEl) {
+        applyUsernameGlow(dmUsernameEl, user.username, user.color);
+    }
 
     // Setup DM input events
     setupDMInputEvents(user.id);
@@ -4635,8 +4789,16 @@ window.showUserProfile = async function (uid) {
 
         if (profile) {
             viewProfilePic.src = profile.avatar_url || DEFAULT_AVATAR;
-            viewProfileUsername.textContent = profile.username;
+            viewProfileUsername.innerHTML = `<span class="glow-username-text">${profile.username}</span>`;
             viewProfileBio.textContent = profile.bio || "Write something about uh.";
+
+            // Apply glow to profile username span
+            const onlineUser = currentOnlineUsersList.find(u => u.uid === uid);
+            const userColor = onlineUser ? onlineUser.color : '#00D4FF';
+            const usernameSpan = viewProfileUsername.querySelector('.glow-username-text');
+            if (usernameSpan) {
+                applyUsernameGlow(usernameSpan, profile.username, userColor);
+            }
 
             // Follow System Integration (Parallel)
             updateFollowButtonUI(uid);
@@ -5367,3 +5529,417 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
+// ==========================================
+// DRIXY AI INTENTIONAL OVERRIDE
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DRIXY: Initializing Manual Override Listener");
+
+    // Function to attach listener
+    const attachDrixyListener = () => {
+        const btn = document.getElementById('drixyAIMenuBar');
+        if (btn) {
+            console.log("DRIXY: Button Found");
+            // Remove old listeners by cloning to ensure clean slate
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log("DRIXY: Menu Clicked!");
+
+                if (window.openDrixyAI) {
+                    window.openDrixyAI();
+                } else {
+                    console.error("DRIXY: DrixyAI module not loaded!");
+                    alert("AI System Loading... Please try again in a second.");
+                }
+
+                // Close menu UI
+                const menu = document.getElementById('hamburgerMenu');
+                const overlay = document.getElementById('menuOverlay');
+                if (menu) menu.classList.remove('active');
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    overlay.style.display = 'none';
+                }
+            });
+            console.log("DRIXY: Listener Attached Successfully");
+        } else {
+            // console.warn("DRIXY: Button NOT Found - Retrying...");
+            setTimeout(attachDrixyListener, 1000); // Retry if dynamic
+        }
+    };
+
+    // Run immediately and after a delay to catch any dynamic renders
+    attachDrixyListener();
+    setTimeout(attachDrixyListener, 2000);
+});
+
+// ===================================
+// DRIXY AI CHAT LOGIC (CONSOLIDATED)
+// ===================================
+
+const DrixyAI = {
+    modal: null,
+    messagesContainer: null,
+    input: null,
+    sendBtn: null,
+    thinkingIndicator: null,
+    isProcessing: false,
+    historyLoaded: false,
+
+    init() {
+        if (!document.getElementById('drixyAIModal')) {
+            this.createModal();
+        }
+        this.cacheDOM();
+        this.bindEvents();
+    },
+
+    createModal() {
+        const modalHTML = `
+            <div id="drixyAIModal">
+                <div class="drixy-chat-window">
+                    <div class="drixy-chat-header">
+                        <div class="drixy-header-title">
+                            <i class="fas fa-robot drixy-icon-spin"></i>
+                            <span class="ai-text">Drixy AI</span>
+                        </div>
+                        <button class="drixy-close-btn" id="drixyCloseBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="drixy-chat-messages" id="drixyMessages">
+                        <!-- Messages will appear here -->
+                        <div class="drixy-thinking" id="drixyThinking">
+                            <div class="thinking-bubble"></div>
+                            <div class="thinking-bubble"></div>
+                            <div class="thinking-bubble"></div>
+                        </div>
+                    </div>
+
+                    <div class="drixy-input-area">
+                        <div class="drixy-input-wrapper">
+                            <textarea id="drixyInput" rows="1" placeholder="Ask Drixy something..."></textarea>
+                        </div>
+                        <button id="drixySendBtn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    },
+
+    cacheDOM() {
+        this.modal = document.getElementById('drixyAIModal');
+        this.messagesContainer = document.getElementById('drixyMessages');
+        this.input = document.getElementById('drixyInput');
+        this.sendBtn = document.getElementById('drixySendBtn');
+        this.thinkingIndicator = document.getElementById('drixyThinking');
+    },
+
+    bindEvents() {
+        // Close Modal
+        const closeBtn = document.getElementById('drixyCloseBtn');
+        if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+
+        if (this.modal) {
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) this.close();
+            });
+        }
+
+        // Send Message
+        if (this.sendBtn) this.sendBtn.addEventListener('click', () => this.sendMessage());
+
+        // Note: Menu Button listener is handled by the "Override" block above or external logic
+        // We can add a fallback here if needed, but the override handles it.
+
+        // Input Handling
+        if (this.input) {
+            this.input.addEventListener('input', () => {
+                this.adjustTextareaHeight();
+                this.sendBtn.disabled = this.input.value.trim() === '' || this.isProcessing;
+            });
+
+            this.input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!this.sendBtn.disabled) this.sendMessage();
+                }
+            });
+        }
+    },
+
+    open() {
+        // Force close hamburger menu
+        const hamburgerBtn = document.querySelector('.hamburger-menu-btn'); // specific selector if needed
+        const menu = document.getElementById('hamburgerMenu');
+        const overlay = document.getElementById('menuOverlay');
+
+        if (menu) menu.classList.remove('active');
+        if (overlay) {
+            overlay.classList.remove('active');
+            overlay.style.display = 'none';
+        }
+        // Also try to trigger the close logic if bound to a button
+        if (window.toggleMenu && typeof window.toggleMenu === 'function') {
+            // checking state first to avoid toggling it ON if it's off, but safer to just force remove classes
+        }
+
+        this.modal.style.display = 'flex';
+        setTimeout(() => this.modal.classList.add('show'), 10);
+        if (this.input) this.input.focus();
+
+        if (!this.historyLoaded && window.supabase) {
+            if (!window.supabaseUser) {
+                window.supabase.auth.getUser().then(({ data }) => {
+                    if (data.user) {
+                        window.supabaseUser = data.user;
+                        this.loadHistory();
+                    } else {
+                        this.showWelcomeMessage();
+                    }
+                });
+            } else {
+                this.loadHistory();
+            }
+        } else if (!this.historyLoaded) {
+            this.showWelcomeMessage();
+        }
+    },
+
+    close() {
+        this.modal.classList.remove('show');
+        setTimeout(() => {
+            this.modal.style.display = 'none';
+        }, 300);
+    },
+
+    adjustTextareaHeight() {
+        this.input.style.height = 'auto';
+        this.input.style.height = Math.min(this.input.scrollHeight, 100) + 'px';
+    },
+
+    async loadHistory() {
+        this.messagesContainer.innerHTML = '';
+        this.addDateSeparator('Loading secure history...');
+
+        try {
+            const userId = window.supabaseUser?.id;
+            if (!userId) {
+                this.showWelcomeMessage();
+                return;
+            }
+
+            const response = await fetch(`/api/chat/history/${userId}`);
+            const data = await response.json();
+
+            this.messagesContainer.innerHTML = '';
+
+            if (data.success && data.messages.length > 0) {
+                let lastDate = null;
+                data.messages.forEach(msg => {
+                    const date = new Date(msg.created_at);
+                    const dayStr = this.formatDate(date);
+                    if (dayStr !== lastDate) {
+                        this.addDateSeparator(dayStr);
+                        lastDate = dayStr;
+                    }
+                    this.appendMessage(msg.role, msg.content, false);
+                });
+            } else {
+                this.showWelcomeMessage();
+            }
+            this.historyLoaded = true;
+            this.scrollToBottom();
+
+        } catch (error) {
+            console.error('Failed to load history:', error);
+            this.addDateSeparator('Drixy AI Ready');
+            this.showWelcomeMessage();
+        }
+    },
+
+    showWelcomeMessage() {
+        // Use the global currentUser variable from script.js scope
+        const username = currentUser || (window.supabaseUser?.user_metadata?.username) || 'User';
+        const welcomeText = `Hey There ${username} ..wanna talk about something?!`;
+        setTimeout(() => {
+            this.appendMessage('assistant', welcomeText, true);
+        }, 500);
+    },
+
+    async sendMessage() {
+        const text = this.input.value.trim();
+        if (!text || this.isProcessing) return;
+
+        this.input.value = '';
+        this.input.style.height = 'auto';
+        this.sendBtn.disabled = true;
+        this.isProcessing = true;
+
+        this.appendMessage('user', text);
+        this.scrollToBottom();
+        this.showThinking();
+
+        try {
+            const userId = window.supabaseUser?.id;
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: text,
+                    userId: userId,
+                    sessionId: 'default-session'
+                })
+            });
+
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+
+            this.hideThinking();
+            if (data.success && data.response) {
+                await this.typeMessage(data.response);
+            } else {
+                this.appendMessage('assistant', "I'm having trouble connecting to my neural network right now. 🔌");
+            }
+        } catch (error) {
+            console.error('Chat Error:', error);
+            this.hideThinking();
+            this.appendMessage('assistant', "Connection interrupted. Please try again. ⚠️");
+        } finally {
+            this.isProcessing = false;
+        }
+    },
+
+    appendMessage(role, text, withTyping = false) {
+        if (withTyping) {
+            this.typeMessage(text);
+            return;
+        }
+        const div = document.createElement('div');
+        div.className = `drixy-message ${role}`;
+
+        // Render Markdown for assistant, plain text for user
+        if (role === 'assistant') {
+            if (typeof marked !== 'undefined') {
+                div.innerHTML = marked.parse(text);
+            } else {
+                div.textContent = text;
+            }
+            this.addCopyButton(div, text); // Add Copy Button
+        } else {
+            div.textContent = text;
+        }
+
+        this.messagesContainer.appendChild(div);
+        this.scrollToBottom();
+    },
+
+    async typeMessage(text) {
+        const div = document.createElement('div');
+        div.className = `drixy-message assistant`;
+        this.messagesContainer.appendChild(div);
+
+        // Type the raw markdown first
+        for (let i = 0; i < text.length; i++) {
+            div.textContent = text.substring(0, i + 1);
+            this.scrollToBottom();
+            // Faster typing for long responses
+            const speed = Math.random() * 10 + 5;
+            await new Promise(r => setTimeout(r, speed));
+        }
+
+        // Compile Markdown at end
+        if (typeof marked !== 'undefined') {
+            div.innerHTML = marked.parse(text);
+        }
+        this.addCopyButton(div, text); // Add Copy Button
+        this.scrollToBottom();
+    },
+
+    addCopyButton(messageDiv, text) {
+        const btn = document.createElement('button');
+        btn.className = 'drixy-copy-btn';
+        btn.innerHTML = '<i class="fas fa-copy"></i>';
+        btn.title = 'Copy to clipboard';
+
+        btn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(text);
+
+                // Animation State
+                btn.classList.add('copied');
+                btn.innerHTML = '<i class="fas fa-check"></i>'; // Tick Icon
+
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '<i class="fas fa-copy"></i>';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy', err);
+            }
+        });
+
+        messageDiv.appendChild(btn);
+    },
+
+    showThinking() {
+        // Create dynamically to ensure it exists
+        if (this.thinkingDiv) this.thinkingDiv.remove(); // clear old if exists
+
+        this.thinkingDiv = document.createElement('div');
+        this.thinkingDiv.className = 'drixy-thinking active';
+        this.thinkingDiv.innerHTML = `
+            <div class="thinking-bubble"></div>
+            <div class="thinking-bubble"></div>
+            <div class="thinking-bubble"></div>
+        `;
+        this.messagesContainer.appendChild(this.thinkingDiv);
+        this.scrollToBottom();
+    },
+
+    hideThinking() {
+        if (this.thinkingDiv) {
+            this.thinkingDiv.remove();
+            this.thinkingDiv = null;
+        }
+    },
+
+    addDateSeparator(text) {
+        const div = document.createElement('div');
+        div.className = 'drixy-date-separator';
+        div.textContent = text;
+        this.messagesContainer.appendChild(div);
+    },
+
+    scrollToBottom() {
+        if (this.messagesContainer) {
+            this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+        }
+    },
+
+    formatDate(date) {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (date.toDateString() === today.toDateString()) return 'Today';
+        if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+        return date.toLocaleDateString();
+    }
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    DrixyAI.init();
+});
+
+// Expose globally
+window.openDrixyAI = () => DrixyAI.open();
+window.DrixyAI = DrixyAI;

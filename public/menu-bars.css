@@ -94,3 +94,132 @@
 [data-theme="onyx"] .menu-bar:hover .menu-bar-arrow {
     color: #D4AF37;
 }
+
+/* ================= DRIXY AI MENU BAR CUSTOM STYLING ================= */
+
+/* Drixy AI Title Container */
+.drixy-ai-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* AI Text Styling - Bold, Glowing, Sweep Effect */
+.ai-text {
+    font-weight: 800;
+    font-family: 'Orbitron', sans-serif;
+    color: #1a1a1a;
+    text-shadow:
+        0 0 10px rgba(0, 212, 255, 0.5),
+        0 0 20px rgba(0, 212, 255, 0.3),
+        0 0 30px rgba(0, 212, 255, 0.2);
+    position: relative;
+    background: linear-gradient(135deg,
+            #0a0a0a 0%,
+            #2a2a2a 25%,
+            #00D4FF 50%,
+            #2a2a2a 75%,
+            #0a0a0a 100%);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: glowingSweep 3s ease-in-out infinite;
+}
+
+/* Glowing Sweep Animation */
+@keyframes glowingSweep {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+        text-shadow:
+            0 0 10px rgba(0, 212, 255, 0.3),
+            0 0 20px rgba(0, 212, 255, 0.2);
+    }
+
+    50% {
+        background-position: 100% 50%;
+        text-shadow:
+            0 0 15px rgba(0, 212, 255, 0.6),
+            0 0 30px rgba(0, 212, 255, 0.4),
+            0 0 45px rgba(0, 212, 255, 0.2);
+    }
+}
+
+/* Verified Tick Icon */
+.verified-tick {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    margin-left: 2px;
+    filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.4));
+    animation: tickPulse 2s ease-in-out infinite;
+}
+
+@keyframes tickPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.4));
+    }
+
+    50% {
+        transform: scale(1.05);
+        filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.6));
+    }
+}
+
+/* Drixy AI Bar Hover Enhancement */
+.drixy-ai-bar:hover .ai-text {
+    animation-duration: 1.5s;
+}
+
+.drixy-ai-bar:hover .verified-tick {
+    animation-duration: 1s;
+}
+
+/* Onyx Theme Overrides for AI Text */
+[data-theme="onyx"] .ai-text {
+    background: linear-gradient(135deg,
+            #1a1a1a 0%,
+            #3a3a3a 25%,
+            #D4AF37 50%,
+            #3a3a3a 75%,
+            #1a1a1a 100%);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow:
+        0 0 10px rgba(212, 175, 55, 0.5),
+        0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+[data-theme="onyx"] .verified-tick {
+    filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.4));
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .verified-tick {
+        width: 14px;
+        height: 14px;
+    }
+
+    .ai-text {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .verified-tick {
+        width: 12px;
+        height: 12px;
+    }
+
+    .ai-text {
+        font-size: 0.9rem;
+    }
+}
