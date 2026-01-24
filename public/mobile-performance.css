@@ -4,7 +4,7 @@
 @media (max-width: 768px) {
 
     /* ===== REDUCE EXPENSIVE BLUR EFFECTS ===== */
-    /* Reduce all backdrop-filter blur by 60% for mobile performance */
+    /* FORCE REMOVAL OF SVG FILTER ON MOBILE */
     html body .glass-panel-shared,
     html body #userHamburgerMenu,
     html body .user-hamburger-menu,
@@ -21,17 +21,25 @@
     html body #settingsModal,
     html body .settings-modal-content,
     html body #userProfileModal,
-    html body .profile-modal-content {
-        /* Reduced from 60px to 20px */
-        backdrop-filter: blur(20px) saturate(150%) brightness(1.05) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.05) !important;
-
+    html body .profile-modal-content,
+    html body .drixy-chat-window {
+        /* CRITICAL: Remove the SVG filter that causes lag */
+        backdrop-filter: blur(25px) saturate(180%) brightness(1.1) !important;
+        -webkit-backdrop-filter: blur(25px) saturate(180%) brightness(1.1) !important;
+        
+        /* Ensure no SVG is referenced */
+        filter: none !important;
+        
         /* Enable hardware acceleration */
         transform: translateZ(0) !important;
-        will-change: transform !important;
+        will-change: transform, opacity !important;
 
         /* Reduce box-shadow complexity */
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+        
+        /* Remove any noise background images that might be heavy */
+        background-image: none !important;
+        background-color: rgba(20, 20, 25, 0.6) !important;
     }
 
     /* Profile modal - slightly more blur for distinction */

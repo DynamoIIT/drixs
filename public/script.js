@@ -1,6 +1,28 @@
 ﻿// Socket.IO Connection
 const socket = io();
 
+// UTILITY: Throttle Function for Performance
+function throttle(func, limit) {
+    let lastFunc;
+    let lastRan;
+    return function () {
+        const context = this;
+        const args = arguments;
+        if (!lastRan) {
+            func.apply(context, args);
+            lastRan = Date.now();
+        } else {
+            clearTimeout(lastFunc);
+            lastFunc = setTimeout(function () {
+                if ((Date.now() - lastRan) >= limit) {
+                    func.apply(context, args);
+                    lastRan = Date.now();
+                }
+            }, limit - (Date.now() - lastRan));
+        }
+    }
+}
+
 // Supabase Import
 // Supabase Client (Initialized async)
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm';
@@ -346,42 +368,95 @@ let currentTheme = 'default';
 
 function initializeTheme() {
     const savedTheme = localStorage.getItem('brochatz-theme') || 'default';
-    const themeIcon = document.getElementById('themeIcon');
     const body = document.body;
 
     currentTheme = savedTheme;
+    applyTheme(savedTheme, false); // Apply without animation on page load
 
-    if (savedTheme === 'onyx') {
+    // Force RGB on welcome screen
+    forceWelcomeRGB();
+}
+
+function applyTheme(themeName, showActivation = true) {
+    const body = document.body;
+    const themeIcon = document.getElementById('themeIcon');
+    const themeDescription = document.getElementById('themeDescription');
+
+    // Remove all theme attributes first
+    body.removeAttribute('data-theme');
+
+    // Apply selected theme
+    if (themeName === 'onyx') {
         body.setAttribute('data-theme', 'onyx');
-        themeIcon.className = 'fas fa-gem theme-icon'; // Gem icon for luxury
+        if (themeIcon) themeIcon.className = 'fas fa-gem theme-icon';
+        if (themeDescription) themeDescription.textContent = 'Luxury dark with gold accents';
+        if (showActivation) showThemeActivation('ONYX LUXURY MODE', 'onyx');
+    } else if (themeName === 'darkish') {
+        body.setAttribute('data-theme', 'darkish');
+        if (themeIcon) themeIcon.className = 'fas fa-moon theme-icon';
+        if (themeDescription) themeDescription.textContent = 'Ultra-smooth with Tyndall effect';
+        if (showActivation) showThemeActivation('DARKISH MODE ACTIVATED', 'darkish');
     } else {
-        body.removeAttribute('data-theme');
-        themeIcon.className = 'fas fa-sun theme-icon';
+        // Default RGB mode
+        if (themeIcon) themeIcon.className = 'fas fa-sun theme-icon';
+        if (themeDescription) themeDescription.textContent = 'Vibrant colors with dynamic effects';
+        if (showActivation) showThemeActivation('RGB MODE ACTIVATED', 'default');
+    }
+
+    currentTheme = themeName;
+    localStorage.setItem('brochatz-theme', themeName);
+
+    // Update theme selector if it exists
+    updateThemeSelectorSelection();
+}
+
+function selectTheme(themeName) {
+    applyTheme(themeName, true);
+    closeThemeSelector();
+}
+
+function forceWelcomeRGB() {
+    // Ensure welcome screen always shows RGB colors
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    if (welcomeScreen && welcomeScreen.classList.contains('active')) {
+        // Apply RGB-style CSS variables directly to welcome screen
+        welcomeScreen.style.setProperty('--bg-primary', '#050a15');
+        welcomeScreen.style.setProperty('--accent-primary', '#00C9FF');
+        welcomeScreen.style.setProperty('--accent-secondary', '#92FE9D');
     }
 }
 
-function toggleTheme() {
-    const themeIcon = document.getElementById('themeIcon');
-    const body = document.body;
-
-    if (currentTheme === 'default') {
-        // Activate Onyx Mode
-        currentTheme = 'onyx';
-        body.setAttribute('data-theme', 'onyx');
-        themeIcon.className = 'fas fa-gem theme-icon';
-        localStorage.setItem('brochatz-theme', 'onyx');
-
-        showThemeActivation('ONYX LUXURY MODE', 'onyx');
-
-    } else {
-        // Activate Default Mode  
-        currentTheme = 'default';
-        body.removeAttribute('data-theme');
-        themeIcon.className = 'fas fa-sun theme-icon';
-        localStorage.setItem('brochatz-theme', 'default');
-
-        showThemeActivation('RGB MODE ACTIVATED', 'default');
+// Theme Selector Modal Functions
+function openThemeSelector() {
+    const modal = document.getElementById('themeSelectorModal');
+    if (modal) {
+        updateThemeSelectorSelection();
+        modal.classList.add('active');
     }
+}
+
+function closeThemeSelector() {
+    const modal = document.getElementById('themeSelectorModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function updateThemeSelectorSelection() {
+    const options = document.querySelectorAll('.theme-toggle-btn');
+    options.forEach(option => {
+        const optionTheme = option.getAttribute('data-theme');
+        if (optionTheme === currentTheme) {
+            option.classList.add('selected');
+        } else {
+            option.classList.remove('selected');
+        }
+    });
+}
+
+// Legacy function kept for compatibility
+function toggleTheme() {
+    openThemeSelector();
 }
 
 function showThemeActivation(message, theme) {
@@ -1244,6 +1319,9 @@ function startChat() {
         });
         sessionStorage.setItem('phonkPlayed', 'true');
     }
+
+    // Check for Mobile Performance Suggestion
+    checkMobilePerformanceSuggestion();
 
     // Show loading screen
     showLoadingScreen();
@@ -2164,20 +2242,22 @@ function scrollToBottom(force = false) {
 
 // Monitor scroll position
 if (chatMessages) {
-    chatMessages.addEventListener('scroll', () => {
-        userScrolledUp = !isUserAtBottom();
+    chatMessages.addEventListener('scroll', throttle(() => {
+        window.requestAnimationFrame(() => {
+            userScrolledUp = !isUserAtBottom();
 
-        if (userScrolledUp) {
-            if (scrollToBottomBtn) {
-                scrollToBottomBtn.style.display = 'flex';
+            if (userScrolledUp) {
+                if (scrollToBottomBtn) {
+                    scrollToBottomBtn.style.display = 'flex';
+                }
+            } else {
+                if (scrollToBottomBtn) {
+                    scrollToBottomBtn.style.display = 'none';
+                    scrollToBottomBtn.classList.remove('new-message');
+                }
             }
-        } else {
-            if (scrollToBottomBtn) {
-                scrollToBottomBtn.style.display = 'none';
-                scrollToBottomBtn.classList.remove('new-message');
-            }
-        }
-    });
+        });
+    }, 100));
 }
 
 // Scroll to bottom button click handler
@@ -2435,11 +2515,8 @@ function hideLoadingScreen() {
 }
 
 // Initialize particle effects on scroll
-chatMessages.addEventListener('scroll', function () {
-    if (Math.random() > 0.95) { // 5% chance on scroll
-        createScrollParticle();
-    }
-});
+// Scroll particle effect removed for performance
+// chatMessages.addEventListener('scroll', function () { ... });
 
 function createScrollParticle() {
     const particle = document.createElement('div');
@@ -2693,48 +2770,64 @@ function renderDevUserList(users) {
 }
 
 // Render Public User List (Tabs, Status Dots, DMs)
+// Optimized Render Public User List with Skeleton Loader support
 function renderPublicUserList(users, mode) {
     const usersList = document.getElementById('usersListContainer');
     if (!usersList) return;
 
-    // Use DocumentFragment for better performance
+    // Show skeleton if loading (empty users array but valid request)
+    // Here we assume empty array means no users or loading
+
     const fragment = document.createDocumentFragment();
 
-    // Create Map for quick online status lookup
+    // Create Map for quick lookup
     const onlineMap = new Map();
     if (currentOnlineUsersList && currentOnlineUsersList.length > 0) {
         currentOnlineUsersList.forEach(u => onlineMap.set(u.username, u));
     }
 
-    users.forEach(user => {
-        if (user.username === currentUser) return;
+    let usersToRender = users.filter(user => {
+        if (user.username === currentUser) return false;
+        if (mode === 'online') {
+            return onlineMap.has(user.username);
+        }
+        return true;
+    });
 
+    if (usersToRender.length === 0) {
+        usersList.innerHTML = `
+            <div style="text-align:center; padding: 40px; color: rgba(255,255,255,0.5);">
+                <i class="fas fa-users" style="font-size: 2em; margin-bottom: 15px; opacity: 0.5;"></i>
+                <p>No users found.</p>
+            </div>
+        `;
+        return;
+    }
+
+    usersToRender.forEach(user => {
         const username = user.username;
         const onlineUserData = onlineMap.get(username);
         const isOnline = !!onlineUserData;
-
-        // Filter: If mode is online, MUST be online
-        if (mode === 'online' && !isOnline) return;
 
         const statusClass = isOnline ? 'online' : 'offline';
         const userColor = onlineUserData ? onlineUserData.color : '#ffffff';
         const avatarUrl = user.avatar_url || (onlineUserData ? (onlineUserData.profilePic || DEFAULT_AVATAR) : DEFAULT_AVATAR);
         const targetUid = onlineUserData ? onlineUserData.uid : user.id;
-        const uidParam = `'${targetUid}'`;
 
         // Follow Logic
         const doesFollowMe = currentUserFollowers.has(targetUid);
         const amIFollowing = currentUserFollowing.has(targetUid);
         const isMutual = amIFollowing && doesFollowMe;
+        const isSelf = targetUid === supabaseUser?.id;
 
         const userDiv = document.createElement('div');
         userDiv.className = 'user-item';
-
-        const isSelf = targetUid === supabaseUser?.id;
+        // Force hardware acceleration for smooth scrolling
+        userDiv.style.transform = "translateZ(0)";
 
         userDiv.innerHTML = `
             <div class="user-avatar-small" style="border-color: ${userColor}; position: relative; width: 40px; height: 40px; border-radius: 50%; border: 2px solid ${userColor}; overflow: visible; margin-right: 15px; cursor: pointer;">
-                <img src="${avatarUrl}" onerror="this.src='${DEFAULT_AVATAR}'" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                <img src="${avatarUrl}" loading="lazy" onerror="this.src='${DEFAULT_AVATAR}'" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
                 <div class="status-dot ${statusClass}" style="position: absolute; bottom: -2px; right: -2px; border: 2px solid #000;"></div>
             </div>
             <div class="user-info" style="flex: 1; cursor: pointer;">
@@ -2758,40 +2851,33 @@ function renderPublicUserList(users, mode) {
             </div>
         `;
 
-        // Attach event listeners AFTER rendering
-        // Profile click - entire row except actions area
+        // Event Listeners
         userDiv.addEventListener('click', (e) => {
             if (e.target.closest('.user-actions')) return;
             window.showUserProfile(targetUid);
         });
 
-        // DM button click - only attach if mutual or self
         if (isMutual || isSelf) {
             const dmBtn = userDiv.querySelector('.dm-trigger-btn');
             if (dmBtn) {
                 dmBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    // openDMByUsername has fresh mutual-follow check as backup
                     window.openDMByUsername(dmBtn.dataset.username);
                 });
             }
         }
 
-        // Append to fragment instead of directly to DOM
         fragment.appendChild(userDiv);
 
-        // Apply glow to username text span ONLY
         const usernameEl = userDiv.querySelector('.glow-username-text');
         if (usernameEl) {
             applyUsernameGlow(usernameEl, username, userColor);
         }
     });
 
-    // Clear and batch-append for better performance
     usersList.innerHTML = '';
     usersList.appendChild(fragment);
 
-    // Re-apply search filter
     const searchTerm = document.getElementById('publicUserSearch') ? document.getElementById('publicUserSearch').value.toLowerCase() : '';
     if (searchTerm) filterPublicUserList(searchTerm);
 }
@@ -5081,11 +5167,37 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Theme Toggle Card
+    // Theme Toggle Card - Opens theme selector modal
     const themeToggleCard = document.getElementById('themeToggleCard');
     if (themeToggleCard) {
         themeToggleCard.addEventListener('click', function () {
-            toggleTheme();
+            openThemeSelector();
+        });
+    }
+
+    // Theme Selector Modal Events
+    const themeSelectorClose = document.getElementById('themeSelectorClose');
+    const themeSelectorModal = document.getElementById('themeSelectorModal');
+
+    if (themeSelectorClose) {
+        themeSelectorClose.addEventListener('click', closeThemeSelector);
+    }
+
+    if (themeSelectorModal) {
+        // Close on background click
+        themeSelectorModal.addEventListener('click', function (e) {
+            if (e.target === themeSelectorModal) {
+                closeThemeSelector();
+            }
+        });
+
+        // Theme option clicks
+        const themeOptions = document.querySelectorAll('.theme-toggle-btn');
+        themeOptions.forEach(option => {
+            option.addEventListener('click', function () {
+                const selectedTheme = this.getAttribute('data-theme');
+                selectTheme(selectedTheme);
+            });
         });
     }
 
@@ -5943,3 +6055,45 @@ document.addEventListener('DOMContentLoaded', () => {
 // Expose globally
 window.openDrixyAI = () => DrixyAI.open();
 window.DrixyAI = DrixyAI;
+
+// ================= MOBILE PERFORMANCE SUGGESTION =================
+function checkMobilePerformanceSuggestion() {
+    // 1. Check if Mobile (width < 768px)
+    if (window.innerWidth >= 768) return;
+
+    // 2. Check if already using Darkish
+    if (currentTheme === 'darkish') return;
+
+    // 3. Check if already suggested in this session
+    if (sessionStorage.getItem('darkishSuggested')) return;
+
+    // Show Suggestion
+    const modal = document.getElementById('darkishSuggestionModal');
+    if (modal) {
+        setTimeout(() => {
+            modal.classList.add('active');
+            sessionStorage.setItem('darkishSuggested', 'true'); // excessive prompting prevention
+        }, 3000); // 3s delay for user to settle in
+    }
+}
+
+// Event Listeners for Suggestion Modal
+document.addEventListener('DOMContentLoaded', () => {
+    const switchBtn = document.getElementById('suggestionSwitchBtn');
+    const closeBtn = document.getElementById('suggestionCloseBtn');
+    const modal = document.getElementById('darkishSuggestionModal');
+
+    if (switchBtn) {
+        switchBtn.addEventListener('click', () => {
+            selectTheme('darkish');
+            if (modal) modal.classList.remove('active');
+            showNotification('Optimized for speed! ⚡', 'success');
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            if (modal) modal.classList.remove('active');
+        });
+    }
+});
